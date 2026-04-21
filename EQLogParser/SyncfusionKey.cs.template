@@ -1,0 +1,8 @@
+// Copy this file to SyncfusionKey.cs and replace YOUR_KEY_HERE with your Syncfusion license key.
+namespace EQLogParser
+{
+  internal static class SyncfusionKeyResource
+  {
+    internal const string Key = "YOUR_KEY_HERE";
+  }
+}

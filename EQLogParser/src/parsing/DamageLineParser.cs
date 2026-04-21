@@ -545,6 +545,38 @@ namespace EQLogParser
           spell = string.Join(" ", split, fromDamage + 2, byIndex - fromDamage - 2);
           attacker = string.Join(" ", split, byIndex + 1, stop - byIndex);
 
+          if (!string.IsNullOrEmpty(attacker) && attacker[^1] == '.')
+          {
+            attacker = attacker[..^1];
+          }
+
+          // Dalaya format: "from AttackerName by SpellName" (reversed vs live EQ).
+          // In Dalaya, named pets are logged with a double-space after their name,
+          // which produces a trailing space when the tokens are joined here.
+          // Regular player names never have a trailing space.
+          // We always swap X and Y, then use the trailing space to decide
+          // whether X is a pet (register under current player) or another player.
+          var realAttacker = spell;   // X = the name between "from" and "by"
+          var realSpell = attacker;   // Y = everything after "by"
+
+          if (!string.IsNullOrEmpty(realAttacker) && !string.IsNullOrEmpty(realSpell))
+          {
+            spell = realSpell;
+            attacker = realAttacker;
+
+            if (attacker.EndsWith(" "))
+            {
+              // Trailing space = named pet (Bonaparte , Fireballs , Otto , etc.)
+              PlayerManager.Instance.AddVerifiedPet(attacker);
+              PlayerManager.Instance.AddPetToPlayer(attacker.Trim(), ConfigUtil.PlayerName);
+            }
+            else
+            {
+              // No trailing space = another player in the group/raid
+              PlayerManager.Instance.AddVerifiedPlayer(attacker, lineData.BeginTime);
+            }
+          }
+
           // died to spell emoted/killed self
           if (attacker == ".")
           {
@@ -553,18 +585,12 @@ namespace EQLogParser
           }
           else if (string.IsNullOrEmpty(spell))
           {
-            // not sure when this happens
             spell = attacker;
-          }
-          else if (!string.IsNullOrEmpty(attacker) && attacker[^1] == '.')
-          {
-            // fix spell name
-            attacker = attacker[..^1];
           }
         }
         else if (yourIndex > -1)
         {
-          attacker = split[yourIndex];
+          attacker = ConfigUtil.PlayerName;
           spell = string.Join(" ", split, yourIndex + 1, stop - yourIndex);
           spell = (!string.IsNullOrEmpty(spell) && spell[^1] == '.') ? spell[..^1] : Labels.Dot;
         }
@@ -697,7 +723,7 @@ namespace EQLogParser
       // EMU specific stuff
       // Old (eqemu direct damage) [Sat Jan 15 21:08:54 2022] Jaun hit Pixtt Invi Mal for 150 points of non-melee damage.
       // Heroes Forge EMU [Sun Dec 08 04:56:54 2024] Lobekn (Owner: Bulron) hit a wan ghoul knight for 311 points of non-melee damage. (Earthquake)
-      else if (MainWindow.IsEmuParsingEnabled && forIndex > -1 && hitTypeIndex > -1 && split[hitTypeIndex] == "hit" && forIndex < pointsOfIndex && nonMeleeIndex > pointsOfIndex)
+      else if (forIndex > -1 && hitTypeIndex > -1 && split[hitTypeIndex] == "hit" && forIndex < pointsOfIndex && nonMeleeIndex > pointsOfIndex)
       {
         if (emuPetIndex > -1)
         {

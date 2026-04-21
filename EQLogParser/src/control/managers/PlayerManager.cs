@@ -401,7 +401,8 @@ namespace EQLogParser
         {
           // no generated or unassigned pets but allow for warders
           var filtered = _petToPlayer.Where(kv => !_gameGeneratedPets.ContainsKey(kv.Key) && kv.Value != Labels.Unassigned &&
-            (IsPossiblePlayerName(kv.Key) || kv.Key.EndsWith("`s warder", StringComparison.OrdinalIgnoreCase)));
+            (IsPossiblePlayerName(kv.Key) || kv.Key.EndsWith("`s warder", StringComparison.OrdinalIgnoreCase)
+              || IsPossiblePlayerName(kv.Key.Trim())));
           ConfigUtil.SavePetMapping(filtered);
         }
 

@@ -88,6 +88,12 @@
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup Condition="Exists('SyncfusionKey.cs')">
+    <DefineConstants>$(DefineConstants);SYNCFUSION_KEY</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="!Exists('SyncfusionKey.cs')">
+    <Compile Remove="SyncfusionKey.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Update="System">
       <Private>False</Private>

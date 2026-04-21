@@ -4,3 +4,5 @@ tmp/
 .vscode/
 sign.cmd
 .aider*
+# Syncfusion license key - never commit this
+EQLogParser/SyncfusionKey.cs

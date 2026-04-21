@@ -36,7 +36,16 @@ namespace EQLogParser
     public App()
     {
       // 33.x
-      SyncfusionLicenseProvider.RegisterLicense("");
+      SyncfusionLicenseProvider.RegisterLicense(GetSyncfusionKey());
+    }
+
+    private static string GetSyncfusionKey()
+    {
+      #if SYNCFUSION_KEY
+        return SyncfusionKeyResource.Key;
+      #else
+        return Environment.GetEnvironmentVariable("SYNCFUSION_LICENSE_KEY") ?? string.Empty;
+      #endif
     }
 
     protected override async void OnStartup(StartupEventArgs e)
