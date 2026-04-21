@@ -376,7 +376,7 @@ namespace EQLogParser
     private void RestoreClick(object sender, RoutedEventArgs e) => MainActions.Restore();
     private void OpenCreateWavClick(object sender, RoutedEventArgs e) => new WavCreatorWindow().ShowDialog();
     private void OpenSoundsFolderClick(object sender, RoutedEventArgs e) => MainActions.OpenFileWithDefault("\"" + @"data\sounds" + "\"");
-    private void ReportProblemClick(object sender, RoutedEventArgs e) => MainActions.OpenFileWithDefault("http://github.com/kauffman12/EQLogParser/issues");
+    private void ReportProblemClick(object sender, RoutedEventArgs e) => MainActions.OpenFileWithDefault("https://github.com/SkepticalMystic/EQLogParser-Dalaya/issues");
     private void ViewReleaseNotesClick(object sender, RoutedEventArgs e) => MainActions.OpenFileWithDefault(App.ReleaseNotesUrl);
     private void OpenLogManager(object sender, RoutedEventArgs e) => new LogManagementWindow().ShowDialog();
     private void DockSiteCloseButtonClick(object sender, CloseButtonEventArgs e) => SyncFusionUtil.CloseTab(dockSite, e.TargetItem as ContentControl, _logWindows);

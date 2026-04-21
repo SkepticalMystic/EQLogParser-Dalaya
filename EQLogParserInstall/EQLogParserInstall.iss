@@ -5,22 +5,21 @@
   #define IncludePiperTTS 0
 #endif
 
-#define MyAppName "EQLogParser"
-#define MyAppVersion "2.3.50"
-#define MyAppPublisher "Kizant"
-#define MyAppURL "https://github.com/kauffman12/EQLogParser"
-#define MyAppExeName "EQLogParser.exe"
-#define MyReleaseDir "C:\Users\kauff\code\github\EQLogParser\EQLogParser\bin\Release\net8.0-windows10.0.17763.0"
-;#define MyReleaseDir "C:\Users\kauff\code\github\EQLogParser\EQLogParser\bin\Debug\net8.0-windows10.0.17763.0"
-#define MySrcDir "C:\Users\kauff\code\github\EQLogParser\EQLogParser"
-#define BackupUtilDir "C:\Users\kauff\code\github\EQLogParser\BackupUtil\bin\Release\net8.0-windows10.0.17763.0"
+#define MyAppName "EQLogParser-Dalaya"
+#define MyAppVersion "1.0.0"
+#define MyAppPublisher "SkepticalMystic"
+#define MyAppURL "https://github.com/SkepticalMystic/EQLogParser-Dalaya"
+#define MyAppExeName "EQLogParser-Dalaya.exe"
+#define MyReleaseDir "C:\Users\Admin\EQLogParser-Dalaya\EQLogParser\EQLogParser\bin\x64\Release\net8.0-windows10.0.17763.0"
+#define MySrcDir "C:\Users\Admin\EQLogParser-Dalaya\EQLogParser\EQLogParser"
+#define BackupUtilDir "C:\Users\Admin\EQLogParser-Dalaya\EQLogParser\BackupUtil\bin\Release\net8.0-windows10.0.17763.0"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 ArchitecturesInstallIn64BitMode=x64compatible
 ArchitecturesAllowed=x64compatible
-AppId={{EBB73706-893E-4CD4-96D7-FE2E864EE327}
+AppId={{2BEC45A5-502F-4400-94FD-A1082A4CAA06}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
@@ -31,7 +30,7 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={commonpf}\{#MyAppName}
 DisableDirPage=no
 DisableProgramGroupPage=yes
-InfoBeforeFile={#MyReleaseDir}\data\releasenotes.rtf
+InfoBeforeFile={#MySrcDir}\data\releasenotes.rtf
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 #if IncludePiperTTS
@@ -44,7 +43,6 @@ MinVersion=10.0
 UninstallDisplayIcon={#MySrcDir}\src\ui\main\EQLogParser.ico
 Compression=lzma
 SolidCompression=yes
-SignTool=signtool
 WizardImageFile=background.bmp
 WizardSmallImageFile=graphic.bmp
 WizardStyle=modern
@@ -63,10 +61,9 @@ Source: "{#MyReleaseDir}\piper-tts\*"; DestDir: "{app}\piper-tts"; Flags: ignore
 
 Source: "{#MyReleaseDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\DotLiquid.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyReleaseDir}\EQLogParser.deps.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyReleaseDir}\EQLogParser.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyReleaseDir}\EQLogParser.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#MyReleaseDir}\EQLogParser.runtimeconfig.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyReleaseDir}\EQLogParser-Dalaya.deps.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyReleaseDir}\EQLogParser-Dalaya.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyReleaseDir}\EQLogParser-Dalaya.runtimeconfig.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\FontAwesome5.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\FontAwesome5.Net.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\LiteDB.dll"; DestDir: "{app}"; Flags: ignoreversion
@@ -154,7 +151,7 @@ var
 begin
   Log('Delete Old Log Files');
   // Specify the directory containing the log files
-  LogDir := ExpandConstant('{userappdata}\EQLogParser\logs');
+  LogDir := ExpandConstant('{userappdata}\EQLogParser-Dalaya\logs');
 
   // Find and delete all .log files
   if FindFirst(LogDir + '\*.log', FindRec) then
@@ -193,9 +190,8 @@ var
   OkButton: TButton;
 begin
   // Create the form
-  Form := CreateCustomForm;
-  Form.ClientWidth := ScaleX(358);
-  Form.ClientHeight := ScaleY(118);
+// Create the form
+  Form := CreateCustomForm(ScaleX(358), ScaleY(118), False, False);
   Form.Font.Size := 10
   Form.Caption := 'Additional Components Required';
   Form.Position := poScreenCenter;
@@ -203,7 +199,7 @@ begin
   // Create an informational label
   InfoLabel := TLabel.Create(Form);
   InfoLabel.Parent := Form;
-  InfoLabel.Caption := 'EQLogParser requires .NET 8.0 x64 Desktop Runtime. Please install ' + #13#10 +
+  InfoLabel.Caption := 'EQLogParser-Dalaya requires .NET 8.0 x64 Desktop Runtime. Please install ' + #13#10 +
   'before continuing. A recent version can be found here:';
   InfoLabel.Font.Size := 9;
   InfoLabel.Top := ScaleY(10);

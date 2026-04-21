@@ -6,3 +6,5 @@ sign.cmd
 .aider*
 # Syncfusion license key - never commit this
 EQLogParser/SyncfusionKey.cs
+EQLogParser/data/spells_old.txt
+EQLogParserInstall/Output/

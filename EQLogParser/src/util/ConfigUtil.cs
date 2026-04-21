@@ -17,7 +17,7 @@ namespace EQLogParser
     public static string LogsDir;
     public static string ConfigDir;
     internal static event Action<string> EventsLoadingText;
-    internal const string AppData = @"%AppData%\EQLogParser";
+    internal const string AppData = @"%AppData%\EQLogParser-Dalaya";
 
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     private static readonly ConcurrentDictionary<string, string> ApplicationSettings = new();

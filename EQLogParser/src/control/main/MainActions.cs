@@ -173,7 +173,7 @@ namespace EQLogParser
 
       try
       {
-        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/kauffman12/EQLogParser/releases/latest");
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/SkepticalMystic/EQLogParser-Dalaya/releases/latest");
         request.Headers.UserAgent.Add(new ProductInfoHeaderValue("EQLogParser", "1.0"));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         var response = await TheHttpClient.SendAsync(request);
