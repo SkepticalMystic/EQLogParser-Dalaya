@@ -79,6 +79,7 @@ namespace EQLogParser
 
     internal void AddPetToPlayer(string pet, string player, bool init = false)
     {
+      pet = pet?.Trim();
       if (!string.IsNullOrEmpty(pet) && !string.IsNullOrEmpty(player))
       {
         lock (LockObject)
@@ -108,6 +109,7 @@ namespace EQLogParser
 
     internal void AddVerifiedPet(string name, bool init = false)
     {
+      name = name?.Trim();
       if (!string.IsNullOrEmpty(name))
       {
         lock (LockObject)
