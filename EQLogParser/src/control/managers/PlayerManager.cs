@@ -224,7 +224,7 @@ namespace EQLogParser
 
       if (!string.IsNullOrEmpty(pet))
       {
-        _petToPlayer.TryGetValue(pet, out player);
+        _petToPlayer.TryGetValue(pet.Trim(), out player);
       }
 
       return player;
@@ -242,6 +242,7 @@ namespace EQLogParser
 
       if (!string.IsNullOrEmpty(name))
       {
+        name = name.Trim();
         found = _verifiedPets.ContainsKey(name);
         isGameGenerated = !found && _gameGeneratedPets.ContainsKey(name);
 

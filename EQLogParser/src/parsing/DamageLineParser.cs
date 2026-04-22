@@ -55,6 +55,7 @@ namespace EQLogParser
     };
 
     private static OldCritData _lastCrit;
+    private static PendingDsData _pendingDs;
 
     static DamageLineParser()
     {
@@ -163,6 +164,12 @@ namespace EQLogParser
       int emuPetIndex = -1, shieldedIndex = -1, absorbsIndex = -1, oldCritIndex = -1;
       string subType = null;
       var foundType = false;
+
+      // Discard any pending Dalaya DS record that was never confirmed by a matching melee line
+      if (_pendingDs != null && (lineData.BeginTime - _pendingDs.BeginTime) > 1)
+      {
+        _pendingDs = null;
+      }
 
       var found = false;
       for (var i = 0; i <= stop && !found; i++)
@@ -500,6 +507,23 @@ namespace EQLogParser
           record.ModifiersMask = LineModifiersParser.Crit;
           _lastCrit = null;
         }
+
+        // Resolve pending Dalaya DS: the line immediately before a melee hit is the DS proc on the attacker.
+        // attacker = the NPC; defender = the player who owns the damage shield.
+        if (!checkLineType && _pendingDs != null)
+        {
+          if (string.Equals(_pendingDs.Npc, attacker, StringComparison.OrdinalIgnoreCase) &&
+              (lineData.BeginTime - _pendingDs.BeginTime) <= 1)
+          {
+            // DS damage: player (defender) deals _pendingDs.Damage to the NPC (attacker)
+            var dsRecord = CreateDamageRecord(_pendingDs.LineData, [], -1, defender, attacker, _pendingDs.Damage, Labels.Ds, Labels.Ds);
+            if (dsRecord != null && !double.IsNaN(_pendingDs.LineData.BeginTime))
+            {
+              EventsDamageProcessed?.Invoke(new DamageProcessedEvent { Record = dsRecord, BeginTime = _pendingDs.LineData.BeginTime });
+            }
+          }
+          _pendingDs = null;
+        }
       }
       // [Sun Apr 18 20:24:56 2021] Sonozen hit Jortreva the Crusader for 38948 points of fire damage by Burst of Flames. (Lucky Critical Twincast)
       // [Sat Jan 04 15:29:18 2025] Piemastaj hit Boss for 176000 points of unresistable damage by Elemental Conversion VI.
@@ -567,8 +591,11 @@ namespace EQLogParser
             if (attacker.EndsWith(" "))
             {
               // Trailing space = named pet (Bonaparte , Fireballs , Otto , etc.)
+              // Trim before registering and before the record is created so the
+              // stored name and the damage record name are consistent.
+              attacker = attacker.Trim();
               PlayerManager.Instance.AddVerifiedPet(attacker);
-              PlayerManager.Instance.AddPetToPlayer(attacker.Trim(), ConfigUtil.PlayerName);
+              PlayerManager.Instance.AddPetToPlayer(attacker, ConfigUtil.PlayerName);
             }
             else
             {
@@ -672,17 +699,15 @@ namespace EQLogParser
         defender = UpdateDefender(defender, attacker);
         record = CreateDamageRecord(lineData, split, stop, attacker, defender, damage, Labels.Ds, Labels.Ds);
       }
-      // Unknown but often from spell recourse like from The Protector's Grasp when the player is dead
-      // [Mon Oct 23 22:18:46 2022] Demonstrated Depletion was hit by non-melee for 6734 points of damage.
-      // also seems to be emu direct damage for current player?
+      // Dalaya damage shield: "Mistress Saitha was hit by non-melee for 45 points of damage."
+      // The DS owner is whoever Saitha attacks on the very next line. Defer attribution until confirmed.
+      // (On live/EMU this line is rare spell recourse with no attacker context, so pending approach is safe.)
       else if (forIndex > -1 && forIndex < pointsOfIndex && nonMeleeIndex < pointsOfIndex &&
                byIndex == (nonMeleeIndex - 1) && isIndex > -1 && split[isIndex + 1] == "hit")
       {
-        defender = string.Join(" ", split, 0, isIndex);
-        attacker = MainWindow.IsEmuParsingEnabled ? ConfigUtil.PlayerName : Labels.Unk;
+        var npc = ToUpper(string.Join(" ", split, 0, isIndex));
         var damage = StatsUtil.ParseUInt(split[pointsOfIndex - 1]);
-        defender = UpdateDefender(defender, attacker);
-        record = CreateDamageRecord(lineData, split, stop, attacker, defender, damage, Labels.Dd, Labels.Dd);
+        _pendingDs = new PendingDsData { Npc = npc, Damage = damage, BeginTime = lineData.BeginTime, LineData = lineData };
       }
       // falling damage? [Fri Mar 04 21:28:19 2022] You were hit by non-melee for 16 damage
       else if (isIndex > -1 && nonMeleeIndex == (isIndex + 3) && split[isIndex + 1] == "hit" && endDamage == stop && pointsOfIndex == -1)
@@ -1265,6 +1290,15 @@ namespace EQLogParser
     {
       internal DamageRecord Record { get; init; }
       internal double BeginTime { get; init; }
+    }
+
+    // Dalaya damage shield: holds a "X was hit by non-melee" line until the triggering melee hit identifies the DS owner
+    private class PendingDsData
+    {
+      internal string Npc { get; init; }
+      internal uint Damage { get; init; }
+      internal double BeginTime { get; init; }
+      internal LineData LineData { get; init; }
     }
 
     [GeneratedRegex(@"^Eye of (\w+)")]
