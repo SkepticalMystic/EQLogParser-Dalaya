@@ -493,6 +493,11 @@ namespace EQLogParser
       {
         var hitTypeMod = hitTypeAdd > 0 ? 1 : 0;
         attacker = string.Join(" ", split, 0, hitTypeIndex);
+        // Dalaya named pets (e.g. "Bonaparte  bashes ...") are logged with a double-space after
+        // their name, which leaves `attacker` with a trailing space after the tokens rejoin.
+        // Normalize here so "Bonaparte " and "Bonaparte" don't become two different PlayerStats
+        // rows in DPS Summary. Attacker names never legitimately end with whitespace.
+        attacker = attacker.TrimEnd();
         defender = string.Join(" ", split, hitTypeIndex + hitTypeMod + 1, forIndex - hitTypeIndex - hitTypeMod - 1);
         subType = ToUpper(subType);
         var damage = StatsUtil.ParseUInt(split[pointsOfIndex - 1]);
@@ -536,6 +541,10 @@ namespace EQLogParser
         {
           spell = spell[..^1];
           attacker = string.Join(" ", split, 0, hitTypeIndex);
+          // Dalaya double-space on named pets leaves a trailing space ("Bonaparte  hit X for…").
+          // Same normalization as the melee branch — without it, direct-damage records for
+          // Bonaparte end up in a separate DPS Summary row from the melee/DoT records.
+          attacker = attacker.TrimEnd();
           defender = string.Join(" ", split, hitTypeIndex + 1, forIndex - hitTypeIndex - 1);
           var type = GetTypeFromSpell(spell, Labels.Dd);
           var damage = StatsUtil.ParseUInt(split[pointsOfIndex - 1]);
