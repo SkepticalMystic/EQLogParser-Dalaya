@@ -264,6 +264,34 @@ namespace EQLogParserTest
         "Non-hit record at t=118 must extend the segment's EndTime");
     }
 
+    [TestMethod]
+    public void Merge_TankingBlocks_AggregatedSeparatelyFromDamage()
+    {
+      // Tanking records (NPC hits player) live in Fight.TankingBlocks and must flow through
+      // the merger onto the merged Fight's TankingBlocks + TankSegments + TankHits + TankTotal +
+      // PlayerTankTotals. Without this the Raid Damage window's Tanking tab shows no data.
+      var tankHit = MakeDamage("Bob", "Alice", 500, Labels.Melee, "");
+      var fight = new Fight { Name = "Bob", BeginTime = 100, LastTime = 120 };
+      var ag = new ActionGroup { BeginTime = 110 };
+      ag.Actions.Add(tankHit);
+      fight.TankingBlocks.Add(ag);
+
+      var merged = FightMerger.MergeFromSources(new[]
+      {
+        new FightSource { SourcePlayer = "Alice", Fights = new List<Fight> { fight } }
+      });
+
+      Assert.AreEqual(1, merged.Count);
+      Assert.AreEqual(1, merged[0].TankingBlocks.Count);
+      Assert.AreEqual(1, merged[0].TankHits);
+      Assert.AreEqual(500, merged[0].TankTotal);
+      Assert.AreEqual(110.0, merged[0].BeginTankingTime);
+      Assert.AreEqual(110.0, merged[0].LastTankingTime);
+      Assert.IsTrue(merged[0].PlayerTankTotals.ContainsKey("Alice"), "Tank totals should be keyed by defender (the tank)");
+      Assert.AreEqual(500, merged[0].PlayerTankTotals["Alice"].Damage);
+      Assert.IsTrue(merged[0].TankSegments.ContainsKey("Alice"), "Time segments keyed by defender");
+    }
+
     // Helpers
 
     private static DamageRecord MakeDamage(string attacker, string defender, uint total, string type, string subType) => new()
