@@ -836,7 +836,7 @@ namespace EQLogParser
       }
     }
 
-    internal static void ExportFights(string currentFile, List<Fight> fights)
+    internal static void ExportFights(string currentFile, List<Fight> fights, bool filterToSelectedDefenders = false)
     {
       var saveFileDialog = new SaveFileDialog();
       var fileName = $"eqlog_{ConfigUtil.PlayerName}_{ConfigUtil.ServerName}-selected.txt";
@@ -847,6 +847,13 @@ namespace EQLogParser
       {
         var dialog = new MessageWindow($"Saving {fights.Count} Selected Fights.", Resource.FILEMENU_SAVE_FIGHTS,
           MessageWindow.IconType.Save);
+
+        // Build a case-insensitive defender-name set for the precise-filter path. The parser's
+        // UpdateDefender normalization already matches what Fight.Name stores (first letter
+        // uppercased), so a case-insensitive compare covers any stray casing variance.
+        var defenderNames = filterToSelectedDefenders
+          ? new HashSet<string>(fights.Select(f => f.Name), StringComparer.OrdinalIgnoreCase)
+          : null;
 
         Task.Delay(150).ContinueWith(async _ =>
         {
@@ -882,6 +889,20 @@ namespace EQLogParser
 
                   if (TimeRange.TimeCheck(line, range.TimeSegments[0].BeginTime, range, out var exceeds))
                   {
+                    // "Without adds" mode: parse the line as damage; if it produced a record
+                    // whose defender is NOT one of the selected fights, drop the line. Non-
+                    // damage lines (casts, buffs, misc) fall through since ParseLine returns
+                    // null — those provide DoT/proc attribution context and don't spawn
+                    // stray Fight entries on re-parse.
+                    if (defenderNames != null)
+                    {
+                      var damageRecord = DamageLineParser.ParseLine(action);
+                      if (damageRecord != null && !defenderNames.Contains(damageRecord.Defender))
+                      {
+                        continue;
+                      }
+                    }
+
                     os.Write(Encoding.UTF8.GetBytes(line));
                     os.Write(Encoding.UTF8.GetBytes(Environment.NewLine));
                   }

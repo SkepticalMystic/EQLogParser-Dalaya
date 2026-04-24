@@ -52,7 +52,8 @@ namespace EQLogParser
       fightSearchBox.Text = Resource.NPC_SEARCH_TEXT;
 
       menuItemClear.IsEnabled = menuItemSelectFight.IsEnabled = menuItemUnselectFight.IsEnabled =
-        menuItemSetPet.IsEnabled = menuItemSetPlayer.IsEnabled = menuItemRefresh.IsEnabled = false;
+        menuItemSetPet.IsEnabled = menuItemSetPlayer.IsEnabled = menuItemRefresh.IsEnabled =
+        menuItemExportFightsWithAdds.IsEnabled = menuItemExportFightsNoAdds.IsEnabled = false;
 
       _selectionTimer = new DispatcherTimer(DispatcherPriority.Send) { Interval = new TimeSpan(0, 0, 0, 0, 750) };
       _selectionTimer.Tick += (_, _) =>
@@ -380,11 +381,33 @@ namespace EQLogParser
       menuItemSetPlayer.IsEnabled = dataGrid.SelectedItems.Count == 1 && selected?.IsInactivity == false &&
         PlayerManager.IsPossiblePlayerName((dataGrid.SelectedItem as Fight)?.Name);
       menuItemRefresh.IsEnabled = dataGrid.SelectedItems.Count > 0;
+      menuItemExportFightsWithAdds.IsEnabled = menuItemExportFightsNoAdds.IsEnabled = dataGrid.SelectedItems.Count > 0;
     }
 
     private void RefreshClick(object sender, RoutedEventArgs e)
     {
       MainActions.FireFightSelectionChanged(dataGrid.SelectedItems?.Cast<Fight>().ToList());
+    }
+
+    private void ExportFightsWithAddsClick(object sender, RoutedEventArgs e) => ExportSelected(filterToSelectedDefenders: false);
+    private void ExportFightsNoAddsClick(object sender, RoutedEventArgs e) => ExportSelected(filterToSelectedDefenders: true);
+
+    private void ExportSelected(bool filterToSelectedDefenders)
+    {
+      var filtered = GetSelectedFights().OrderBy(fight => fight.Id).ToList();
+
+      if (string.IsNullOrEmpty(MainWindow.CurrentLogFile))
+      {
+        new MessageWindow("No Log File Opened. Nothing to Save.", Resource.FILEMENU_SAVE_FIGHTS).ShowDialog();
+      }
+      else if (filtered.Count > 0)
+      {
+        MainActions.ExportFights(MainWindow.CurrentLogFile, filtered, filterToSelectedDefenders);
+      }
+      else
+      {
+        new MessageWindow("No Fights Selected. Nothing to Save.", Resource.FILEMENU_SAVE_FIGHTS).ShowDialog();
+      }
     }
 
     private void SelectGroupClick(object sender, RoutedEventArgs e)

@@ -94,7 +94,17 @@
             <MenuItem.Icon>
               <fa:ImageAwesome x:Name="refreshIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_CircleNotch" />
             </MenuItem.Icon>
-          </MenuItem>          
+          </MenuItem>
+          <MenuItem x:Name="menuItemExportFightsWithAdds" IsEnabled="False" Header="Export Selected Fights (with adds)..." Click="ExportFightsWithAddsClick" ToolTip="Save Selected Fights to log file including ambient NPCs/adds that were active in the same time window. Good for a 'what happened during this fight' archive.">
+            <MenuItem.Icon>
+              <fa:ImageAwesome x:Name="exportFightsWithAddsIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_File" />
+            </MenuItem.Icon>
+          </MenuItem>
+          <MenuItem x:Name="menuItemExportFightsNoAdds" IsEnabled="False" Header="Export Selected Fights (without adds)..." Click="ExportFightsNoAddsClick" ToolTip="Save Selected Fights to log file filtered to only the selected fight names. Drops unrelated NPCs that overlapped in time — good for multi-log sharing via the Raid Damage window.">
+            <MenuItem.Icon>
+              <fa:ImageAwesome x:Name="exportFightsNoAddsIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_FileExport" />
+            </MenuItem.Icon>
+          </MenuItem>
           <Separator />
           <MenuItem InputGestureText="Ctrl+A" Header="Select All" Command="{Binding Source={x:Static Member=local:ContextMenuCommands.SelectAll}}" 
                     CommandParameter="{Binding Path=PlacementTarget, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ContextMenu}}}">

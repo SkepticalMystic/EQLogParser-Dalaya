@@ -2,6 +2,8 @@
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.0.3 | 04/24/26\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab Added two variants to the {\b Fight List} right-click menu for exporting selected fights: {\b Export Selected Fights (with adds)} keeps the existing behavior (writes every combat line in the selected fights' time window, including ambient adds, trash, and wand procs), and {\b Export Selected Fights (without adds)} filters to only the selected fight names — dropping unrelated NPCs that overlapped in time. The "without adds" variant is the right choice for sharing exports across multiple players' logs: each imported file contributes exactly the fights selected, with no phantom fights from overlapping encounters. Single-parse use cases still benefit from the original "with adds" behavior.\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.0.2 | 04/23/26\par}
 {\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab Fixed duplicate named-pet rows in {\b DPS Summary}. Some non-melee direct-damage lines (e.g. {\b Blood Fountain} procs from Bonaparte) were still leaving a trailing space on the attacker name, so the same pet appeared as two rows in the DPS breakdown. The pet now correctly rolls up as a single row under the owning player.\par}
 {\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 2.\tx360\tab Fixed a phantom DPS row that showed only a time value and no damage. Pet miss lines such as {\b "Bonaparte  tries to bash NPC, but NPC is INVULNERABLE!"} were registering a separate attacker entry because of the trailing space on the pet name, producing an empty row alongside the real one.\par}
