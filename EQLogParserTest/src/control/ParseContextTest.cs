@@ -81,6 +81,32 @@ namespace EQLogParserTest
     }
 
     [TestMethod]
+    public void RaidDamageHost_DoesNotForwardChartOpened()
+    {
+      // Verifies the Phase 6/7 gotcha: the embedded DamageSummary in the Raid Damage window
+      // must NOT participate in the DPS Trends chart flow. MainActions.FireChartOpened firing
+      // must not reach a handler registered via RaidDamageHost.EventsChartOpened, because the
+      // add/remove accessors are intentionally no-ops. If a future change wires them up, the
+      // embedded instance would call FireChartEvent on its isolated manager — harmless today
+      // (MainWindow subscribes to the live singleton's EventsUpdateDataPoint, not the
+      // isolated one) but the no-op is the contract worth pinning.
+      var host = new RaidDamageHost(DataManager.Instance);
+      var calls = 0;
+      void Handler(string _) { calls++; }
+
+      host.EventsChartOpened += Handler;
+      try
+      {
+        MainActions.FireChartOpened("Damage");
+        Assert.AreEqual(0, calls, "RaidDamageHost.EventsChartOpened must not forward MainActions.EventsChartOpened");
+      }
+      finally
+      {
+        host.EventsChartOpened -= Handler;
+      }
+    }
+
+    [TestMethod]
     public void CreateIsolated_DamageParserEventsStayInContext()
     {
       // Damage events fired by an isolated DamageLineParser should only reach its isolated

@@ -1,0 +1,115 @@
+<UserControl x:Class="EQLogParser.RaidDamageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+             xmlns:local="clr-namespace:EQLogParser"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="1000">
+  <Grid x:Name="mainGrid">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="{DynamicResource EQTriggerCharacterList}" />
+      <ColumnDefinition Width="3" />
+      <ColumnDefinition Width="320" />
+      <ColumnDefinition Width="3" />
+      <ColumnDefinition Width="300*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Left pane: sources list -->
+    <Grid Grid.Column="0">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="40" />
+        <RowDefinition Height="30" />
+        <RowDefinition Height="100*" />
+        <RowDefinition Height="{DynamicResource EQGridFooterHeight}" />
+      </Grid.RowDefinitions>
+      <Border Grid.Row="0" Padding="8,2,0,0" Background="{DynamicResource ContentBackgroundAlt}">
+        <DockPanel>
+          <TextBlock Text="Log Sources" FontSize="{DynamicResource EQTitleSize}" Height="{DynamicResource EQButtonHeight}" />
+        </DockPanel>
+      </Border>
+      <syncfusion:ToolBarAdv Grid.Row="1" GripperVisibility="Hidden" Background="{DynamicResource ContentBackground}">
+        <Button x:Name="addSourceButton" FontSize="{DynamicResource EQContentSize}" MinWidth="50" Margin="0,0,8,0" Padding="4,4,4,4" Click="AddSourceClick">Add</Button>
+        <Button x:Name="removeSourceButton" FontSize="{DynamicResource EQContentSize}" MinWidth="60" Padding="4,4,4,4" IsEnabled="False" Click="RemoveSourceClick">Remove</Button>
+      </syncfusion:ToolBarAdv>
+      <syncfusion:SfDataGrid x:Name="sourcesGrid"
+                             Grid.Row="2"
+                             AllowResizingColumns="False"
+                             AutoGenerateColumns="False"
+                             ColumnSizer="Star"
+                             HideEmptyGridViewDefinition="False"
+                             GridLinesVisibility="Both"
+                             HeaderRowHeight="0"
+                             IsReadOnly="True"
+                             RowHeight="{DynamicResource EQTableRowHeight}"
+                             SelectionChanged="SourcesSelectionChanged"
+                             ShowRowHeader="False"
+                             GridCopyOption="CopyData,IncludeHeaders,IncludeFormat"
+                             SelectionUnit="Row"
+                             SelectionMode="Extended">
+        <syncfusion:SfDataGrid.Columns>
+          <syncfusion:GridTemplateColumn MappingName="SourcePlayer">
+            <syncfusion:GridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                  <CheckBox Margin="8,0,0,0" FocusVisualStyle="{x:Null}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Click="SourceCheckboxClick" />
+                  <TextBlock Margin="5,0,0,0" Padding="4,0,4,0" VerticalAlignment="Center" Text="{Binding SourcePlayer}" />
+                  <TextBlock Margin="5,0,0,0" Padding="0,0,4,0" VerticalAlignment="Center" FontStyle="Italic" Opacity="0.7" Text="{Binding StatusText}" />
+                </StackPanel>
+              </DataTemplate>
+            </syncfusion:GridTemplateColumn.CellTemplate>
+          </syncfusion:GridTemplateColumn>
+        </syncfusion:SfDataGrid.Columns>
+      </syncfusion:SfDataGrid>
+      <TextBlock Grid.Row="3" x:Name="sourcesStatus" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="{DynamicResource EQContentSize}" Opacity="0.7" />
+    </Grid>
+
+    <GridSplitter Grid.Column="1" ResizeDirection="Columns" HorizontalAlignment="Stretch" />
+
+    <!-- Middle pane: merged fights list -->
+    <Grid Grid.Column="2">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="40" />
+        <RowDefinition Height="100*" />
+      </Grid.RowDefinitions>
+      <Border Grid.Row="0" Padding="8,2,0,0" Background="{DynamicResource ContentBackgroundAlt}">
+        <TextBlock x:Name="fightsTitle" Text="Merged Fights" FontSize="{DynamicResource EQTitleSize}" Height="{DynamicResource EQButtonHeight}" />
+      </Border>
+      <syncfusion:SfDataGrid x:Name="fightsGrid"
+                             Grid.Row="1"
+                             AllowResizingColumns="True"
+                             AllowSorting="True"
+                             AllowDraggingColumns="False"
+                             AutoGenerateColumns="False"
+                             ColumnSizer="Star"
+                             GridLinesVisibility="Both"
+                             IsReadOnly="True"
+                             RowHeight="{DynamicResource EQTableRowHeight}"
+                             HeaderRowHeight="{DynamicResource EQTableHeaderRowHeight}"
+                             ShowRowHeader="False"
+                             SelectionChanged="FightsSelectionChanged"
+                             SelectionUnit="Row"
+                             SelectionMode="Extended">
+        <syncfusion:SfDataGrid.Columns>
+          <syncfusion:GridTextColumn MappingName="BeginTimeString" HeaderText="Time" />
+          <syncfusion:GridTextColumn MappingName="Name" HeaderText="Fight" />
+          <syncfusion:GridTextColumn MappingName="DurationString" HeaderText="Duration" />
+          <syncfusion:GridTextColumn MappingName="DamageString" HeaderText="Damage" />
+        </syncfusion:SfDataGrid.Columns>
+      </syncfusion:SfDataGrid>
+    </Grid>
+
+    <GridSplitter Grid.Column="3" ResizeDirection="Columns" HorizontalAlignment="Stretch" />
+
+    <!-- Right pane: embedded DamageSummary control bound to an isolated DamageStatsManager -->
+    <Grid Grid.Column="4">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="100*" />
+        <RowDefinition Height="{DynamicResource EQGridFooterHeight}" />
+      </Grid.RowDefinitions>
+      <ContentControl x:Name="summaryHost" Grid.Row="0" />
+      <TextBlock Grid.Row="1" x:Name="mergeStatus" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="{DynamicResource EQContentSize}" Opacity="0.7" />
+    </Grid>
+  </Grid>
+</UserControl>

@@ -25,6 +25,14 @@ namespace EQLogParser
       _context = context;
     }
 
+    // Synchronous entry point for background parse flows (e.g. Raid Damage window loading an
+    // exported log). Reuses DoPreProcess so chat skipping, double-line splitting, and the
+    // parser chain all behave the same as the live tailing flow.
+    internal void ProcessSync(string line, double dateTime)
+    {
+      DoPreProcess(line, dateTime, false);
+    }
+
     public void LinkTo(BlockingCollection<LogReaderItem> collection)
     {
       // start archive if enabled

@@ -16,12 +16,22 @@ namespace EQLogParser
   public partial class DamageSummary : IDocumentContent
   {
     private readonly DispatcherTimer _selectionTimer;
+    private readonly DamageStatsManager _damageStatsManager;
+    private readonly IDamageSummaryHost _host;
     private int _currentGroupCount;
     private int _currentPetOrPlayerOption;
     private bool _ready;
 
-    public DamageSummary()
+    // XAML requires a public parameterless ctor. The main DPS Summary tab instantiates the
+    // control via XAML and gets the live singleton + MainActions forwarding. Other hosts
+    // (e.g. the Raid Damage window) construct via the injected overload so the two views
+    // can't stomp on each other's state or events.
+    public DamageSummary() : this(DamageStatsManager.Instance, new MainActionsHost(), null) { }
+
+    internal DamageSummary(DamageStatsManager damageStatsManager, IDamageSummaryHost host, string columnPersistenceKey)
     {
+      _damageStatsManager = damageStatsManager;
+      _host = host;
       InitializeComponent();
       petOrPlayerList.ItemsSource = new List<string> { Labels.PetPlayerOption, Labels.PlayerOption, Labels.PetOption, Labels.AllOption };
       petOrPlayerList.SelectedIndex = 0;
@@ -30,6 +40,14 @@ namespace EQLogParser
       CreateClassMenuItems(menuItemShowSpellCasts, DataGridSpellCastsByClassClick, false, DataGridShowSpellCastsClick);
       CreateClassMenuItems(menuItemShowBreakdown, DataGridShowBreakdownByClassClick, false, DataGridShowBreakdownClick);
       CreateClassMenuItems(menuItemSetPlayerClass, DataGridSetPlayerClassClick, true);
+
+      // Override the XAML default Tag="DamageSummaryColumns" so multiple DamageSummary
+      // instances (main tab + embedded raid-damage view) persist column visibility under
+      // separate ConfigUtil keys and don't overwrite each other on save.
+      if (!string.IsNullOrEmpty(columnPersistenceKey))
+      {
+        selectedColumns.Tag = columnPersistenceKey;
+      }
 
       // call after everything else is initialized
       InitSummaryTable(title, dataGrid, selectedColumns, classesList);
@@ -111,7 +129,7 @@ namespace EQLogParser
       });
     }
 
-    private void CopyToEqClick(object sender, RoutedEventArgs e) => MainActions.CopyToEqClick(Labels.DamageParse);
+    private void CopyToEqClick(object sender, RoutedEventArgs e) => _host.CopyToEqClick(Labels.DamageParse);
     internal override bool IsPetsCombined() => _currentPetOrPlayerOption == 0;
     private void DataGridSelectionChanged(object sender, GridSelectionChangedEventArgs e) => DataGridSelectionChanged();
 
@@ -379,7 +397,7 @@ namespace EQLogParser
       if (name == "Damage")
       {
         var selected = GetSelectedStats();
-        DamageStatsManager.Instance.FireChartEvent("UPDATE", selected);
+        _damageStatsManager.FireChartEvent("UPDATE", selected);
       }
     }
 
@@ -401,7 +419,7 @@ namespace EQLogParser
         var selectionChanged = new PlayerStatsSelectionChangedEventArgs();
         selectionChanged.Selected.AddRange(selected);
         selectionChanged.CurrentStats = CurrentStats;
-        MainActions.FireDamageSelectionChanged(selectionChanged);
+        _host.FireDamageSelectionChanged(selectionChanged);
       });
     }
 
@@ -415,7 +433,7 @@ namespace EQLogParser
 
       if (statOptions.MinSeconds < statOptions.MaxSeconds || statOptions.MaxSeconds == -1)
       {
-        Task.Run(() => DamageStatsManager.Instance.RebuildTotalStats(statOptions));
+        Task.Run(() => _damageStatsManager.RebuildTotalStats(statOptions));
       }
     }
 
@@ -423,12 +441,12 @@ namespace EQLogParser
     {
       if (VisualParent != null && !_ready)
       {
-        DamageStatsManager.Instance.EventsGenerationStatus += EventsGenerationStatus;
-        DataManager.Instance.EventsClearedActiveData += EventsClearedActiveData;
-        MainActions.EventsChartOpened += EventsChartOpened;
-        MainActions.EventsDamageSummaryOptionsChanged += EventsDamageSummaryOptionsChanged;
+        _damageStatsManager.EventsGenerationStatus += EventsGenerationStatus;
+        _host.EventsClearedActiveData += EventsClearedActiveData;
+        _host.EventsChartOpened += EventsChartOpened;
+        _host.EventsDamageSummaryOptionsChanged += EventsDamageSummaryOptionsChanged;
 
-        if (DamageStatsManager.Instance.GetLastStats() is { } stats)
+        if (_damageStatsManager.GetLastStats() is { } stats)
         {
           EventsGenerationStatus(stats);
         }
@@ -443,16 +461,16 @@ namespace EQLogParser
 
     public void HideContent()
     {
-      DamageStatsManager.Instance.EventsGenerationStatus -= EventsGenerationStatus;
-      DataManager.Instance.EventsClearedActiveData -= EventsClearedActiveData;
-      MainActions.EventsDamageSummaryOptionsChanged -= EventsDamageSummaryOptionsChanged;
-      MainActions.EventsChartOpened -= EventsChartOpened;
+      _damageStatsManager.EventsGenerationStatus -= EventsGenerationStatus;
+      _host.EventsClearedActiveData -= EventsClearedActiveData;
+      _host.EventsDamageSummaryOptionsChanged -= EventsDamageSummaryOptionsChanged;
+      _host.EventsChartOpened -= EventsChartOpened;
 
       ClearData();
 
       if ((long)minTimeChooser.Value != 0 || (long)maxTimeChooser.Value != (long)maxTimeChooser.MaxValue)
       {
-        DamageStatsManager.Instance.RebuildTotalStats(new GenerateStatsOptions(), true);
+        _damageStatsManager.RebuildTotalStats(new GenerateStatsOptions(), true);
       }
 
       _ready = false;

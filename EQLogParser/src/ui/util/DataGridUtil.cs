@@ -537,9 +537,11 @@ namespace EQLogParser
       ConfigUtil.RemoveSetting("DamageSummaryColumns");
       ConfigUtil.RemoveSetting("HealingSummaryColumns");
       ConfigUtil.RemoveSetting("TankingSummaryColumns");
+      ConfigUtil.RemoveSetting("RaidDamageSummaryColumns");
       ConfigUtil.RemoveSetting("DamageSummaryColumnsDisplayIndex");
       ConfigUtil.RemoveSetting("HealingSummaryColumnsDisplayIndex");
       ConfigUtil.RemoveSetting("TankingSummaryColumnsDisplayIndex");
+      ConfigUtil.RemoveSetting("RaidDamageSummaryColumnsDisplayIndex");
       ConfigUtil.RemoveSetting("DamageBreakdownColumns");
       ConfigUtil.RemoveSetting("HealingBreakdownColumns");
       ConfigUtil.RemoveSetting("ReceivedHealingBreakdownColumns");
