@@ -251,6 +251,38 @@ namespace EQLogParserTest
     }
 
     [TestMethod]
+    public void DalayaPet_NonMeleeDdTrimsTrailingSpace()
+    {
+      // Dalaya named pet DD spells (e.g. Blood Fountain on Bonaparte's direct-damage proc) log
+      // as "<Pet>  hit <NPC> for <N> points of non-melee damage." with a double-space after the
+      // pet name. This routes through the old-eqemu DD branch; without TrimEnd on the assembled
+      // attacker, the record stores "Bonaparte " while melee/DoT records store "Bonaparte",
+      // producing two separate DPS Summary rows for the same pet.
+      var r = DamageLineParser.Instance.ParseLine("Bonaparte  hit a high dreadguard for 267 points of non-melee damage.");
+      Assert.IsNotNull(r);
+      Assert.AreEqual("Bonaparte", r.Attacker);
+      Assert.AreEqual("A high dreadguard", r.Defender);
+      Assert.AreEqual(267u, r.Total);
+      Assert.AreEqual(Labels.Dd, r.Type);
+    }
+
+    [TestMethod]
+    public void DalayaPet_MissRecordTrimsTrailingSpace()
+    {
+      // Dalaya pet misses ("Bonaparte  tries to hit NPC, but NPC is INVULNERABLE!") carry a
+      // double-space after the pet name. The try/but miss branch emits a damage=0 record with
+      // the attacker name verbatim. Even zero-damage records flow into NpcDamageManager's time
+      // segments via AddPlayerTime, which populates _playerTimeRanges — so a "Bonaparte "
+      // attacker produces a phantom DPS Summary row with only a Sec value and no damage.
+      var r = DamageLineParser.Instance.ParseLine("Bonaparte  tries to hit Mistress Saitha, but Mistress Saitha is INVULNERABLE!");
+      Assert.IsNotNull(r);
+      Assert.AreEqual("Bonaparte", r.Attacker);
+      Assert.AreEqual("Mistress Saitha", r.Defender);
+      Assert.AreEqual(0u, r.Total);
+      Assert.AreEqual(Labels.Invulnerable, r.Type);
+    }
+
+    [TestMethod]
     public void DalayaPlayer_NoTrailingSpaceMarksAttackerAsPlayer()
     {
       // Regular player names never have a trailing space. The parser registers them as
