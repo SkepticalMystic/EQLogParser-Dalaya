@@ -19,11 +19,29 @@ namespace EQLogParser
     private bool _currentPetValue;
     private int _currentGroupCount;
     private readonly DispatcherTimer _selectionTimer;
+    private readonly TankingStatsManager _tankingStatsManager;
+    private readonly ITankingSummaryHost _host;
     private bool _ready;
 
-    public TankingSummary()
+    // XAML requires a public parameterless ctor. The main Tanking Summary tab instantiates
+    // the control via XAML and gets the live singleton + MainActions forwarding. Other hosts
+    // (e.g. the Raid Damage window's Tanking tab) construct directly via the injected overload
+    // so the two views can't stomp on each other's state or events.
+    public TankingSummary() : this(TankingStatsManager.Instance, new MainActionsTankingHost(), null) { }
+
+    internal TankingSummary(TankingStatsManager tankingStatsManager, ITankingSummaryHost host, string columnPersistenceKey)
     {
+      _tankingStatsManager = tankingStatsManager;
+      _host = host;
       InitializeComponent();
+
+      // Override the XAML default Tag="TankingSummaryColumns" so multiple TankingSummary
+      // instances (main tab + embedded raid-damage view) persist column visibility under
+      // separate ConfigUtil keys and don't overwrite each other on save.
+      if (!string.IsNullOrEmpty(columnPersistenceKey))
+      {
+        selectedColumns.Tag = columnPersistenceKey;
+      }
 
       // if pets are shown
       showPets.IsChecked = _currentPetValue = ConfigUtil.IfSet("TankingSummaryShowPets", true);
@@ -150,8 +168,8 @@ namespace EQLogParser
       });
     }
 
-    private void CopyToEqClick(object sender, RoutedEventArgs e) => MainActions.CopyToEqClick(Labels.TankParse);
-    private void CopyReceivedHealingToEqClick(object sender, RoutedEventArgs e) => MainActions.CopyToEqClick(Labels.ReceivedHealParse);
+    private void CopyToEqClick(object sender, RoutedEventArgs e) => _host.CopyToEqClick(Labels.TankParse);
+    private void CopyReceivedHealingToEqClick(object sender, RoutedEventArgs e) => _host.CopyToEqClick(Labels.ReceivedHealParse);
     private void DataGridSelectionChanged(object sender, GridSelectionChangedEventArgs e) => DataGridSelectionChanged();
 
     private void CreatePetOwnerMenu()
@@ -385,7 +403,7 @@ namespace EQLogParser
         if (needRequery)
         {
           var tankingOptions = new GenerateStatsOptions { DamageType = DamageType, MaxSeconds = (long)maxTimeChooser.Value, MinSeconds = (long)minTimeChooser.Value };
-          Task.Run(() => TankingStatsManager.Instance.RebuildTotalStats(tankingOptions));
+          Task.Run(() => _tankingStatsManager.RebuildTotalStats(tankingOptions));
         }
       }
     }
@@ -395,7 +413,7 @@ namespace EQLogParser
       if (name == "Tanking")
       {
         var selected = GetSelectedStats();
-        TankingStatsManager.Instance.FireChartEvent("UPDATE", DamageType, selected);
+        _tankingStatsManager.FireChartEvent("UPDATE", DamageType, selected);
       }
     }
 
@@ -406,7 +424,7 @@ namespace EQLogParser
         var selectionChanged = new PlayerStatsSelectionChangedEventArgs();
         selectionChanged.Selected.AddRange(selected);
         selectionChanged.CurrentStats = CurrentStats;
-        MainActions.FireTankingSelectionChanged(selectionChanged);
+        _host.FireTankingSelectionChanged(selectionChanged);
       });
     }
 
@@ -421,7 +439,7 @@ namespace EQLogParser
 
       if (statOptions.MinSeconds < statOptions.MaxSeconds || statOptions.MaxSeconds == -1)
       {
-        Task.Run(() => TankingStatsManager.Instance.RebuildTotalStats(statOptions));
+        Task.Run(() => _tankingStatsManager.RebuildTotalStats(statOptions));
       }
     }
 
@@ -429,11 +447,11 @@ namespace EQLogParser
     {
       if (VisualParent != null && !_ready)
       {
-        TankingStatsManager.Instance.EventsGenerationStatus += EventsGenerationStatus;
+        _tankingStatsManager.EventsGenerationStatus += EventsGenerationStatus;
         HealingStatsManager.Instance.EventsGenerationStatus += EventsGenerationStatus;
-        DataManager.Instance.EventsClearedActiveData += EventsClearedActiveData;
-        MainActions.EventsChartOpened += EventsChartOpened;
-        MainActions.EventsTankingSelectionChanged += EventsTankingSelectionChanged;
+        _host.EventsClearedActiveData += EventsClearedActiveData;
+        _host.EventsChartOpened += EventsChartOpened;
+        _host.EventsTankingSelectionChanged += EventsTankingSelectionChanged;
         EventsTankingSummaryOptionsChanged();
         _ready = true;
       }
@@ -441,20 +459,20 @@ namespace EQLogParser
 
     private void EventsTankingSelectionChanged(PlayerStatsSelectionChangedEventArgs data)
     {
-      TankingStatsManager.Instance.FireChartEvent("SELECT", DamageType, data.Selected);
+      _tankingStatsManager.FireChartEvent("SELECT", DamageType, data.Selected);
     }
 
     public void HideContent()
     {
-      TankingStatsManager.Instance.EventsGenerationStatus -= EventsGenerationStatus;
+      _tankingStatsManager.EventsGenerationStatus -= EventsGenerationStatus;
       HealingStatsManager.Instance.EventsGenerationStatus -= EventsGenerationStatus;
-      DataManager.Instance.EventsClearedActiveData -= EventsClearedActiveData;
-      MainActions.EventsChartOpened -= EventsChartOpened;
-      MainActions.EventsTankingSelectionChanged -= EventsTankingSelectionChanged;
+      _host.EventsClearedActiveData -= EventsClearedActiveData;
+      _host.EventsChartOpened -= EventsChartOpened;
+      _host.EventsTankingSelectionChanged -= EventsTankingSelectionChanged;
       ClearData();
 
       // window is close so reset
-      TankingStatsManager.Instance.FireChartEvent("UPDATE", DamageType, null, true);
+      _tankingStatsManager.FireChartEvent("UPDATE", DamageType, null, true);
       _ready = false;
     }
   }
