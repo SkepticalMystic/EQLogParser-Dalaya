@@ -24,23 +24,36 @@ namespace EQLogParser
     internal event EventHandler<PlayerClassMapping> EventsUpdateDefaultPlayerClass;
 
     internal static PlayerManager Instance = new();
-    internal static readonly BitmapImage BerIcon = new(new Uri(@"pack://application:,,,/icons/Ber.png"));
-    internal static readonly BitmapImage BrdIcon = new(new Uri(@"pack://application:,,,/icons/Brd.png"));
-    internal static readonly BitmapImage BstIcon = new(new Uri(@"pack://application:,,,/icons/Bst.png"));
-    internal static readonly BitmapImage ClrIcon = new(new Uri(@"pack://application:,,,/icons/Clr.png"));
-    internal static readonly BitmapImage DruIcon = new(new Uri(@"pack://application:,,,/icons/Dru.png"));
-    internal static readonly BitmapImage EncIcon = new(new Uri(@"pack://application:,,,/icons/Enc.png"));
-    internal static readonly BitmapImage MagIcon = new(new Uri(@"pack://application:,,,/icons/Mag.png"));
-    internal static readonly BitmapImage MnkIcon = new(new Uri(@"pack://application:,,,/icons/Mnk.png"));
-    internal static readonly BitmapImage NecIcon = new(new Uri(@"pack://application:,,,/icons/Nec.png"));
-    internal static readonly BitmapImage PalIcon = new(new Uri(@"pack://application:,,,/icons/Pal.png"));
-    internal static readonly BitmapImage RngIcon = new(new Uri(@"pack://application:,,,/icons/Rng.png"));
-    internal static readonly BitmapImage RogIcon = new(new Uri(@"pack://application:,,,/icons/Rog.png"));
-    internal static readonly BitmapImage ShdIcon = new(new Uri(@"pack://application:,,,/icons/Shd.png"));
-    internal static readonly BitmapImage UnkIcon = new(new Uri(@"pack://application:,,,/icons/Unk.png"));
-    internal static readonly BitmapImage ShmIcon = new(new Uri(@"pack://application:,,,/icons/Shm.png"));
-    internal static readonly BitmapImage WarIcon = new(new Uri(@"pack://application:,,,/icons/War.png"));
-    internal static readonly BitmapImage WizIcon = new(new Uri(@"pack://application:,,,/icons/Wiz.png"));
+
+    // Lazy class icons so PlayerManager can be used in non-WPF contexts (unit tests)
+    // where the pack:// URI scheme isn't registered at class-load time.
+    private static readonly Dictionary<string, BitmapImage> IconCache = [];
+    private static BitmapImage LoadClassIcon(string name)
+    {
+      if (!IconCache.TryGetValue(name, out var icon))
+      {
+        icon = new BitmapImage(new Uri($"pack://application:,,,/icons/{name}.png"));
+        IconCache[name] = icon;
+      }
+      return icon;
+    }
+    internal static BitmapImage BerIcon => LoadClassIcon("Ber");
+    internal static BitmapImage BrdIcon => LoadClassIcon("Brd");
+    internal static BitmapImage BstIcon => LoadClassIcon("Bst");
+    internal static BitmapImage ClrIcon => LoadClassIcon("Clr");
+    internal static BitmapImage DruIcon => LoadClassIcon("Dru");
+    internal static BitmapImage EncIcon => LoadClassIcon("Enc");
+    internal static BitmapImage MagIcon => LoadClassIcon("Mag");
+    internal static BitmapImage MnkIcon => LoadClassIcon("Mnk");
+    internal static BitmapImage NecIcon => LoadClassIcon("Nec");
+    internal static BitmapImage PalIcon => LoadClassIcon("Pal");
+    internal static BitmapImage RngIcon => LoadClassIcon("Rng");
+    internal static BitmapImage RogIcon => LoadClassIcon("Rog");
+    internal static BitmapImage ShdIcon => LoadClassIcon("Shd");
+    internal static BitmapImage UnkIcon => LoadClassIcon("Unk");
+    internal static BitmapImage ShmIcon => LoadClassIcon("Shm");
+    internal static BitmapImage WarIcon => LoadClassIcon("War");
+    internal static BitmapImage WizIcon => LoadClassIcon("Wiz");
 
     // static data
     private const int LowConfidenceThreshold = 8;
@@ -60,11 +73,35 @@ namespace EQLogParser
     private volatile bool _petMappingUpdated;
     private volatile bool _playersUpdated;
 
-    private PlayerManager()
+    internal PlayerManager() : this(autoSave: true) { }
+
+    internal PlayerManager(bool autoSave)
     {
       // Populate generated pets
       ConfigUtil.ReadList(@"data\petnames.txt").ForEach(line => _gameGeneratedPets[line.TrimEnd()] = 1);
-      _saveTimer = UiUtil.CreateTimer(SaveTimerTick, 30000, true, DispatcherPriority.Background);
+
+      // Autosave writes petmapping.txt. Background parse contexts should pass false so the
+      // off-log parse doesn't overwrite the live user's pet mapping.
+      if (autoSave)
+      {
+        _saveTimer = UiUtil.CreateTimer(SaveTimerTick, 30000, true, DispatcherPriority.Background);
+      }
+    }
+
+    // Seeds this PlayerManager's classification state from another (typically the live
+    // singleton). Needed when spinning up an isolated parse context so that fresh parses
+    // don't misclassify known players/pets as NPCs. Copies are shallow (string → byte/string
+    // dictionaries); subsequent mutations on either side stay independent.
+    internal void SeedFrom(PlayerManager other)
+    {
+      if (other == null || ReferenceEquals(other, this))
+      {
+        return;
+      }
+      foreach (var kv in other._verifiedPlayers) _verifiedPlayers[kv.Key] = kv.Value;
+      foreach (var kv in other._verifiedPets) _verifiedPets[kv.Key] = kv.Value;
+      foreach (var kv in other._petToPlayer) _petToPlayer[kv.Key] = kv.Value;
+      foreach (var kv in other._mercs) _mercs[kv.Key] = kv.Value;
     }
 
     internal bool IsVerifiedPlayer(string name) => !string.IsNullOrEmpty(name) && (name == Labels.Unassigned || SecondPerson.Contains(name)
@@ -93,6 +130,29 @@ namespace EQLogParser
               EventsNewPetMapping?.Invoke(this, new PetMapping(pet, player));
               _petMappingUpdated = true;
             }
+          }
+        }
+      }
+    }
+
+    // Adds a pet→owner mapping ONLY if the pet doesn't already have one. Used by the Dalaya
+    // double-space pet detection in DamageLineParser, which has no way to know the pet's real
+    // owner and previously guessed ConfigUtil.PlayerName for every named pet in the log.
+    // In raid logs that guess clobbered correct mappings (from petmapping.txt, manual edits,
+    // or chat parsing). This variant preserves existing mappings so the parser can no longer
+    // overwrite them with wrong guesses.
+    internal void AddPetToPlayerIfUnmapped(string pet, string player)
+    {
+      pet = pet?.Trim();
+      if (!string.IsNullOrEmpty(pet) && !string.IsNullOrEmpty(player))
+      {
+        lock (LockObject)
+        {
+          if (!_petToPlayer.ContainsKey(pet) && !IsVerifiedPlayer(pet))
+          {
+            _petToPlayer[pet] = player;
+            EventsNewPetMapping?.Invoke(this, new PetMapping(pet, player));
+            _petMappingUpdated = true;
           }
         }
       }

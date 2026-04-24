@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace EQLogParser
 {
-  internal static class CastLineParser
+  internal class CastLineParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     private static readonly char[] OldSpellChars = ['<', '>'];
@@ -22,7 +22,20 @@ namespace EQLogParser
       { "Fortify Companion", true }, { "Zeal of the Elements", true }, { "Frenzied Burnout", true }, { "Frenzy of the Dead", true }
     };
 
-    public static bool Process(LineData lineData)
+    internal static CastLineParser Instance { get; } = new();
+
+    private readonly DataManager _dataManager;
+    private readonly PlayerManager _playerManager;
+
+    public CastLineParser() : this(DataManager.Instance, PlayerManager.Instance) { }
+
+    public CastLineParser(DataManager dataManager, PlayerManager playerManager)
+    {
+      _dataManager = dataManager;
+      _playerManager = playerManager;
+    }
+
+    public bool Process(LineData lineData)
     {
       try
       {
@@ -135,7 +148,7 @@ namespace EQLogParser
                 }
               }
 
-              var spellData = DataManager.Instance.GetSpellByName(spellName);
+              var spellData = _dataManager.GetSpellByName(spellName);
 
               if (spellData != null)
               {
@@ -144,20 +157,20 @@ namespace EQLogParser
               else
               {
                 // unknown spell
-                spellData = DataManager.Instance.AddUnknownSpell(spellName);
+                spellData = _dataManager.AddUnknownSpell(spellName);
               }
 
               var cast = new SpellCast { Caster = string.Intern(player), Spell = string.Intern(spellName), SpellData = spellData };
               RecordManager.Instance.Add(cast, currentTime);
 
-              if (!spellData.IsUnknown && DataManager.Instance.GetSpellClass(spellData.Name) is { } theClass)
+              if (!spellData.IsUnknown && _dataManager.GetSpellClass(spellData.Name) is { } theClass)
               {
-                PlayerManager.Instance.SetActivePlayerClass(player, theClass, 2, currentTime);
+                _playerManager.SetActivePlayerClass(player, theClass, 2, currentTime);
               }
 
               if (specialKey != null && spellData != null)
               {
-                DataManager.Instance.UpdateAdps(spellData);
+                _dataManager.UpdateAdps(spellData);
               }
             }
             else
@@ -184,7 +197,7 @@ namespace EQLogParser
       return false;
     }
 
-    private static bool CheckLandsOnMessages(string[] split, double beginTime)
+    private bool CheckLandsOnMessages(string[] split, double beginTime)
     {
       // LandsOnYou messages also require DataIndex of zero
       var player = ConfigUtil.PlayerName;
@@ -209,11 +222,11 @@ namespace EQLogParser
         }
       }
 
-      var searchResult = DataManager.Instance.GetLandsOnYou(split);
+      var searchResult = _dataManager.GetLandsOnYou(split);
       if (searchResult.SpellData.Count == 0 || searchResult.DataIndex != 0)
       {
         // WearOff messages can only apply to use so DataIndex has to also be zero meaning that every word was matched
-        searchResult = DataManager.Instance.GetWearOff(split);
+        searchResult = _dataManager.GetWearOff(split);
         if (searchResult.SpellData.Count > 0 && searchResult.DataIndex == 0)
         {
           if (!string.IsNullOrEmpty(player))
@@ -233,24 +246,24 @@ namespace EQLogParser
           return true;
         }
 
-        searchResult = DataManager.Instance.GetLandsOnOther(split, out player);
+        searchResult = _dataManager.GetLandsOnOther(split, out player);
         if (searchResult.SpellData.Count == 1 && !string.IsNullOrEmpty(player))
         {
-          if (searchResult.SpellData[0].Target == (int)SpellTarget.Pet && !PlayerManager.Instance.IsVerifiedPet(player) &&
-          PlayerManager.IsPossiblePlayerName(player) && !PlayerManager.Instance.IsVerifiedPlayer(player))
+          if (searchResult.SpellData[0].Target == (int)SpellTarget.Pet && !_playerManager.IsVerifiedPet(player) &&
+          PlayerManager.IsPossiblePlayerName(player) && !_playerManager.IsVerifiedPlayer(player))
           {
             foreach (var spell in PetSpells.Keys)
             {
               if (searchResult.SpellData[0].Name.StartsWith(spell))
               {
-                PlayerManager.Instance.AddVerifiedPet(player);
+                _playerManager.AddVerifiedPet(player);
               }
             }
           }
-          else if (searchResult.SpellData[0].Target == (int)SpellTarget.Pet2 && !PlayerManager.Instance.IsVerifiedPet(player) &&
-            PlayerManager.IsPossiblePlayerName(player) && !PlayerManager.Instance.IsVerifiedPlayer(player))
+          else if (searchResult.SpellData[0].Target == (int)SpellTarget.Pet2 && !_playerManager.IsVerifiedPet(player) &&
+            PlayerManager.IsPossiblePlayerName(player) && !_playerManager.IsVerifiedPlayer(player))
           {
-            PlayerManager.Instance.AddVerifiedPet(player);
+            _playerManager.AddVerifiedPet(player);
           }
         }
       }
@@ -278,7 +291,7 @@ namespace EQLogParser
         RecordManager.Instance.Add(new ZoneRecord { Zone = zone }, beginTime);
         if (!zone.StartsWith("an area", StringComparison.OrdinalIgnoreCase))
         {
-          DataManager.Instance.ZoneChanged();
+          _dataManager.ZoneChanged();
           return true;
         }
       }

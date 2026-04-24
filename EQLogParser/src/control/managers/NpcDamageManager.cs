@@ -8,17 +8,28 @@ namespace EQLogParser
   {
     internal double LastFightProcessTime = double.NaN;
     private int _currentNpcId = 1;
-    private static readonly Dictionary<string, bool> RecentSpellCache = [];
+    // Per-context cache — was static, moved to instance so a background parse's recent-spell state
+    // doesn't leak into the live context's attacker-attribution logic.
+    private readonly Dictionary<string, bool> RecentSpellCache = [];
     private readonly Dictionary<string, bool> _validCombo = [];
     private readonly SimpleObjectCache<DamageRecord> _damageCache = new();
     private const int RecentSpellTime = 300;
 
     private readonly List<Defender> _defenders = [];
 
-    public NpcDamageManager()
+    private readonly DataManager _dataManager;
+    private readonly PlayerManager _playerManager;
+    private readonly DamageLineParser _damageLineParser;
+
+    public NpcDamageManager() : this(DataManager.Instance, PlayerManager.Instance, DamageLineParser.Instance) { }
+
+    public NpcDamageManager(DataManager dataManager, PlayerManager playerManager, DamageLineParser damageLineParser)
     {
-      DamageLineParser.EventsDamageProcessed += HandleDamageProcessed;
-      DamageLineParser.EventsNewTaunt += HandleNewTaunt;
+      _dataManager = dataManager;
+      _playerManager = playerManager;
+      _damageLineParser = damageLineParser;
+      _damageLineParser.EventsDamageProcessed += HandleDamageProcessed;
+      _damageLineParser.EventsNewTaunt += HandleNewTaunt;
     }
 
     internal void Reset()
@@ -32,7 +43,7 @@ namespace EQLogParser
 
     private void HandleNewTaunt(TauntEvent e)
     {
-      var fight = DataManager.Instance.GetFight(e.Record.Npc) ?? Create(e.Record.Npc, e.BeginTime);
+      var fight = _dataManager.GetFight(e.Record.Npc) ?? Create(e.Record.Npc, e.BeginTime);
       AddAction(fight.TauntBlocks, e.Record, e.BeginTime);
     }
 
@@ -77,7 +88,7 @@ namespace EQLogParser
 
       if (!LastFightProcessTime.Equals(beginTime))
       {
-        DataManager.Instance.CheckExpireFights(beginTime);
+        _dataManager.CheckExpireFights(beginTime);
         _validCombo.Clear();
 
         if (beginTime - LastFightProcessTime > RecentSpellTime)
@@ -87,7 +98,7 @@ namespace EQLogParser
       }
 
       // cache recent player spells to help determine who the caster was
-      var isAttackerPlayer = PlayerManager.Instance.IsPetOrPlayerOrMerc(record.Attacker) || record.Attacker == Labels.Rs;
+      var isAttackerPlayer = _playerManager.IsPetOrPlayerOrMerc(record.Attacker) || record.Attacker == Labels.Rs;
       if (isAttackerPlayer && record.Type is Labels.Dd or Labels.Dot or Labels.Proc)
       {
         RecentSpellCache[record.SubType] = true;
@@ -103,7 +114,7 @@ namespace EQLogParser
         if (record.AttackerIsSpell && defender)
         {
           // check if it's really a player being hit
-          defender = !PlayerManager.Instance.IsPetOrPlayerOrMerc(record.Defender);
+          defender = !_playerManager.IsPetOrPlayerOrMerc(record.Defender);
 
           if (defender)
           {
@@ -219,14 +230,14 @@ namespace EQLogParser
         // tooltip
         var ttl = fight.LastTime - fight.BeginTime + 1;
         fight.TooltipText = $"#Hits To Players: {fight.TankHits}, #Hits From Players: {fight.DamageHits}, Time Alive: {ttl}s";
-        DataManager.Instance.UpdateIfNewFightMap(fight.CorrectMapKey, fight, isNonTankingFight);
+        _dataManager.UpdateIfNewFightMap(fight.CorrectMapKey, fight, isNonTankingFight);
       }
     }
 
     private Fight Get(DamageRecord record, double currentTime, bool defender)
     {
       var npc = defender ? record.Defender : record.Attacker;
-      return DataManager.Instance.GetFight(npc) ?? Create(npc, currentTime);
+      return _dataManager.GetFight(npc) ?? Create(npc, currentTime);
     }
 
     private Fight Create(string defender, double currentTime)
@@ -263,7 +274,7 @@ namespace EQLogParser
       StatsUtil.UpdateTimeSegments(segments, subSegments, StatsUtil.CreateRecordKey(record.Type, record.SubType), player, time);
     }
 
-    private static bool IsValidAttack(DamageRecord record, bool isAttackerPlayer, out bool npcDefender)
+    private bool IsValidAttack(DamageRecord record, bool isAttackerPlayer, out bool npcDefender)
     {
       npcDefender = false;
 
@@ -274,7 +285,7 @@ namespace EQLogParser
 
       var isAttackerPlayerSpell = IsAttackerPlayerSpell(record);
       isAttackerPlayer = isAttackerPlayer || isAttackerPlayerSpell;
-      var isDefenderPlayer = PlayerManager.Instance.IsPetOrPlayerOrMerc(record.Defender);
+      var isDefenderPlayer = _playerManager.IsPetOrPlayerOrMerc(record.Defender);
       var isAttackerNpc = IsAttackerNpc(record, isAttackerPlayerSpell, isAttackerPlayer);
       var isDefenderNpc = IsDefenderNpc(record, isAttackerPlayerSpell, isDefenderPlayer) || isAttackerPlayer;
 
@@ -291,7 +302,7 @@ namespace EQLogParser
           return isAttackerPlayer || PlayerManager.IsPossiblePlayerName(record.Attacker);
         }
 
-        if (DataManager.Instance.GetFight(record.Defender) != null && DataManager.Instance.GetFight(record.Attacker) == null)
+        if (_dataManager.GetFight(record.Defender) != null && _dataManager.GetFight(record.Attacker) == null)
         {
           npcDefender = true;
           return true;
@@ -337,19 +348,19 @@ namespace EQLogParser
       return record.Attacker.Equals(record.Defender, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsAttackerPlayerSpell(DamageRecord record)
+    private bool IsAttackerPlayerSpell(DamageRecord record)
     {
       return record.AttackerIsSpell && RecentSpellCache.ContainsKey(record.Attacker);
     }
 
-    private static bool IsAttackerNpc(DamageRecord record, bool isAttackerPlayerSpell, bool isAttackerPlayer)
+    private bool IsAttackerNpc(DamageRecord record, bool isAttackerPlayerSpell, bool isAttackerPlayer)
     {
-      return (!isAttackerPlayer && DataManager.Instance.IsKnownNpc(record.Attacker)) || (record.AttackerIsSpell && !isAttackerPlayerSpell);
+      return (!isAttackerPlayer && _dataManager.IsKnownNpc(record.Attacker)) || (record.AttackerIsSpell && !isAttackerPlayerSpell);
     }
 
-    private static bool IsDefenderNpc(DamageRecord record, bool isAttackerPlayerSpell, bool isDefenderPlayer)
+    private bool IsDefenderNpc(DamageRecord record, bool isAttackerPlayerSpell, bool isDefenderPlayer)
     {
-      return (!isDefenderPlayer && DataManager.Instance.IsKnownNpc(record.Defender)) || isAttackerPlayerSpell;
+      return (!isDefenderPlayer && _dataManager.IsKnownNpc(record.Defender)) || isAttackerPlayerSpell;
     }
   }
 }

@@ -197,7 +197,7 @@ namespace EQLogParser
             {
               ChatType chatType = null;
               var action = line[MainWindow.ActionIndex..];
-              var damageRecord = DamageLineParser.ParseLine(action);
+              var damageRecord = DamageLineParser.Instance.ParseLine(action);
 
               if (damageRecord != null)
               {

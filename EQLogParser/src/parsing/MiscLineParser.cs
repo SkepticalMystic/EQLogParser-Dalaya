@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace EQLogParser
 {
-  internal static class MiscLineParser
+  internal class MiscLineParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     private static readonly List<string> Currency = ["Platinum", "Gold", "Silver", "Copper"];
@@ -20,10 +20,24 @@ namespace EQLogParser
       { "sliced", 1 }, { "stabbed", 1 }, { "surrounded", 1 }, { "struck", 1 }, { "stunned", 1 }, { "targeted", 1 }, { "withered", 1 }
     };
 
-    private static string _randomPlayer;
-    private static long _lastLine = -1;
+    internal static MiscLineParser Instance { get; } = new();
 
-    public static bool Process(LineData lineData)
+    private readonly DataManager _dataManager;
+    private readonly PlayerManager _playerManager;
+
+    // Per-context mutable state for random roll two-line detection.
+    private string _randomPlayer;
+    private long _lastLine = -1;
+
+    public MiscLineParser() : this(DataManager.Instance, PlayerManager.Instance) { }
+
+    public MiscLineParser(DataManager dataManager, PlayerManager playerManager)
+    {
+      _dataManager = dataManager;
+      _playerManager = playerManager;
+    }
+
+    public bool Process(LineData lineData)
     {
       var handled = false;
 
@@ -74,10 +88,10 @@ namespace EQLogParser
               ((split[0] == "" && split[1] == "AFK" && ParseWho(split, 2, out var who, out var whoClass)) ||
                (split[0].StartsWith('[') && ParseWho(split, 0, out who, out whoClass))))
             {
-              PlayerManager.Instance.AddVerifiedPlayer(who, lineData.BeginTime);
-              if (DataManager.Instance.IsValidClassName(whoClass))
+              _playerManager.AddVerifiedPlayer(who, lineData.BeginTime);
+              if (_dataManager.IsValidClassName(whoClass))
               {
-                PlayerManager.Instance.SetActivePlayerClass(who, whoClass, 1, lineData.BeginTime);
+                _playerManager.SetActivePlayerClass(who, whoClass, 1, lineData.BeginTime);
               }
               handled = true;
             }
@@ -163,7 +177,7 @@ namespace EQLogParser
                     RecordManager.Instance.Add(record, lineData.BeginTime);
 
                     // also update npc resist stats
-                    if (DataManager.Instance.GetDetSpellByName(record.Spell) is { } spellData && spellData.Resist != SpellResist.Undefined)
+                    if (_dataManager.GetDetSpellByName(record.Spell) is { } spellData && spellData.Resist != SpellResist.Undefined)
                     {
                       RecordManager.Instance.UpdateNpcSpellStats(record.Defender, spellData.Resist, true);
                     }
@@ -181,9 +195,9 @@ namespace EQLogParser
                   if (split.Length >= 7 && i == 2 && split[^1] == "set." && split[3] == "your" && split[1] == "successfully" && split[0] == "You")
                   {
                     var className = string.Join(" ", split, 4, 1 + (split.Length - 7));
-                    if (DataManager.Instance.IsValidClassName(className))
+                    if (_dataManager.IsValidClassName(className))
                     {
-                      PlayerManager.Instance.SetActivePlayerClass(ConfigUtil.PlayerName, className, 1, lineData.BeginTime);
+                      _playerManager.SetActivePlayerClass(ConfigUtil.PlayerName, className, 1, lineData.BeginTime);
                     }
                     handled = true;
                   }
@@ -199,7 +213,7 @@ namespace EQLogParser
                   {
                     looter = split[0].Equals("you", StringComparison.OrdinalIgnoreCase) ? ConfigUtil.PlayerName : split[0];
                     var item = string.Join(" ", split, itemsIndex + 1, i - itemsIndex - 1);
-                    PlayerManager.Instance.AddVerifiedPlayer(looter, lineData.BeginTime);
+                    _playerManager.AddVerifiedPlayer(looter, lineData.BeginTime);
                     var record = new LootRecord { Item = item, Player = looter, Quantity = 0, IsCurrency = false, Npc = "Won Roll (Not Looted)" };
                     RecordManager.Instance.Add(record, lineData.BeginTime);
                     handled = true;
@@ -256,7 +270,7 @@ namespace EQLogParser
 
                     if (ParseCurrency(split, lootedIndex + 1, i, out var item, out var count))
                     {
-                      PlayerManager.Instance.AddVerifiedPlayer(name, lineData.BeginTime);
+                      _playerManager.AddVerifiedPlayer(name, lineData.BeginTime);
                       var record = new LootRecord { Item = item, Player = name, Quantity = count, IsCurrency = true };
                       RecordManager.Instance.Add(record, lineData.BeginTime);
                       handled = true;
@@ -272,7 +286,7 @@ namespace EQLogParser
 
                     if (count > 0 && count != ushort.MaxValue)
                     {
-                      PlayerManager.Instance.AddVerifiedPlayer(looter, lineData.BeginTime);
+                      _playerManager.AddVerifiedPlayer(looter, lineData.BeginTime);
                       var record = new LootRecord { Item = item, Player = looter, Quantity = count, IsCurrency = false, Npc = npc };
                       RecordManager.Instance.Add(record, lineData.BeginTime);
                       handled = true;
@@ -296,7 +310,7 @@ namespace EQLogParser
                     {
                       looter = player[..^1];
                       looter = looter.Equals("you", StringComparison.OrdinalIgnoreCase) ? ConfigUtil.PlayerName : looter;
-                      PlayerManager.Instance.AddVerifiedPlayer(looter, lineData.BeginTime);
+                      _playerManager.AddVerifiedPlayer(looter, lineData.BeginTime);
                       var item = string.Join(" ", split, 1, i - 2);
                       var record = new LootRecord { Item = item, Player = looter, Quantity = 0, IsCurrency = false, Npc = "Given (Not Looted)" };
                       RecordManager.Instance.Add(record, lineData.BeginTime);
@@ -340,7 +354,7 @@ namespace EQLogParser
                 var count = split[3][0] == 'a' ? 1 : StatsUtil.ParseUInt(split[3]); item = item[..^3];
                 if (count > 0 && count != ushort.MaxValue)
                 {
-                  PlayerManager.Instance.AddVerifiedPlayer(looter, lineData.BeginTime);
+                  _playerManager.AddVerifiedPlayer(looter, lineData.BeginTime);
                   var record = new LootRecord { Item = item, Player = looter, Quantity = count, IsCurrency = false, Npc = "" };
                   RecordManager.Instance.Add(record, lineData.BeginTime);
                   handled = true;

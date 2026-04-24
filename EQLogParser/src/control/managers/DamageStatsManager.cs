@@ -11,7 +11,7 @@ namespace EQLogParser
 {
   internal class DamageStatsManager
   {
-    internal static DamageStatsManager Instance = new();
+    internal static DamageStatsManager Instance { get; } = new();
     internal event EventHandler<DataPointEvent> EventsUpdateDataPoint;
     internal event Action<StatsGenerationEvent> EventsGenerationStatus;
 
@@ -28,9 +28,16 @@ namespace EQLogParser
     private StatsGenerationEvent _lastStatsEvent;
     private string _title;
 
-    internal DamageStatsManager()
+    private readonly DataManager _dataManager;
+    private readonly PlayerManager _playerManager;
+
+    internal DamageStatsManager() : this(DataManager.Instance, PlayerManager.Instance) { }
+
+    internal DamageStatsManager(DataManager dataManager, PlayerManager playerManager)
     {
-      DataManager.Instance.EventsClearedActiveData += (_) =>
+      _dataManager = dataManager;
+      _playerManager = playerManager;
+      _dataManager.EventsClearedActiveData += (_) =>
       {
         lock (_damageGroupIds)
         {
@@ -248,7 +255,7 @@ namespace EQLogParser
                     }
                     else if (isValid)
                     {
-                      var isAttackerPet = PlayerManager.Instance.IsVerifiedPet(record.Attacker);
+                      var isAttackerPet = _playerManager.IsVerifiedPet(record.Attacker);
                       var isNewFrame = CheckNewFrame(prevPlayerTimes, stats.Name, block.BeginTime);
 
                       _raidTotals.Total += record.Total;
@@ -354,7 +361,7 @@ namespace EQLogParser
                 }
               }
 
-              var playerClass = PlayerManager.Instance.GetPlayerClass(stats.OrigName, lastTime);
+              var playerClass = _playerManager.GetPlayerClass(stats.OrigName, lastTime);
               stats.ClassName = playerClass;
               playerClasses.TryAdd(stats.OrigName, playerClass);
 
@@ -475,7 +482,7 @@ namespace EQLogParser
 
     private void UpdatePetMapping(DamageRecord damage)
     {
-      var petName = PlayerManager.Instance.GetPlayerFromPet(damage.Attacker);
+      var petName = _playerManager.GetPlayerFromPet(damage.Attacker);
       if ((!string.IsNullOrEmpty(petName) && petName != Labels.Unassigned) || !string.IsNullOrEmpty(petName = damage.AttackerOwner))
       {
         if (!_playerPets.TryGetValue(petName, out var mapping))

@@ -218,7 +218,7 @@ namespace EQLogParser
       }
     }
 
-    internal static short ParseDamage(string player, string modifiers, double currentTime, bool isPlayer)
+    internal static short ParseDamage(PlayerManager playerManager, string player, string modifiers, double currentTime, bool isPlayer)
     {
       var result = Parse(player, modifiers);
 
@@ -228,39 +228,39 @@ namespace EQLogParser
         string className = null;
         if (IsAssassinate(result))
         {
-          PlayerManager.Instance.AddVerifiedPlayer(player, currentTime);
+          playerManager.AddVerifiedPlayer(player, currentTime);
           classAbility = "Assassinate";
           className = Resource.ROG;
         }
         else if (IsHeadshot(result) || IsDoubleBowShot(result))
         {
-          PlayerManager.Instance.AddVerifiedPlayer(player, currentTime);
+          playerManager.AddVerifiedPlayer(player, currentTime);
           classAbility = IsHeadshot(result) ? "Headshot" : "Double Bow Shot";
           className = Resource.RNG;
         }
         else if (IsSlayUndead(result))
         {
-          PlayerManager.Instance.AddVerifiedPlayer(player, currentTime);
+          playerManager.AddVerifiedPlayer(player, currentTime);
           classAbility = "Slay Undead";
           className = Resource.PAL;
         }
 
         if (!string.IsNullOrEmpty(classAbility) && !string.IsNullOrEmpty(className))
         {
-          PlayerManager.Instance.SetActivePlayerClass(player, className, 1, currentTime);
+          playerManager.SetActivePlayerClass(player, className, 1, currentTime);
         }
       }
 
       return result;
     }
 
-    internal static short ParseHeal(string player, string modifiers, double currentTime)
+    internal static short ParseHeal(PlayerManager playerManager, string player, string modifiers, double currentTime)
     {
       var result = Parse(player, modifiers);
 
       if (IsTwincast(result))
       {
-        PlayerManager.Instance.AddVerifiedPlayer(player, currentTime);
+        playerManager.AddVerifiedPlayer(player, currentTime);
       }
 
       return result;

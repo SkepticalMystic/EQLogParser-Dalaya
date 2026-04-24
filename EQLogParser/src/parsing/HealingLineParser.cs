@@ -8,12 +8,18 @@ namespace EQLogParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
 
-    private HealingLineParser()
-    {
+    internal static HealingLineParser Instance { get; } = new();
 
+    private readonly PlayerManager _playerManager;
+
+    public HealingLineParser() : this(PlayerManager.Instance) { }
+
+    public HealingLineParser(PlayerManager playerManager)
+    {
+      _playerManager = playerManager;
     }
 
-    public static bool Process(LineData lineData)
+    public bool Process(LineData lineData)
     {
       var action = lineData.Action;
       try
@@ -51,7 +57,7 @@ namespace EQLogParser
       return false;
     }
 
-    private static HealRecord HandleHealed(string part, int optional, double beginTime)
+    private HealRecord HandleHealed(string part, int optional, double beginTime)
     {
       // [Sun Feb 24 21:00:58 2019] Foob's promised interposition is fulfilled Foob healed himself for 44238 hit points by Promised Interposition Heal V. (Lucky Critical)
       // [Sun Feb 24 21:01:01 2019] Rowanoak is soothed by Brell's Soothing Wave. Farzi healed Rowanoak for 524 hit points by Brell's Sacred Soothing Wave.
@@ -213,15 +219,15 @@ namespace EQLogParser
           var possessive = healed.IndexOf("`s ", StringComparison.Ordinal);
           if (possessive > -1)
           {
-            if (PlayerManager.Instance.IsVerifiedPlayer(healed[..possessive]))
+            if (_playerManager.IsVerifiedPlayer(healed[..possessive]))
             {
-              PlayerManager.Instance.AddVerifiedPet(healed);
+              _playerManager.AddVerifiedPet(healed);
             }
           }
           // found a bst/mag/nec pet
           else if (!string.IsNullOrEmpty(healer) && !string.IsNullOrEmpty(spell) && spell.StartsWith("Mend Companion", StringComparison.Ordinal))
           {
-            PlayerManager.Instance.AddVerifiedPet(healed);
+            _playerManager.AddVerifiedPet(healed);
           }
           else if (string.IsNullOrEmpty(healer) && !string.IsNullOrEmpty(spell) && spell.StartsWith("Theft of Essence", StringComparison.OrdinalIgnoreCase))
           {
@@ -252,7 +258,7 @@ namespace EQLogParser
               var firstParen = part.LastIndexOf('(', part.Length - 4);
               if (firstParen > -1)
               {
-                record.ModifiersMask = LineModifiersParser.ParseHeal(record.Healer,
+                record.ModifiersMask = LineModifiersParser.ParseHeal(_playerManager, record.Healer,
                   part.Substring(firstParen + 1, part.Length - 1 - firstParen - 1), beginTime);
               }
             }

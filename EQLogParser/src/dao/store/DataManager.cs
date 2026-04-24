@@ -120,7 +120,7 @@ namespace EQLogParser
     private readonly Regex RomanRegex = new(@"^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$", RegexOptions.IgnoreCase | RegexOptions.Compiled
 );
 
-    private DataManager()
+    internal DataManager()
     {
       var spellList = new List<SpellData>();
 
