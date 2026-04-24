@@ -14,7 +14,7 @@ namespace EQLogParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
 
-    internal static HealingStatsManager Instance = new();
+    internal static HealingStatsManager Instance { get; } = new();
     internal event EventHandler<DataPointEvent> EventsUpdateDataPoint;
     internal event Action<StatsGenerationEvent> EventsGenerationStatus;
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, TimeRange>> _healedByHealerTimeRanges = new();
@@ -36,9 +36,16 @@ namespace EQLogParser
     private bool _isLimited;
     internal static readonly string[] Separator = [" @"];
 
-    internal HealingStatsManager()
+    private readonly DataManager _dataManager;
+    private readonly PlayerManager _playerManager;
+
+    internal HealingStatsManager() : this(DataManager.Instance, PlayerManager.Instance) { }
+
+    internal HealingStatsManager(DataManager dataManager, PlayerManager playerManager)
     {
-      DataManager.Instance.EventsClearedActiveData += (_) =>
+      _dataManager = dataManager;
+      _playerManager = playerManager;
+      _dataManager.EventsClearedActiveData += (_) =>
       {
         lock (_healingGroups)
         {
@@ -186,7 +193,7 @@ namespace EQLogParser
                         }
                       }
 
-                      if (PlayerManager.Instance.IsPetOrPlayerOrMerc(allHeals[j].Item2.Healed) ||
+                      if (_playerManager.IsPetOrPlayerOrMerc(allHeals[j].Item2.Healed) ||
                         PlayerManager.IsPossiblePlayerName(allHeals[j].Item2.Healed))
                       {
                         if (healingValidator.IsValid(allHeals[j].Item1, allHeals[j].Item2, currentSpellCounts, previousSpellCounts, ignoreRecords))
@@ -499,7 +506,7 @@ namespace EQLogParser
               }
 
               UpdateStats(_raidTotals, stats, _healerSpellTimeRanges, _healerHealedTimeRanges, _healerHealedSpellTimeRanges, false);
-              var playerClass = PlayerManager.Instance.GetPlayerClass(stats.OrigName, lastTime);
+              var playerClass = _playerManager.GetPlayerClass(stats.OrigName, lastTime);
               stats.ClassName = playerClass;
               playerClasses.TryAdd(stats.OrigName, playerClass);
 

@@ -18,6 +18,7 @@ namespace EQLogParserTest
       Assert.AreNotSame(a.NpcDamageManager, b.NpcDamageManager);
       Assert.AreNotSame(a.DamageStatsManager, b.DamageStatsManager);
       Assert.AreNotSame(a.TankingStatsManager, b.TankingStatsManager);
+      Assert.AreNotSame(a.HealingStatsManager, b.HealingStatsManager);
 
       // Isolated contexts should also be distinct from the app-wide singletons.
       Assert.AreNotSame(DataManager.Instance, a.DataManager);
@@ -25,6 +26,7 @@ namespace EQLogParserTest
       Assert.AreNotSame(DamageLineParser.Instance, a.DamageLineParser);
       Assert.AreNotSame(DamageStatsManager.Instance, a.DamageStatsManager);
       Assert.AreNotSame(TankingStatsManager.Instance, a.TankingStatsManager);
+      Assert.AreNotSame(HealingStatsManager.Instance, a.HealingStatsManager);
     }
 
     [TestMethod]
@@ -109,6 +111,36 @@ namespace EQLogParserTest
       {
         TankingStatsManager.Instance.EventsGenerationStatus -= LiveHandler;
         ctx.TankingStatsManager.EventsGenerationStatus -= IsolatedHandler;
+      }
+    }
+
+    [TestMethod]
+    public void CreateIsolated_HealingStatsManagerEventsStayInContext()
+    {
+      // Same canary as DamageStatsManager/TankingStatsManager, applied to HealingStatsManager.
+      // An embedded HealingSummary in the Raid Damage window must not trigger the live Healing
+      // Summary tab's event handlers (or vice versa).
+      var ctx = ParseContext.CreateIsolated();
+
+      var liveEvents = new List<StatsGenerationEvent>();
+      var isolatedEvents = new List<StatsGenerationEvent>();
+      void LiveHandler(StatsGenerationEvent e) { liveEvents.Add(e); }
+      void IsolatedHandler(StatsGenerationEvent e) { isolatedEvents.Add(e); }
+
+      HealingStatsManager.Instance.EventsGenerationStatus += LiveHandler;
+      ctx.HealingStatsManager.EventsGenerationStatus += IsolatedHandler;
+      try
+      {
+        ctx.HealingStatsManager.BuildTotalStats(new GenerateStatsOptions());
+
+        Assert.IsTrue(isolatedEvents.Count > 0, "Isolated manager should emit generation events");
+        Assert.AreEqual(0, liveEvents.Count,
+          "Live HealingStatsManager must not receive events from an isolated manager");
+      }
+      finally
+      {
+        HealingStatsManager.Instance.EventsGenerationStatus -= LiveHandler;
+        ctx.HealingStatsManager.EventsGenerationStatus -= IsolatedHandler;
       }
     }
 
