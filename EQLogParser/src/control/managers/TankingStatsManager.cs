@@ -15,7 +15,7 @@ namespace EQLogParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
 
-    internal static TankingStatsManager Instance = new();
+    internal static TankingStatsManager Instance { get; } = new();
     internal event EventHandler<DataPointEvent> EventsUpdateDataPoint;
     internal event Action<StatsGenerationEvent> EventsGenerationStatus;
     private readonly Dictionary<int, byte> _tankingGroupIds = [];
@@ -27,15 +27,22 @@ namespace EQLogParser
     private List<Fight> _selected;
     private string _title;
 
-    internal TankingStatsManager()
+    private readonly DataManager _dataManager;
+    private readonly PlayerManager _playerManager;
+
+    internal TankingStatsManager() : this(DataManager.Instance, PlayerManager.Instance) { }
+
+    internal TankingStatsManager(DataManager dataManager, PlayerManager playerManager)
     {
-      lock (_tankingGroupIds)
+      _dataManager = dataManager;
+      _playerManager = playerManager;
+      _dataManager.EventsClearedActiveData += (_) =>
       {
-        DataManager.Instance.EventsClearedActiveData += (_) =>
+        lock (_tankingGroupIds)
         {
           Reset();
-        };
-      }
+        }
+      };
     }
 
     internal void RebuildTotalStats(GenerateStatsOptions options)
@@ -264,7 +271,7 @@ namespace EQLogParser
               var filteredTimeRange = StatsUtil.FilterTimeRange(timeRange, startTime, stopTime);
               stats.TotalSeconds = filteredTimeRange.GetTotal();
 
-              var playerClass = PlayerManager.Instance.GetPlayerClass(stats.OrigName, lastTime);
+              var playerClass = _playerManager.GetPlayerClass(stats.OrigName, lastTime);
               stats.ClassName = playerClass;
               playerClasses.TryAdd(stats.OrigName, playerClass);
 

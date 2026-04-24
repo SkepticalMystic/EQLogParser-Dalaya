@@ -17,12 +17,14 @@ namespace EQLogParserTest
       Assert.AreNotSame(a.DamageLineParser, b.DamageLineParser);
       Assert.AreNotSame(a.NpcDamageManager, b.NpcDamageManager);
       Assert.AreNotSame(a.DamageStatsManager, b.DamageStatsManager);
+      Assert.AreNotSame(a.TankingStatsManager, b.TankingStatsManager);
 
       // Isolated contexts should also be distinct from the app-wide singletons.
       Assert.AreNotSame(DataManager.Instance, a.DataManager);
       Assert.AreNotSame(PlayerManager.Instance, a.PlayerManager);
       Assert.AreNotSame(DamageLineParser.Instance, a.DamageLineParser);
       Assert.AreNotSame(DamageStatsManager.Instance, a.DamageStatsManager);
+      Assert.AreNotSame(TankingStatsManager.Instance, a.TankingStatsManager);
     }
 
     [TestMethod]
@@ -77,6 +79,36 @@ namespace EQLogParserTest
       {
         DamageStatsManager.Instance.EventsGenerationStatus -= LiveHandler;
         ctx.DamageStatsManager.EventsGenerationStatus -= IsolatedHandler;
+      }
+    }
+
+    [TestMethod]
+    public void CreateIsolated_TankingStatsManagerEventsStayInContext()
+    {
+      // Same canary as DamageStatsManager above, applied to TankingStatsManager. An embedded
+      // TankingSummary in the Raid Damage window must not trigger the live DPS Summary tab's
+      // tanking event handlers (or vice versa).
+      var ctx = ParseContext.CreateIsolated();
+
+      var liveEvents = new List<StatsGenerationEvent>();
+      var isolatedEvents = new List<StatsGenerationEvent>();
+      void LiveHandler(StatsGenerationEvent e) { liveEvents.Add(e); }
+      void IsolatedHandler(StatsGenerationEvent e) { isolatedEvents.Add(e); }
+
+      TankingStatsManager.Instance.EventsGenerationStatus += LiveHandler;
+      ctx.TankingStatsManager.EventsGenerationStatus += IsolatedHandler;
+      try
+      {
+        ctx.TankingStatsManager.BuildTotalStats(new GenerateStatsOptions());
+
+        Assert.IsTrue(isolatedEvents.Count > 0, "Isolated manager should emit generation events");
+        Assert.AreEqual(0, liveEvents.Count,
+          "Live TankingStatsManager must not receive events from an isolated manager");
+      }
+      finally
+      {
+        TankingStatsManager.Instance.EventsGenerationStatus -= LiveHandler;
+        ctx.TankingStatsManager.EventsGenerationStatus -= IsolatedHandler;
       }
     }
 

@@ -15,6 +15,7 @@ namespace EQLogParser
     internal PreLineParser PreLineParser { get; }
     internal NpcDamageManager NpcDamageManager { get; }
     internal DamageStatsManager DamageStatsManager { get; }
+    internal TankingStatsManager TankingStatsManager { get; }
 
     internal ParseContext(
       DataManager dataManager,
@@ -25,7 +26,8 @@ namespace EQLogParser
       MiscLineParser miscLineParser,
       PreLineParser preLineParser,
       NpcDamageManager npcDamageManager,
-      DamageStatsManager damageStatsManager)
+      DamageStatsManager damageStatsManager,
+      TankingStatsManager tankingStatsManager)
     {
       DataManager = dataManager;
       PlayerManager = playerManager;
@@ -36,6 +38,7 @@ namespace EQLogParser
       PreLineParser = preLineParser;
       NpcDamageManager = npcDamageManager;
       DamageStatsManager = damageStatsManager;
+      TankingStatsManager = tankingStatsManager;
     }
 
     // The live parse context — singletons bundled together. NpcDamageManager is instantiated
@@ -49,7 +52,8 @@ namespace EQLogParser
       MiscLineParser.Instance,
       PreLineParser.Instance,
       liveNpcDamageManager,
-      DamageStatsManager.Instance);
+      DamageStatsManager.Instance,
+      TankingStatsManager.Instance);
 
     // A fully isolated context. Reference data (spells, classes, pet names) is re-loaded into
     // the new DataManager/PlayerManager — callers should reuse the returned context rather than
@@ -70,7 +74,8 @@ namespace EQLogParser
       var plp = new PreLineParser(pm);
       var npc = new NpcDamageManager(dm, pm, dlp);
       var dsm = new DamageStatsManager(dm, pm);
-      return new ParseContext(dm, pm, dlp, hlp, clp, mlp, plp, npc, dsm);
+      var tsm = new TankingStatsManager(dm, pm);
+      return new ParseContext(dm, pm, dlp, hlp, clp, mlp, plp, npc, dsm, tsm);
     }
   }
 }
