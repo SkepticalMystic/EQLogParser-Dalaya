@@ -41,6 +41,7 @@ namespace EQLogParser
 
       _tankingSummary = new TankingSummary(
         _statsContext.TankingStatsManager,
+        _statsContext.HealingStatsManager,
         new RaidDamageTankingHost(_statsContext.DataManager),
         "RaidDamageTankingSummaryColumns");
       tankingHost.Content = _tankingSummary;

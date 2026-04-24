@@ -20,18 +20,23 @@ namespace EQLogParser
     private int _currentGroupCount;
     private readonly DispatcherTimer _selectionTimer;
     private readonly TankingStatsManager _tankingStatsManager;
+    private readonly HealingStatsManager _healingStatsManager;
     private readonly ITankingSummaryHost _host;
     private bool _ready;
 
     // XAML requires a public parameterless ctor. The main Tanking Summary tab instantiates
-    // the control via XAML and gets the live singleton + MainActions forwarding. Other hosts
+    // the control via XAML and gets the live singletons + MainActions forwarding. Other hosts
     // (e.g. the Raid Damage window's Tanking tab) construct directly via the injected overload
-    // so the two views can't stomp on each other's state or events.
-    public TankingSummary() : this(TankingStatsManager.Instance, new MainActionsTankingHost(), null) { }
+    // so the two views can't stomp on each other's state or events. HealingStatsManager is
+    // threaded through because the tanking view overlays received-healing onto each tank's
+    // stats via HealingStatsManager.PopulateHealing — for an embedded raid-damage tanking
+    // tab to show that overlay correctly, it must call the isolated context's healing manager.
+    public TankingSummary() : this(TankingStatsManager.Instance, HealingStatsManager.Instance, new MainActionsTankingHost(), null) { }
 
-    internal TankingSummary(TankingStatsManager tankingStatsManager, ITankingSummaryHost host, string columnPersistenceKey)
+    internal TankingSummary(TankingStatsManager tankingStatsManager, HealingStatsManager healingStatsManager, ITankingSummaryHost host, string columnPersistenceKey)
     {
       _tankingStatsManager = tankingStatsManager;
+      _healingStatsManager = healingStatsManager;
       _host = host;
       InitializeComponent();
 
@@ -265,7 +270,7 @@ namespace EQLogParser
         {
           if (CurrentStats != null)
           {
-            HealingStatsManager.Instance.PopulateHealing(CurrentStats);
+            _healingStatsManager.PopulateHealing(CurrentStats);
             dataGrid.SelectedItems.Clear();
             dataGrid.View?.RefreshFilter();
 
@@ -312,7 +317,7 @@ namespace EQLogParser
                 minTimeChooser.Value = Convert.ToInt64(CurrentStats.RaidStats.MinTime);
 
                 title.Content = CurrentStats.FullTitle;
-                isHealingLimited = HealingStatsManager.Instance.PopulateHealing(CurrentStats);
+                isHealingLimited = _healingStatsManager.PopulateHealing(CurrentStats);
                 dataGrid.ItemsSource = CurrentStats.StatsList;
               }
 
@@ -448,7 +453,7 @@ namespace EQLogParser
       if (VisualParent != null && !_ready)
       {
         _tankingStatsManager.EventsGenerationStatus += EventsGenerationStatus;
-        HealingStatsManager.Instance.EventsGenerationStatus += EventsGenerationStatus;
+        _healingStatsManager.EventsGenerationStatus += EventsGenerationStatus;
         _host.EventsClearedActiveData += EventsClearedActiveData;
         _host.EventsChartOpened += EventsChartOpened;
         _host.EventsTankingSelectionChanged += EventsTankingSelectionChanged;
@@ -465,7 +470,7 @@ namespace EQLogParser
     public void HideContent()
     {
       _tankingStatsManager.EventsGenerationStatus -= EventsGenerationStatus;
-      HealingStatsManager.Instance.EventsGenerationStatus -= EventsGenerationStatus;
+      _healingStatsManager.EventsGenerationStatus -= EventsGenerationStatus;
       _host.EventsClearedActiveData -= EventsClearedActiveData;
       _host.EventsChartOpened -= EventsChartOpened;
       _host.EventsTankingSelectionChanged -= EventsTankingSelectionChanged;
