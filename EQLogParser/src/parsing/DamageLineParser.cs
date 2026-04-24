@@ -764,6 +764,12 @@ namespace EQLogParser
         else
         {
           attacker = string.Join(" ", split, 0, hitTypeIndex);
+          // Dalaya named pets ("Bonaparte  hit NPC for N points of non-melee damage.") have a
+          // double-space after the name, which leaves `attacker` with a trailing space after
+          // the tokens rejoin. Without TrimEnd here, the pet's non-melee DD records become
+          // "Bonaparte " while melee/DoT records are "Bonaparte" — producing two separate
+          // DPS Summary rows for the same pet. Matches the trim sites at ~556 and ~602.
+          attacker = attacker.TrimEnd();
         }
 
         defender = string.Join(" ", split, hitTypeIndex + 1, forIndex - hitTypeIndex - 1);
@@ -902,6 +908,12 @@ namespace EQLogParser
           {
             defender = defender[..^1];
             attacker = string.Join(" ", split, 0, tryIndex);
+            // Dalaya named pets ("Bonaparte  tries to bash NPC, but NPC is INVULNERABLE!") have a
+            // double-space after the name, leaving a trailing space here. Miss/dodge/invulnerable
+            // records have damage=0 but still register the attacker name into _playerTimeRanges via
+            // NpcDamageManager.AddPlayerTime. Without TrimEnd, "Bonaparte " ends up as a phantom
+            // stats row with only a time value and no damage.
+            attacker = attacker.TrimEnd();
             subType = ToUpper(subType);
             attacker = UpdateAttacker(attacker, subType);
             defender = UpdateDefender(defender, attacker);
