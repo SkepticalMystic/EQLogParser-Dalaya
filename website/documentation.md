@@ -198,7 +198,7 @@ sudo apt install winetricks  # (version 20250102-1)
 winetricks allfonts
 winetricks renderer=gdi
 wine windowsdesktop-runtime-8.0.25-win-x64.exe  # (or latest)
-wine EQLogParser-install-2.3.49.exe  # (or latest)
+wine EQLogParser-install-1.0.2.exe  # (or latest)
 ```
 
 ## Known Issues with Linux

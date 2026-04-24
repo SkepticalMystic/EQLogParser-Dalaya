@@ -1,5 +1,5 @@
 # EQLogParser-Dalaya
-EverQuest combat log parser for the [Dalaya](https://www.dalaya.com) private server (formerly known as Shards of Dalaya).
+EverQuest combat log parser for the [Dalaya](https://www.dalaya.org) private server (formerly known as Shards of Dalaya).
 
 This is a fork of [kauffman12's EQLogParser](https://github.com/kauffman12/EQLogParser), adapted to handle Dalaya's distinct combat log format. It provides damage meters, spell tracking, pet assignment, overlays, triggers, audio alerts, and detailed combat analytics through a rich WPF interface.
 
