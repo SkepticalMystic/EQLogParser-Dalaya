@@ -21,10 +21,11 @@ namespace EQLogParser
     // Kept separate from per-source parse contexts so stats computation state doesn't get tangled.
     private readonly ParseContext _statsContext = ParseContext.CreateIsolated();
 
-    // Embedded DamageSummary bound to the isolated DamageStatsManager. It owns its own
-    // event subscriptions (via ContentLoaded) and renders the full tree grid, context menu,
-    // pet rollups, column chooser, etc. — identical to the main DPS Summary tab.
+    // Embedded summary controls bound to the isolated managers. Each owns its own event
+    // subscriptions (via ContentLoaded) and renders the full tree grid, context menu, pet
+    // rollups, column chooser, etc. — identical to the main DPS / Tanking tabs.
     private readonly DamageSummary _damageSummary;
+    private readonly TankingSummary _tankingSummary;
 
     public RaidDamageView()
     {
@@ -38,17 +39,28 @@ namespace EQLogParser
         "RaidDamageSummaryColumns");
       summaryHost.Content = _damageSummary;
 
+      _tankingSummary = new TankingSummary(
+        _statsContext.TankingStatsManager,
+        new RaidDamageTankingHost(_statsContext.DataManager),
+        "RaidDamageTankingSummaryColumns");
+      tankingHost.Content = _tankingSummary;
+
       UpdateFooterStatus();
       RebuildMergedFights();
     }
 
-    // The DockingManager calls this when the tab is closed. Forwarding to the embedded
-    // DamageSummary tears down its event subscriptions (EventsGenerationStatus,
-    // EventsClearedActiveData via the isolated DataManager, MainActions options-changed).
+    // The DockingManager calls this when the tab is closed. Forwarding to each embedded
+    // summary tears down its event subscriptions (EventsGenerationStatus,
+    // EventsClearedActiveData via the isolated DataManager, host-routed MainActions events).
     public void HideContent()
     {
       _damageSummary?.HideContent();
+      _tankingSummary?.HideContent();
     }
+
+    // Tab selection itself doesn't trigger a rebuild — both managers are populated in
+    // parallel on every fight-selection change so switching tabs is instant.
+    private void RaidViewTabChanged(object sender, SelectionChangedEventArgs e) { }
 
     private async void AddSourceClick(object sender, RoutedEventArgs e)
     {
@@ -207,9 +219,10 @@ namespace EQLogParser
 
       if (selectedFights is null or { Count: 0 })
       {
-        // BuildTotalStats with no Npcs drives the embedded DamageSummary to the "No NPCs"
-        // state via the NONPC event path. No need to touch the control directly.
+        // BuildTotalStats with no Npcs drives each embedded summary to the "No NPCs" state
+        // via the NONPC event path. No need to touch the controls directly.
         Task.Run(() => _statsContext.DamageStatsManager.BuildTotalStats(new GenerateStatsOptions()));
+        Task.Run(() => _statsContext.TankingStatsManager.BuildTotalStats(new GenerateStatsOptions()));
         mergeStatus.Text = "";
         return;
       }
@@ -238,8 +251,10 @@ namespace EQLogParser
       _statsContext.PlayerManager.SeedFrom(PlayerManager.Instance);
 
       // Run on background thread — BuildTotalStats does meaningful work and fires events
-      // that route through the embedded DamageSummary's subscription.
+      // that route through each embedded summary's subscription. Tanking uses the same fight
+      // list but reads fight.TankingBlocks / TankSegments internally, so the options are shared.
       Task.Run(() => _statsContext.DamageStatsManager.BuildTotalStats(options));
+      Task.Run(() => _statsContext.TankingStatsManager.BuildTotalStats(options));
 
       mergeStatus.Text = $"{selectedFights.Count} fight{(selectedFights.Count == 1 ? "" : "s")} selected";
     }

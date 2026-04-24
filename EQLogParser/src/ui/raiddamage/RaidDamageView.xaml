@@ -102,13 +102,20 @@
 
     <GridSplitter Grid.Column="3" ResizeDirection="Columns" HorizontalAlignment="Stretch" />
 
-    <!-- Right pane: embedded DamageSummary control bound to an isolated DamageStatsManager -->
+    <!-- Right pane: tabbed DPS / Tanking views, each bound to its own isolated stats manager -->
     <Grid Grid.Column="4">
       <Grid.RowDefinitions>
         <RowDefinition Height="100*" />
         <RowDefinition Height="{DynamicResource EQGridFooterHeight}" />
       </Grid.RowDefinitions>
-      <ContentControl x:Name="summaryHost" Grid.Row="0" />
+      <TabControl Grid.Row="0" SelectionChanged="RaidViewTabChanged">
+        <TabItem Header="DPS">
+          <ContentControl x:Name="summaryHost" />
+        </TabItem>
+        <TabItem Header="Tanking">
+          <ContentControl x:Name="tankingHost" />
+        </TabItem>
+      </TabControl>
       <TextBlock Grid.Row="1" x:Name="mergeStatus" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="{DynamicResource EQContentSize}" Opacity="0.7" />
     </Grid>
   </Grid>
