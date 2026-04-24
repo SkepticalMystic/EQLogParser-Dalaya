@@ -594,8 +594,15 @@ namespace EQLogParser
               // Trim before registering and before the record is created so the
               // stored name and the damage record name are consistent.
               attacker = attacker.Trim();
+              // Mark as a verified pet but DO NOT guess the owner. Earlier code attributed
+              // every named pet in the log to ConfigUtil.PlayerName, which silently corrupted
+              // pet ownership in raid logs where other players' pets appear (e.g. Kateila's
+              // Fireballs getting reassigned to Ezran just because Ezran is parsing the log).
+              // Real ownership comes from three sources:
+              //   1. petmapping.txt (loaded at startup)
+              //   2. ChatManager's "My leader is X" detection (automatic when pets announce)
+              //   3. Pet Owners UI (manual user assignment)
               PlayerManager.Instance.AddVerifiedPet(attacker);
-              PlayerManager.Instance.AddPetToPlayer(attacker, ConfigUtil.PlayerName);
             }
             else
             {
