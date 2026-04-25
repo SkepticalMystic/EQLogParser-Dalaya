@@ -897,7 +897,7 @@ namespace EQLogParser
                     // stray Fight entries on re-parse.
                     if (defenderNames != null)
                     {
-                      var damageRecord = DamageLineParser.ParseLine(action);
+                      var damageRecord = DamageLineParser.Instance.ParseLine(action);
                       if (damageRecord != null && !defenderNames.Contains(damageRecord.Defender))
                       {
                         continue;
