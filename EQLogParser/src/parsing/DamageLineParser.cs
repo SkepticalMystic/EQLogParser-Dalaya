@@ -554,11 +554,6 @@ namespace EQLogParser
         // rows in DPS Summary. Attacker names never legitimately end with whitespace.
         attacker = attacker.TrimEnd();
         defender = string.Join(" ", split, hitTypeIndex + hitTypeMod + 1, forIndex - hitTypeIndex - hitTypeMod - 1);
-        // Dalaya named pets are logged with a double-space after their name (e.g. "Bonaparte  bashes ..."),
-        // which leaves `attacker` with a trailing space after the tokens rejoin. Normalize here so
-        // "Bonaparte " and "Bonaparte" don't become two different PlayerStats rows in DPS Summary.
-        // Attacker names never legitimately end with whitespace, so unconditional TrimEnd is safe.
-        attacker = attacker.TrimEnd();
         subType = ToUpper(subType);
         var damage = StatsUtil.ParseUInt(split[pointsOfIndex - 1]);
         attacker = UpdateAttacker(attacker, subType);
