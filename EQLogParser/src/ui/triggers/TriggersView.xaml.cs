@@ -107,6 +107,7 @@ namespace EQLogParser
       AddEditorInstance(new RangeEditor(typeof(long), 1, 99999), "TimesToLoop");
       AddEditorInstance(new RangeEditor(typeof(double), 0, 99999), "RepeatedResetTime");
       AddEditorInstance(new RangeEditor(typeof(double), 0, 99999), "LockoutTime");
+      AddEditorInstance(new RangeEditor(typeof(double), 0, 300), "PreviousLineWindowSeconds");
       AddEditorInstance(new DurationEditor(2), "DurationTimeSpan");
       AddEditorInstance(new RangeEditor(typeof(long), 1, 99999), "FadeDelay");
 

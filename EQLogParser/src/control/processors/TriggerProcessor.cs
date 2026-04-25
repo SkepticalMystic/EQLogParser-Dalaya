@@ -59,7 +59,8 @@ namespace EQLogParser
     private Task _mainTask;
     private Task _speakTask;
     private long _activityLastTicks;
-    private LineData _previous;
+    private const int MaxPreviousLines = 5000;
+    private readonly LinkedList<LineData> _previousLines = [];
     private bool _isTesting;
 
     internal TriggerProcessor(string id, string name, string playerName, string voice, int voiceRate,
@@ -290,7 +291,7 @@ namespace EQLogParser
         foreach (var wrapper in _activeTriggersById.Values)
         {
           if (CheckLine(wrapper, lineData, out var matches, out var dynamicDuration, out var swTime) &&
-              CheckPreviousLine(wrapper, _previous, out var previousMatches, out var previousSwTime))
+              CheckPreviousLine(wrapper, _previousLines, lineData.BeginTime, out var previousMatches, out var previousSwTime))
           {
             swTime += previousSwTime;
             await HandleTriggerAsync(wrapper, lineData, matches, previousMatches, dynamicDuration, swTime, beginTicks);
@@ -314,7 +315,11 @@ namespace EQLogParser
       }
       finally
       {
-        _previous = lineData;
+        _previousLines.AddLast(lineData);
+        while (_previousLines.Count > MaxPreviousLines)
+        {
+          _previousLines.RemoveFirst();
+        }
         _activeTriggerSemaphore.Release();
       }
 
@@ -397,21 +402,61 @@ namespace EQLogParser
       return found;
     }
 
-    private static bool CheckPreviousLine(TriggerWrapper wrapper, LineData lineData, out Dictionary<string, string> matches, out long swTime)
+    internal static bool CheckPreviousLine(TriggerWrapper wrapper, LinkedList<LineData> previousLines, double currentBeginTime, out Dictionary<string, string> matches, out long swTime)
     {
-      var found = true;
-      swTime = 0;
       matches = null;
+      swTime = 0;
 
+      // No previous-line constraint configured: pass.
+      if (wrapper.PreviousRegex == null && string.IsNullOrEmpty(wrapper.ModifiedPreviousPattern))
+      {
+        return true;
+      }
+
+      // Constraint exists but we have nothing to compare against yet.
+      if (previousLines == null || previousLines.Count == 0)
+      {
+        return false;
+      }
+
+      var window = wrapper.TriggerData?.PreviousLineWindowSeconds ?? 0;
+
+      // Legacy behavior: only inspect the line directly before the current one.
+      if (window <= 0)
+      {
+        return MatchPreviousLine(wrapper, previousLines.Last!.Value, out matches, out swTime);
+      }
+
+      // Walk newest -> oldest, accept the first match within the window.
+      // The walk short-circuits on time, so its cost is bounded by the window, not the buffer.
+      for (var node = previousLines.Last; node != null; node = node.Previous)
+      {
+        if (currentBeginTime - node.Value.BeginTime > window) break;
+        if (MatchPreviousLine(wrapper, node.Value, out matches, out swTime))
+        {
+          return true;
+        }
+        if (wrapper.IsDisabled) return false;
+      }
+
+      return false;
+    }
+
+    private static bool MatchPreviousLine(TriggerWrapper wrapper, LineData lineData, out Dictionary<string, string> matches, out long swTime)
+    {
+      matches = null;
+      swTime = 0;
+
+      if (string.IsNullOrEmpty(lineData?.Action))
+      {
+        return false;
+      }
 
       long ts0;
+      var found = false;
+
       if (wrapper.PreviousRegex != null)
       {
-        if (string.IsNullOrEmpty(lineData?.Action))
-        {
-          return false;
-        }
-
         ts0 = Stopwatch.GetTimestamp();
         var success = false;
 
@@ -448,11 +493,6 @@ namespace EQLogParser
       }
       else if (!string.IsNullOrEmpty(wrapper.ModifiedPreviousPattern))
       {
-        if (string.IsNullOrEmpty(lineData?.Action))
-        {
-          return false;
-        }
-
         ts0 = Stopwatch.GetTimestamp();
         found = lineData.Action.Contains(wrapper.ModifiedPreviousPattern, StringComparison.OrdinalIgnoreCase);
         if (found) swTime = Stopwatch.GetTimestamp() - ts0;

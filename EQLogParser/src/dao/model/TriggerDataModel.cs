@@ -159,6 +159,9 @@ namespace EQLogParser
     public long WorstEvalTime { get; set; } = -1;
     public string Pattern { get; set; }
     public string PreviousPattern { get; set; }
+    // Seconds back from the current line to scan for a PreviousPattern match.
+    // 0 = legacy behavior: only inspect the line immediately before the current one.
+    public double PreviousLineWindowSeconds { get; set; }
     public long Priority { get; set; } = 3;
     public int TriggerAgainOption { get; set; }
     public bool UseRegex { get; set; }
