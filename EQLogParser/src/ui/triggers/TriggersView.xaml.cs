@@ -563,13 +563,13 @@ namespace EQLogParser
       [
         // Trigger timer categories
         new { Name = timerDurationItem.CategoryName, IsEnabled = trigger && timerType > 0 },
-        new { Name = endEarlyPatternItem.CategoryName, IsEnabled = trigger && timerType > 0 && timerType != 2 },
-        new { Name = warningSecondsItem.CategoryName, IsEnabled = trigger && timerType > 0 && timerType != 2 },
+        new { Name = endEarlyPatternItem.CategoryName, IsEnabled = trigger && timerType > 0 },
+        new { Name = warningSecondsItem.CategoryName, IsEnabled = trigger && timerType > 0 },
         // Overlay categories
         new { Name = idleBrushItem.CategoryName, IsEnabled = isTimerOverlay && cooldownTimer }
       ]);
 
-      resetDurationItem.Visibility = (timerType > 0 && timerType != 2 && timerType != 4) ? Visibility.Visible : Visibility.Collapsed;
+      resetDurationItem.Visibility = (timerType > 0 && timerType != 4) ? Visibility.Visible : Visibility.Collapsed;
       timerDurationItem.Visibility = (timerType > 0 && timerType != 2) ? Visibility.Visible : Visibility.Collapsed;
       timerShortDurationItem.Visibility = timerType == 2 ? Visibility.Visible : Visibility.Collapsed;
       loopingTimerItem.Visibility = timerType == 4 ? Visibility.Visible : Visibility.Collapsed;
