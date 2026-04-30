@@ -136,12 +136,6 @@ namespace EQLogParser
             toModel.TimerType = 1;
             toModel.Node.TriggerData.TimerType = 1;
           }
-
-          // any timer type except short duration
-          if (toModel.TimerType > 0 && toModel.TimerType != 2)
-          {
-            toModel.DurationTimeSpan = new TimeSpan(0, 0, (int)toModel.DurationSeconds);
-          }
         }
         else if (fromTrigger is TriggerPropertyModel fromModel)
         {
@@ -168,11 +162,6 @@ namespace EQLogParser
           toTrigger.WarningSoundToPlay = soundFile;
           toTrigger.WarningTextToSpeak = text;
           toTrigger.EnableTimer = fromModel.TimerType > 0;
-
-          if (fromModel.TimerType > 0 && fromModel.TimerType != 2)
-          {
-            toTrigger.DurationSeconds = fromModel.DurationTimeSpan.TotalSeconds;
-          }
         }
       }
       else if (to is Overlay toOverlay && from is Overlay fromOverlay)

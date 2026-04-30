@@ -228,7 +228,6 @@ namespace EQLogParser
     public SolidColorBrush TriggerFontBrush { get; set; }
     public ObservableCollection<ComboBoxItemDetails> SelectedTextOverlays { get; set; }
     public ObservableCollection<ComboBoxItemDetails> SelectedTimerOverlays { get; set; }
-    public TimeSpan DurationTimeSpan { get; set; }
     public TimeSpan ResetDurationTimeSpan { get; set; }
     public string SoundOrText { get; set; }
     public string EndEarlySoundOrText { get; set; }

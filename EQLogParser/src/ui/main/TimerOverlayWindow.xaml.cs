@@ -101,7 +101,7 @@ namespace EQLogParser
         _timerList.Add(timerData);
         _newData = true;
 
-        if (timerData.TimerType == 2)
+        if (timerData.TimerType == 2 || timerData.DurationSeconds < 10)
         {
           _newShortTickData = true;
         }

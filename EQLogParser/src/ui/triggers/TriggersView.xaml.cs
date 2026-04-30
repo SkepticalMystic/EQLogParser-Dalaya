@@ -96,7 +96,6 @@ namespace EQLogParser
         "TimerType", "HorizontalAlignment", "VerticalAlignment", "VoiceRate", "Volume");
       AddEditor<WrapTextEditor>("EndEarlyTextToDisplay", "EndTextToDisplay", "TextToDisplay", "TextToShare",
         "WarningTextToDisplay", "Comments", "OverlayComments", "TextToSendToChat", "ChatWebhook");
-      AddEditorInstance(new RangeEditor(typeof(double), 0.2, 2.0), "DurationSeconds");
       AddEditorInstance(new TextSoundEditor(fileList), "SoundOrText");
       AddEditorInstance(new TextSoundEditor(fileList), "EndEarlySoundOrText");
       AddEditorInstance(new TextSoundEditor(fileList), "EndSoundOrText");
@@ -108,7 +107,7 @@ namespace EQLogParser
       AddEditorInstance(new RangeEditor(typeof(double), 0, 99999), "RepeatedResetTime");
       AddEditorInstance(new RangeEditor(typeof(double), 0, 99999), "LockoutTime");
       AddEditorInstance(new RangeEditor(typeof(double), 0, 300), "PreviousLineWindowSeconds");
-      AddEditorInstance(new DurationEditor(2), "DurationTimeSpan");
+      AddEditorInstance(new AdaptiveDurationEditor(), "DurationSeconds");
       AddEditorInstance(new RangeEditor(typeof(long), 1, 99999), "FadeDelay");
 
       // don't disconnect these so tree stays in-sync if hidden
@@ -570,8 +569,7 @@ namespace EQLogParser
       ]);
 
       resetDurationItem.Visibility = (timerType > 0 && timerType != 4) ? Visibility.Visible : Visibility.Collapsed;
-      timerDurationItem.Visibility = (timerType > 0 && timerType != 2) ? Visibility.Visible : Visibility.Collapsed;
-      timerShortDurationItem.Visibility = timerType == 2 ? Visibility.Visible : Visibility.Collapsed;
+      timerDurationItem.Visibility = timerType > 0 ? Visibility.Visible : Visibility.Collapsed;
       loopingTimerItem.Visibility = timerType == 4 ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -650,7 +648,7 @@ namespace EQLogParser
               (trigger.TriggerResetBrush?.Color.ToHexString() != original.ResetColor);
           }
         }
-        else if (args.Property.Name == "DurationTimeSpan" && timerDurationItem.Visibility == Visibility.Collapsed)
+        else if (args.Property.Name == "DurationSeconds" && timerDurationItem.Visibility == Visibility.Collapsed)
         {
           triggerChange = false;
         }

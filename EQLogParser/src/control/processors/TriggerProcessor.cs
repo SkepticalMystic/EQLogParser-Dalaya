@@ -913,7 +913,7 @@ namespace EQLogParser
         {
           try
           {
-            await Task.Delay((int)diff * 1000, warningToken);
+            await Task.Delay((int)(diff * 1000), warningToken);
           }
           catch (OperationCanceledException)
           {
