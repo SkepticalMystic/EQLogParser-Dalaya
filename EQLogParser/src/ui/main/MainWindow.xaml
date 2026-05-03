@@ -312,11 +312,6 @@
               <fa:ImageAwesome x:Name="exportFormattedCsvIcon" Style="{StaticResource EQIconStyle}" Visibility="Hidden" Icon="Solid_Check" />
             </MenuItem.Icon>
           </MenuItem>
-          <MenuItem x:Name="emuParsing" Header="Use EMU Server _Parsing" Click="ToggleEmuParsingClick">
-            <MenuItem.Icon>
-              <fa:ImageAwesome x:Name="emuParsingIcon" Style="{StaticResource EQIconStyle}" Visibility="Hidden" Icon="Solid_Check" />
-            </MenuItem.Icon>
-          </MenuItem>
           <Separator />
           <MenuItem x:Name="damageOptions" Header="_Damage Settings">
             <MenuItem.Icon>

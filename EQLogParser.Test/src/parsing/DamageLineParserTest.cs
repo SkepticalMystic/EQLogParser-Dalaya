@@ -43,14 +43,6 @@ namespace EQLogParserTest
       return DamageLineParser.ParseLine(action);
     }
 
-    private static DamageRecord ParseEmuAction(string action)
-    {
-      AppSettings.IsEmuParsingEnabled = true;
-      var result = DamageLineParser.ParseLine(action);
-      AppSettings.IsEmuParsingEnabled = false;
-      return result;
-    }
-
     #region Basic Melee Damage
 
     [TestMethod]
@@ -225,7 +217,7 @@ namespace EQLogParserTest
     [TestMethod]
     public void TestSpell_HitPetOwner()
     {
-      var record = ParseEmuAction("Lobekn (Owner: Bulron) hit a wan ghoul knight for 311 points of non-melee damage. (Earthquake)");
+      var record = ParseAction("Lobekn (Owner: Bulron) hit a wan ghoul knight for 311 points of non-melee damage. (Earthquake)");
       Assert.IsNotNull(record);
       Assert.AreEqual("Lobekn", record.Attacker);
       Assert.AreEqual("Bulron", record.AttackerOwner);
@@ -410,32 +402,6 @@ namespace EQLogParserTest
     }
 
     [TestMethod]
-    [Ignore("Old EMU live-style format. Dalaya's unconditional pre-swap combined with the EMU-flag swap cancel out, producing the original (Dalaya-format) attribution. To be removed with the EMU-toggle cleanup pass.")]
-    public void TestTaken_OldEqemu()
-    {
-      var record = ParseEmuAction("Pixtt Invi Mal has taken 189 damage from Goanna by Tuyen`s Chant of Fire.");
-      Assert.IsNotNull(record);
-      Assert.AreEqual("Goanna", record.Attacker);
-      Assert.AreEqual("Tuyen`s Chant of Fire", record.SubType);
-      Assert.AreEqual("Pixtt Invi Mal", record.Defender);
-      Assert.AreEqual((uint)189, record.Total);
-    }
-
-    [TestMethod]
-    [Ignore("Old EMU live-style format; see TestTaken_OldEqemu.")]
-    public void TestTaken_YouOldEqemu()
-    {
-      var record = ParseEmuAction("You have taken 1 damage from a bonecrawler hatchling by Feeble Poison");
-      Assert.IsNotNull(record);
-      Assert.AreEqual("A bonecrawler hatchling", record.Attacker);
-      Assert.AreEqual(ConfigUtil.PlayerName, record.Defender);
-      Assert.AreEqual((uint)1, record.Total);
-      Assert.AreEqual(Labels.Dot, record.Type);
-      Assert.AreEqual("Feeble Poison", record.SubType);
-      Assert.IsFalse(record.AttackerIsSpell);
-    }
-
-    [TestMethod]
     public void TestTaken_WispExplosion()
     {
       var record = ParseAction("Lawlstryke has taken 216717 damage by Wisp Explosion.");
@@ -453,9 +419,9 @@ namespace EQLogParserTest
     #region Old EQEMU Format
 
     [TestMethod]
-    public void TestOldEqemu_HitForDamage()
+    public void TestEqemuStyle_HitForDamage()
     {
-      var record = ParseEmuAction("Jaun hit Pixtt Invi Mal for 150 points of non-melee damage.");
+      var record = ParseAction("Jaun hit Pixtt Invi Mal for 150 points of non-melee damage.");
       Assert.IsNotNull(record);
       Assert.AreEqual("Jaun", record.Attacker);
       Assert.AreEqual("Pixtt Invi Mal", record.Defender);
@@ -463,40 +429,6 @@ namespace EQLogParserTest
       Assert.AreEqual(Labels.Dd, record.Type);
       Assert.AreEqual(Labels.Dd, record.SubType);
       Assert.IsFalse(record.AttackerIsSpell);
-    }
-
-    #endregion
-
-    #region Critical Melee (Old Style)
-
-    [TestMethod]
-    public void TestOldCrit_ScoresCriticalHit()
-    {
-      var record1 = ParseEmuAction("Vorgash scores a critical hit!");
-      Assert.IsNull(record1);
-
-      var record2 = ParseEmuAction("Vorgash hits a target for 780 points of damage.");
-      Assert.IsNotNull(record2);
-      Assert.AreEqual("A target", record2.Defender);
-      Assert.AreEqual(Labels.Melee, record2.Type);
-      Assert.AreEqual("Hits", record2.SubType);
-      Assert.AreEqual((uint)780, record2.Total);
-      Assert.IsFalse(record2.AttackerIsSpell);
-    }
-
-    [TestMethod]
-    public void TestOldCrit_CripplingBlow()
-    {
-      var record1 = ParseEmuAction("Arilyn lands a Crippling Blow!(244)");
-      Assert.IsNull(record1);
-
-      var record2 = ParseEmuAction("Arilyn hits a target for 280 points of damage.");
-      Assert.IsNotNull(record2);
-      Assert.AreEqual("A target", record2.Defender);
-      Assert.AreEqual(Labels.Melee, record2.Type);
-      Assert.AreEqual("Hits", record2.SubType);
-      Assert.AreEqual((uint)280, record2.Total);
-      Assert.IsFalse(record2.AttackerIsSpell);
     }
 
     #endregion
@@ -619,45 +551,6 @@ namespace EQLogParserTest
       Assert.IsFalse(record.AttackerIsSpell);
     }
 
-    [TestMethod]
-    public void TestAbsorb_Spellshield()
-    {
-      // TODO - Parse the difference as damage?
-      var record = ParseEmuAction("The Spellshield absorbed 132 of 162 points of damage");
-      Assert.IsNotNull(record);
-      Assert.AreEqual(Labels.Unk, record.Attacker);
-      Assert.AreEqual(ConfigUtil.PlayerName, record.Defender);
-      Assert.AreEqual((uint)0, record.Total);
-      Assert.AreEqual(Labels.Absorb, record.Type);
-      Assert.AreEqual("Hits", record.SubType);
-      Assert.IsFalse(record.AttackerIsSpell);
-    }
-
-    [TestMethod]
-    public void TestAbsorb_ShieldedItself()
-    {
-      var record = ParseEmuAction("Gaber (Owner: Claus) has shielded itself from 116 points of damage. (Rune II)");
-      Assert.IsNotNull(record);
-      Assert.AreEqual(Labels.Unk, record.Attacker);
-      Assert.AreEqual("Gaber", record.Defender);
-      Assert.AreEqual((uint)0, record.Total);
-      Assert.AreEqual(Labels.Absorb, record.Type);
-      Assert.AreEqual("Hits", record.SubType);
-      Assert.IsFalse(record.AttackerIsSpell);
-    }
-
-    [TestMethod]
-    public void TestAbsorb_ShieldedHerself()
-    {
-      var record = ParseEmuAction("Leela has shielded herself from 658 points of damage. (Manaskin)");
-      Assert.IsNotNull(record);
-      Assert.AreEqual("Leela", record.Defender);
-      Assert.AreEqual(Labels.Unk, record.Attacker);
-      Assert.AreEqual((uint)0, record.Total);
-      Assert.AreEqual(Labels.Absorb, record.Type);
-      Assert.AreEqual("Hits", record.SubType);
-      Assert.IsFalse(record.AttackerIsSpell);
-    }
 
     #endregion
 
@@ -850,23 +743,6 @@ namespace EQLogParserTest
       Assert.AreEqual("A Kar`Zok soldier", record.Defender);
       Assert.AreEqual(Labels.Miss, record.Type);
       Assert.AreEqual("Crushes", record.SubType);
-      Assert.IsFalse(record.AttackerIsSpell);
-    }
-
-    #endregion
-
-    #region Immolation / DoT
-
-    [TestMethod]
-    public void TestImmolation()
-    {
-      var record = ParseEmuAction("You are immolated by raging energy.  You have taken 179 points of damage.");
-      Assert.IsNotNull(record);
-      Assert.AreEqual(ConfigUtil.PlayerName, record.Defender);
-      Assert.AreEqual(Labels.Unk, record.Attacker);
-      Assert.AreEqual((uint)179, record.Total);
-      Assert.AreEqual(Labels.Dot, record.Type);
-      Assert.AreEqual(Labels.Dot, record.SubType);
       Assert.IsFalse(record.AttackerIsSpell);
     }
 

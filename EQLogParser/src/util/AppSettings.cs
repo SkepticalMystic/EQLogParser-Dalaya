@@ -53,11 +53,6 @@ namespace EQLogParser
     public static volatile bool IsSlayUndeadDamageEnabled = true;
 
     /// <summary>
-    /// Whether EMU (EqEMU) parsing mode is enabled.
-    /// </summary>
-    public static volatile bool IsEmuParsingEnabled;
-
-    /// <summary>
     /// Whether the damage overlay window is currently open.
     /// </summary>
     public static volatile bool IsDamageOverlayOpen;

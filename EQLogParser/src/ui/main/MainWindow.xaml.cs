@@ -118,10 +118,6 @@ namespace EQLogParser
       // Hardware Acceleration
       hardwareAccelIcon.Visibility = ConfigUtil.IfSet("HardwareAcceleration") ? Visibility.Visible : Visibility.Hidden;
 
-      // Enable EMU parsing
-      AppSettings.IsEmuParsingEnabled = ConfigUtil.IfSet("EnableEmuParsing");
-      emuParsingIcon.Visibility = AppSettings.IsEmuParsingEnabled ? Visibility.Visible : Visibility.Hidden;
-
       // upgrade
       if (ConfigUtil.IfSet("TriggersWatchForGINA"))
       {
@@ -451,11 +447,6 @@ namespace EQLogParser
       {
         ChatDB.Instance.Stop();
       }
-    }
-
-    private void ToggleEmuParsingClick(object sender, RoutedEventArgs e)
-    {
-      AppSettings.IsEmuParsingEnabled = MainActions.ToggleSetting("EnableEmuParsing", emuParsingIcon);
     }
 
     private void ToggleMapSendToEqClick(object sender, RoutedEventArgs e)
