@@ -1609,7 +1609,7 @@
 1608^Entrapping Roots^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your feet become entwined.^ is entrapped by roots.^The roots fall from your feet.
 1609^Manaskin^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your skin gleams with an incandescent glow.^'s skin gleams with an incandescent glow.^Your skin returns to normal.
 1610^Shield of the Magi^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel armored.^^Your shielding fades.
-1611^Gold of the Heavens^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Droplets of molten gold rain down on you.^ is covered in molten gold.^
+1611^Gold of the Heavens^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Droplets of molten gold rain down on you.^ is showered with droplets of molten gold.^
 1612^Quivering Veil of A`han^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are surrounded by the Quivering Veil of A`han.^ has been surrounded by the Quivering Veil of A`han.^Your invulnerability fades.
 1613^Deflux^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel your life force drain away.^ staggers.^
 1614^Chill Bones^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel your skin harden and crack from the frost.^'s skin freezes and cracks off.^
@@ -2755,7 +2755,7 @@
 2754^Frenzied Burnout^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ enters an accelerated frenzy.^
 2755^Lifeburn^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You life force burns away.^ staggers.^The burning ends.
 2756^Shock of Rust^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are blasted by Rust!^ is blasted by Rust!^
-2757^Wave of Revulsion^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel an overwhelming sense of revulsion as you run in fea^ feels an overwhelming sense of revulsion as they run in fear.^The revulsion subsides.
+2757^Wave of Revulsion^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel an overwhelming sense of revulsion as you run in fear.^ feels an overwhelming sense of revulsion as they run in fear.^The revulsion subsides.
 2758^Rust^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are covered in rusting lesions.^ is covered in rusting lesions.^
 2759^Undead Pact^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ has been bound by an unbreakable pact.^
 2760^Servant of Nature^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ becomes a servant of nature.^
@@ -3646,7 +3646,7 @@
 3645^Liquid Lead Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been poisoned.^ is poisoned.^
 3646^Frenzy Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been poisoned.^ is poisoned.^
 3647^Savage Frenzy Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been poisoned.^ is poisoned.^
-3648^Mind Assault Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been poisoned.^ is poisoned.^
+3648^Mind Assault Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your mind has been poisoned.^ 's mind is assaulted by poison.^
 3649^Mind Lock Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been poisoned.^ is poisoned.^
 3650^Greater Mind Lock Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been poisoned.^ is poisoned.^
 3651^Alter Plane: Fire^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ fades away.^
@@ -3673,7 +3673,7 @@
 3672^Marlow's Touch^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel your life force drain away.^ staggers.^
 3673^Arrhythmia^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your heartbeat becomes irregular.^ clutches their chest.^Your heartbeat steadies.
 3674^Heart Panic^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your heartbeat becomes irregular.^ clutches their chest.^Your heartbeat steadies.
-3675^Shiritri's Favor^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are cursed by Shiritri!^ is cursed by Shiritri!^The blessing of Shiritri fades.
+3675^Shiritri's Favor^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are cursed by Shiritri!^ is cursed by Shiritri!^The curse of Shiritri fades.
 3676^Illusion: Yiv Goblin^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^Your illusion fades.
 3677^Illusion: Forest^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^Your illusion fades.
 3678^Neurotoxic Twinge^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A warm tingle rushes to your head.^^The poison has run it's course.
@@ -3801,7 +3801,7 @@
 3850^Flame Ward^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A fiery ward surrounds you.^^
 3851^Mending Flames^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Mending flames cleanse your wounds.^^
 3852^Infernal Healing^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are surrounded by healing flames^ is surrounded by healing flames.^
-3853^Charging Gore^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are struck backwards by the chargers horn.^^
+3853^Charging Gore^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are struck backwards by the charging beast.^^
 3854^Majesty of the Djar^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your wounds are cleansed by the majesty of the Djar.^^
 3855^Distracting Sparks^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Sparks dazzle before your eyes.^ blinks.^
 3856^Unsheath^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
@@ -3815,7 +3815,7 @@
 3864^Fiery Destruction^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your skin is scorched by a torrent of flames.^^
 3865^Assemble^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 3866^Control Burning Spirit^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
-3867^Heat1^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+3867^Heat1^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ heats up dramatically.^
 3868^Scorith's Cremation^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your skin ignites.^^
 3869^Control Greater Burning Spirit^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 3870^Flame of the Legion^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are engulfed in savage flames.^ is engulfed in savage flame.^
@@ -3889,7 +3889,7 @@
 3943^Companion Enhancement VIII^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 3944^Mind Edacity^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your body aches as your mind clears.^ winces.^
 3945^Runic: Cascading Vim^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are surrounded by an aura of intense empathy^'s body is surrounded by a healing light.^athy fades.
-3946^Intensify^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Bolts of electricty fork throughout your body.^ jolts as their electric charge intensifies.^
+3946^Barrier of the Gruplok^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your skin gleams with an incandescent glow.^'s skin gleams with an incandescent glow.^
 3947^Runic: Sphere of Eternity^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You channel a transcendent light.^ is bathed in a transcendent light.^
 3948^Runic: Hierophant's Acolyte^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ calls forth an acolyte of the Hierophant.^
 3949^Runic: Avatar of Destruction^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A friendly presence settles into your mind.^ has become an Avatar of Destruction.^The presence fades.
@@ -4101,6 +4101,7 @@
 4156^Epidemic^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You begin withering away.^ withers away.^You feel better.
 4157^Embrace of the Crypt^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Death embraces you.^ is embraced by deathly arms.^
 4158^Whispers of the Tomb^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Death whispers in you ear.^ cringes from the whispers of Death.^
+4159^Chip Away^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ begins to chip away.^
 4200^Semblance of the Roll Master^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^
 4201^Skeletal Visage^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^
 4202^Skeletal Visage^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^
@@ -4126,6 +4127,24 @@
 4250^Comet Storm^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your skin is rent by massive shards of deadly ice.^'s skin is rent by massive shards of deadly ice.^
 4251^Demi Lich^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel the skin peel from your bones.^'s skin peels away.^Your flesh returns.
 4252^Consume Knowledge^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+4253^Daemonbolt^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel your skin singe as a daemonbolt slams into you.^ singes as the daemon hits them.^
+4254^Solarflare^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are struck by a flare of sunlight.^ is struck by a flare of sunlight.^Your sight returns.
+4255^Sanguina^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel your life force drain away.^ staggers.^
+4256^Incendium^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your blood ignites.^'s blood ignites.^Your blood cools.
+4257^Scorch Mana^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel a bit dispelled.^ feels a bit dispelled.^
+4258^Sanguine Incineration^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel your life force burn away.^ staggers.^
+4259^Bloodfire^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+4260^Illusion: Bloodfire Elemental^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^Your illusion fades.
+4261^Stomp^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A stomping foot slams into you. ^ is slammed by a hefty stomp.^
+4262^Carrion Rot^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your flesh begins to rot.^'s flesh begins to rot.^Your flesh returns to normal.
+4263^Leaf Storm^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are barraged by leaves.^ is assaulted by leaves.^
+4264^Hurricane Slash^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are sliced by a torrent of wind.^ is sliced by a torrent of wind.^
+4265^Crescent Strike^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are slammed by a crescent.^ is slammed by a crescent.^
+4266^Unholy Terror^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ is filled with unholy terror.^
+4267^Shadeslice^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+4268^Gruplok Getaway^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are concussed.^ is concussed.^
+4269^Glorious Bravado^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+4270^Powersurge^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4300^Elemental Form: Ice^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel an icy power overtake your body.^ assumes an icy form.^Your elemental power fades.
 4301^Frozen Aura^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are engulfed in an aura of pure cold.^ is overcome by an icy aura.^
 4302^Gather Shards^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^The crystal glows as you remove many shards.^ gathers crystalline shards of ice.^
@@ -4305,7 +4324,7 @@
 4483^Hooptyhork!^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4484^Splurting Pet Speed^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ is surrounded by an ever-increasing aura of speed.^
 4485^Circle of Flames^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are seared by a furious imp.^ is seared by the Imp's Fury.^
-4486^Fleeing Prey^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+4486^Prey Mark^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4487^Radiant Darkness^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are in the grip of darkness.^ is surrounded by darkness.^Your darkness fades.
 4488^Tentacle Shield^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel shielded.^ looks shielded by tentacles.^Your tentacle shield fades.
 4489^Poison Aura^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^An aura of poison surrounds you.^ is surrounded by an aura of poison.^
@@ -4493,11 +4512,11 @@
 4781^Healing Increment X^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4782^Damage Increment X^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4783^Prismatica^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
-4784^Prismatic Strike^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+4784^Prismatic Strike^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are struck by a prismatic strike.^ is struck by a prismatic strike.^
 4785^Prismatic Flurry^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^Your illusion fades.
 4786^Prismatic Cleave^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4787^Combine Supremacy^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You become superior.^ is imbued with Combine mastery.^
-4788^Voice of Night^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^The booming voice freezes you in fear.^ looks very afraid.^You are no longer afraid.
+4788^Voice of Night^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^The voice of night freezes you in fear.^ looks very afraid.^You are no longer afraid.
 4789^Eradicate Defected^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4790^Warden's Soothing^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^The warden's mist is cast over your body.^'s body is covered with the warden's mist.^The warden's mist fades.
 4791^Searing Exposure^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel the gaze of the rangefinder cast down on you.^^
@@ -4625,7 +4644,7 @@
 4955^Embodiment of Jyre^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4956^Mana Conservation IX^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 4957^Akhevan Hubris^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
-4958^Overshadow^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been eclipsed in darkness^ is eclipsed in darkness.^The eclipse fades.
+4958^Overshadow^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are eclipsed in darkness.^ is eclipsed in darkness.^The eclipse fades.
 4959^Gift of the Void^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel your body pulse with void energy.^'s body pulses with void energy.^The pulsing energy fades.
 4960^Illusion: Treefrog^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^Your illusion fades.
 4961^Shattered Recourse^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
@@ -4664,9 +4683,9 @@
 4994^Yclistinite Powder^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your lungs fill with Yclistinite powder.^ coughs violently.^
 4995^Words of Insanity^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^ the tongue on your wrist begins to talk to you...^^
 4996^Pygmatry: High Gnorlis^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Pure elemental yclistinite settles into your lungs.^^
-4997^Pygmatry: Porelseg^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Purified and ritualized yclistinite dust settles into your lu^^
-4998^Pygmatry: Porgnil^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Purified and ritualized yclistinite dust settles into your lu^^
-4999^Pygmatry: Gnorile^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Purified and ritualized yclistinite dust settles into your lu^^
+4997^Pygmatry: Porelseg^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Purified and ritualized yclistinite dust settles into your lungs.^^
+4998^Pygmatry: Porgnil^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Purified and ritualized yclistinite dust settles into your lungs.^^
+4999^Pygmatry: Gnorile^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Purified and ritualized yclistinite dust settles into your lungs.^^
 5000^Placeholder^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5001^Soulbond^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5002^Reckless Daze^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your rage fades away, leaving you dazed.^ is dazed.^Your confusion fades.
@@ -4734,7 +4753,7 @@
 5066^Mana Conservation X^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5067^Gathering of the Council^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5068^Magic Damage IX^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
-5069^Fire Damage IX^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+5069^Draconic Hellfire^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5070^Cold Damage IX^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5071^Poison Damage IX^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5072^Disease Damage IX^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
@@ -4746,7 +4765,7 @@
 5078^Shield of Orsian^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped by lava.^ is enveloped by flame.^The flames die down.
 5079^Enduring Storm's Power^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Power rushes through your hands.^^
 5080^Mending of the Wake^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel much better.^ feels much better.^
-5081^Red Lightning^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A flash of red pierces in to you.^ is struck by a flash of red. ^
+5081^Red Lightning^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A flash of red pierces into you.^ is struck by a flash of red. ^
 5082^Storm's Acumen^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your eyes tingle.^'s eyes tingle.^Your eyes stop tingling.
 5083^Kezlech's Profane Power^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5084^Spite^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ growls in spite.^
@@ -4764,7 +4783,23 @@
 5096^Song of War^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Images of war enter your thoughts.^^The images fade.
 5097^Boundless Knowledge^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your mind opens.^'s mind opens.^Your mind closes.
 5098^Visage: The Jester^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+5099^Fortification Enhancement X^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5100^Cosmic Kitty Magic!^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^ infuses you with some of that cosmic kitty magic!^^
+5101^Yiv Regeneration^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are covered by a sticky substance.^ is covered in fungus.^You have stopped regenerating.
+5102^Visage: Yiv^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+5103^Rage of Battle^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+5104^Glaciation of Fal^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+5110^Gloom I^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [1]^^
+5111^Gloom II^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [2]^^
+5112^Gloom III^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [3]^^
+5113^Gloom IV^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [4]^^
+5114^Gloom V^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [5]^^
+5115^Gloom VI^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [6]^^
+5116^Gloom VII^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [7]^^
+5117^Gloom VIII^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [8]^^
+5118^Gloom IX^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [9]^^
+5119^Gloom X^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in gloom. [10]^^
+5120^Visage: Gloom Emperor^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel different.^'s image shimmers.^
 5200^Volcanic Regeneration^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You experience fiery renewal.^ undergoes volcanic regeneration.^You have stopped regenerating.
 5201^Blazing Rune^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 5202^Blazing Rune Heal^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
@@ -5174,6 +5209,7 @@
 6295^Beneficial Spell^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 6296^Harpy's Grace^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 6297^Bibliophile^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6499^Summon: Drink^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 6500^Levant^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ steps into the shadows.^
 6501^Crystallized Lake Essence^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^The crystal tears chill you to the bone.^ freezes.^
 6502^Contraction III^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel smaller.^ shrinks.^You return to normal height.
@@ -5241,7 +5277,7 @@
 6564^Synaptic Pulse^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your nerves tense.^ tenses.^
 6565^ueToss^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ is thrown by a sweeping hand.^
 6566^Ice Shards^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ is encased in razor sharp ice.^'s ice encasement fades.
-6567^Ebonward^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Power of one long dead arises within you.^^The barrier fades.
+6567^Ebonward^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A long-dead power arises within you.^^The barrier fades.
 6568^Soul Shear^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 6569^Pulse of Darkness^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your wounds pulse with darkness.^ flinches as pain recoils away from them.^
 6570^Corporeal Laceration^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
@@ -5475,6 +5511,22 @@
 6798^Pool of Venom^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your skin blisters.^'s skin blisters.^
 6799^Pool of Toxins^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your skin blisters.^'s skin blisters.^
 6800^Pool of Acid^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your skin blisters.^'s skin blisters.^
+6801^Arch Lich Recourse^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6885^Equip Companion^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You reach in...^^
+6886^Mass Enchant Verdant Strylite^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You enchant a stack of Verdant Strylite bars.^ enchants a stack of Verdant Strylite bars.^
+6887^Mass Enchant Dragon Ferrite^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You enchant a stack of Dragon Ferrite.^ enchants a stack of Dragon Ferrite.^
+6888^Luring Light Ward^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are protected by a brilliant light!^ is protected by a brilliant light!^The brilliant light fades.
+6889^Gan Stardust^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6890^Aelwynn's Whisper^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6891^Tempered Fury^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6892^Grace of an Ox^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your feet leave the ground.^ floats into the air.^You can no longer levitate.
+6893^Motion Breach^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6894^Arrows of Wrath^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You fire each arrow with a vengeance.^^
+6895^Greater Banshee Aura^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A shrieking aura surrounds you.^ is surrounded by a shrieking aura.^The shrieking aura fades.
+6896^Tormentor's Hounds^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6897^Father's Mercy^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are enveloped in the Father's Mercy.^ is enveloped in the Father's Mercy.^
+6898^Smothering Waters^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel drowsy.^ yawns.^You feel less drowsy.
+6899^Chromatic Mirage^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your flesh is carved by a brilliant mirage.^ is carved by a brilliant mirage.^
 6901^Burst of Vigor^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 6902^Fair Fight^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 6903^Ghostbomb!^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are haunted by a ghost!^ is haunted by a ghost!^
@@ -5508,7 +5560,7 @@
 6931^Detonate Recourse^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Constant burning waves of agony crash against your body from the explosion.^ doubles over in burning pain.^
 6932^Smokescreen^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your sight is blocked by a mass of falling ashes.^ is blinded by ashes.^Your sight returns.
 6933^Hyperfocused Antimagic Shield^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ is guarded by a near impenetrable magical rune.^
-6934^Use^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6934^Use Whistle^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 6935^Roar of the Inferno^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are flung back helplessly by a deafening roar.^is flung back by a deafening roar.^
 6936^Bloodcurdling Psionic Scream^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^A psionic scream rends your flesh, draining you of the will to go on.^ staggers from the impact of a psionic scream.^
 6937^DUMMY SPELL^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
@@ -5536,7 +5588,7 @@
 6959^Reverse Cleats^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your feet ache.^^Your feet stop aching.
 6960^Fell Wraith^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your very being is penetrated by tendrils of darkness.^ is enshrouded in darkness, taking on the appearance of a banshee.^
 6961^Chilling Venom^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^An icy venom halts your bloodflow and chills your body to the core..^ is tainted with chilling venom.^The poison has run its course.
-6962^Chilling Venom Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^As the chilling venom is injected a second time, it reaches your heart...^ 's body convulses as chilling venom reaches their heart..^
+6962^Chilling Venom Effect^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^As the chilling venom is injected a second time, it reaches your heart...^'s body convulses as chilling venom reaches their heart..^
 6963^Chilling Toxins^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 6964^Mark of the Lightless^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been marked by the void.^ has been marked by the void.^
 6965^Mark of the Void^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You have been marked by the void.^ has been marked by the void.^
@@ -5571,6 +5623,9 @@
 6994^Cloud of Steam^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are blinded by a searing cloud of steam.^ is blinded by a searing cloud of steam.^Your sight returns.
 6995^Breath of the Skies^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You gasp for air but find nothing.^ gasps for air but finds nothing.^You are no longer stunned.
 6996^Healing of the Vineyard^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Vines extend over your body.^ is enveloped in vines.^The vines recede.
+6997^Chloroflurry^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are blasted with a flurry of chlorophyll.^ is blasted with flurry chlorophyll.^
+6998^Detect Weakness^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
+6999^Harvest Shojarian Produce^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 7000^Attack Stance^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You enter an aggressive combat stance.^ assumes an aggressive combat stance.^
 7001^Defend Stance^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You enter a defensive combat stance.^ assumes a defensive combat stance.^
 7002^Vindicate Stance^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You defend yourself with supreme skill.^ defends themselves with supreme skill.^
@@ -5615,9 +5670,9 @@
 7041^Razor's Kiss V^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You stiffen as a blade thuds into you.^ stiffens as a blade thuds into them.^
 7042^Razor's Kiss VI^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You stiffen as a blade thuds into you.^ stiffens as a blade thuds into them.^
 7043^Razor's Kiss VII^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You stiffen as a blade thuds into you.^ stiffens as a blade thuds into them.^
-7044^Impish Antics I^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^ ^
-7045^Impish Antics II^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^ ^
-7046^Impish Antics III^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^ ^
+7044^Impish Antics I^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ ^
+7045^Impish Antics II^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ ^
+7046^Impish Antics III^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ ^
 7047^Poison Trap I^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 7048^Poison Dart I^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^ starts to pale.^
 7049^Poison Trap II^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
@@ -5830,7 +5885,7 @@
 7513^Oliawen's Burning Trill^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are overcome with heat.^ is overcome with heat.^The heat fades. 
 7514^Oliawen's Chilling Trill^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You are overcome by cold. ^ is overcome by cold.^The cold fades. 
 7515^Focused Blade^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You become one with your weapon.^ becomes one with their weapon. ^
-7516^Mystic Overture^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^^Your sharpness fades. 
+7516^Mystic Overture^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your mind sharpens.^^Your sharpness fades. 
 7517^Harmonic Aegis^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^The harmony surrounds you.^^The harmony fades.
 7518^Sympathy^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel better.^ feels better.^
 7519^Runic: Rousing Anthem^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^You feel inspired.^^Your inspiration fades.
@@ -5919,6 +5974,7 @@
 7602^Inspired Healing^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 7603^Runic: Inspire Faith^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your faith brings hope.^'s faith brings hope.^
 7604^Inspire Belief^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^Your belief brings hope.^'s belief brings hope.^
+7605^__^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 7800^Aura of the Mystic^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^
 7801^Winter's Lingering Grip^0^0^0^0^5^0^1^0^0^0^0^0^0^1^1^^^Winter's lingering grip releases.
 7802^Denon's Dissonant Duet Effect^0^0^0^0^5^0^0^0^0^0^0^0^0^1^1^^^

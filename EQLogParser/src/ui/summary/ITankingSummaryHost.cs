@@ -27,8 +27,8 @@ namespace EQLogParser
   {
     public event Action<bool> EventsClearedActiveData
     {
-      add => DataManager.Instance.EventsClearedActiveData += value;
-      remove => DataManager.Instance.EventsClearedActiveData -= value;
+      add => FightManager.Instance.EventsClearedActiveData += value;
+      remove => FightManager.Instance.EventsClearedActiveData -= value;
     }
 
     public event Action<string> EventsChartOpened
@@ -54,17 +54,17 @@ namespace EQLogParser
   // and no-ops the chart/selection/copy paths that only make sense for the "current parse".
   internal sealed class RaidDamageTankingHost : ITankingSummaryHost
   {
-    private readonly DataManager _dataManager;
+    private readonly FightManager _fightManager;
 
-    public RaidDamageTankingHost(DataManager dataManager)
+    public RaidDamageTankingHost(FightManager fightManager)
     {
-      _dataManager = dataManager;
+      _fightManager = fightManager;
     }
 
     public event Action<bool> EventsClearedActiveData
     {
-      add => _dataManager.EventsClearedActiveData += value;
-      remove => _dataManager.EventsClearedActiveData -= value;
+      add => _fightManager.EventsClearedActiveData += value;
+      remove => _fightManager.EventsClearedActiveData -= value;
     }
 
     public event Action<string> EventsChartOpened { add { } remove { } }

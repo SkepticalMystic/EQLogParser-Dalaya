@@ -24,8 +24,8 @@ namespace EQLogParser
   {
     public event Action<bool> EventsClearedActiveData
     {
-      add => DataManager.Instance.EventsClearedActiveData += value;
-      remove => DataManager.Instance.EventsClearedActiveData -= value;
+      add => FightManager.Instance.EventsClearedActiveData += value;
+      remove => FightManager.Instance.EventsClearedActiveData -= value;
     }
 
     public event Action<string> EventsChartOpened
@@ -52,17 +52,17 @@ namespace EQLogParser
   // the "current parse".
   internal sealed class RaidDamageHealingHost : IHealingSummaryHost
   {
-    private readonly DataManager _dataManager;
+    private readonly FightManager _fightManager;
 
-    public RaidDamageHealingHost(DataManager dataManager)
+    public RaidDamageHealingHost(FightManager fightManager)
     {
-      _dataManager = dataManager;
+      _fightManager = fightManager;
     }
 
     public event Action<bool> EventsClearedActiveData
     {
-      add => _dataManager.EventsClearedActiveData += value;
-      remove => _dataManager.EventsClearedActiveData -= value;
+      add => _fightManager.EventsClearedActiveData += value;
+      remove => _fightManager.EventsClearedActiveData -= value;
     }
 
     public event Action<string> EventsChartOpened { add { } remove { } }

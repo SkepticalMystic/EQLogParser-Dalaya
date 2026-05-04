@@ -34,15 +34,15 @@ namespace EQLogParser
       fightsGrid.ItemsSource = _fights;
 
       _damageSummary = new DamageSummary(
-        _statsContext.DamageStatsManager,
-        new RaidDamageHost(_statsContext.DataManager),
+        _statsContext.DamageStatsBuilder,
+        new RaidDamageHost(_statsContext.FightManager),
         "RaidDamageSummaryColumns");
       summaryHost.Content = _damageSummary;
 
       _tankingSummary = new TankingSummary(
-        _statsContext.TankingStatsManager,
-        _statsContext.HealingStatsManager,
-        new RaidDamageTankingHost(_statsContext.DataManager),
+        _statsContext.TankingStatsBuilder,
+        _statsContext.HealingStatsBuilder,
+        new RaidDamageTankingHost(_statsContext.FightManager),
         "RaidDamageTankingSummaryColumns");
       tankingHost.Content = _tankingSummary;
 
@@ -101,7 +101,7 @@ namespace EQLogParser
       };
       source.StatusText = "(parsing...)";
 
-      source.Context.DataManager.EventsNewFight += (_, fight) => source.AddFight(fight);
+      source.Context.FightManager.EventsNewFight += fight => source.AddFight(fight);
 
       _sources.Add(source);
       UpdateFooterStatus();
@@ -139,7 +139,7 @@ namespace EQLogParser
         {
           continue;
         }
-        processor.ProcessSync(line, DateUtil.ToDouble(dt));
+        processor.ProcessSync(line, DateUtil.ToDotNetSeconds(dt));
       }
     }
 
@@ -222,8 +222,8 @@ namespace EQLogParser
       {
         // BuildTotalStats with no Npcs drives each embedded summary to the "No NPCs" state
         // via the NONPC event path. No need to touch the controls directly.
-        Task.Run(() => _statsContext.DamageStatsManager.BuildTotalStats(new GenerateStatsOptions()));
-        Task.Run(() => _statsContext.TankingStatsManager.BuildTotalStats(new GenerateStatsOptions()));
+        Task.Run(() => _statsContext.DamageStatsBuilder.BuildTotalStats(new GenerateStatsOptions()));
+        Task.Run(() => _statsContext.TankingStatsBuilder.BuildTotalStats(new GenerateStatsOptions()));
         mergeStatus.Text = "";
         return;
       }
@@ -249,13 +249,13 @@ namespace EQLogParser
       // pet→owner mappings that accumulated during the current live session. Without this,
       // DamageStatsManager.UpdatePetMapping fails to find owners and pets show as their own
       // top-level rows instead of rolling into "OwnerName +Pets" aggregates.
-      _statsContext.PlayerManager.SeedFrom(PlayerManager.Instance);
+      _statsContext.PlayerRegistry.SeedFrom(PlayerRegistry.Instance);
 
       // Run on background thread — BuildTotalStats does meaningful work and fires events
       // that route through each embedded summary's subscription. Tanking uses the same fight
       // list but reads fight.TankingBlocks / TankSegments internally, so the options are shared.
-      Task.Run(() => _statsContext.DamageStatsManager.BuildTotalStats(options));
-      Task.Run(() => _statsContext.TankingStatsManager.BuildTotalStats(options));
+      Task.Run(() => _statsContext.DamageStatsBuilder.BuildTotalStats(options));
+      Task.Run(() => _statsContext.TankingStatsBuilder.BuildTotalStats(options));
 
       mergeStatus.Text = $"{selectedFights.Count} fight{(selectedFights.Count == 1 ? "" : "s")} selected";
     }

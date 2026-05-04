@@ -79,7 +79,7 @@ namespace EQLogParser
         IsHitTestVisible = false;
       }
 
-      TriggerStateManager.Instance.TriggerUpdateEvent += TriggerUpdateEvent;
+      TriggerStateDB.Instance.TriggerUpdateEvent += TriggerUpdateEvent;
     }
 
     internal void DoPreview()
@@ -101,7 +101,7 @@ namespace EQLogParser
         _timerList.Add(timerData);
         _newData = true;
 
-        if (timerData.TimerType == 2)
+        if (timerData.TimerType == 2 || timerData.DurationSeconds < 10)
         {
           _newShortTickData = true;
         }
@@ -112,9 +112,24 @@ namespace EQLogParser
           startLoop = true; // decide under the lock
         }
       }
-      finally
+      catch (Exception ex)
+      {
+        Log.Debug("Error starting timer", ex);
+        _timerList.Remove(timerData);
+        _newData = false;
+        _newShortTickData = false;
+        _isRendering = false;
+        _renderSemaphore.Release();
+        return;
+      }
+
+      try
       {
         _renderSemaphore.Release();
+      }
+      catch
+      {
+        // ignore release errors
       }
 
       if (startLoop)
@@ -126,6 +141,9 @@ namespace EQLogParser
 
     internal async Task StopTimerAsync(TimerData timerData)
     {
+      if (_isClosed)
+        return;
+
       await _renderSemaphore.WaitAsync();
 
       try
@@ -778,7 +796,7 @@ namespace EQLogParser
       saveButton.IsEnabled = false;
       cancelButton.IsEnabled = false;
       closeButton.IsEnabled = true;
-      await TriggerStateManager.Instance.Update(_node);
+      await TriggerStateDB.Instance.Update(_node);
     }
 
     private void CancelClick(object sender, RoutedEventArgs e)
@@ -889,7 +907,7 @@ namespace EQLogParser
         _isRendering = false;
         _newData = false;
         _newShortTickData = false;
-        TriggerStateManager.Instance.TriggerUpdateEvent -= TriggerUpdateEvent;
+        TriggerStateDB.Instance.TriggerUpdateEvent -= TriggerUpdateEvent;
         _previewWindows?.Remove(_node.Id);
         _previewWindows = null;
         await Task.Delay(750);

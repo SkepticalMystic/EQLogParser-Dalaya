@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using EQLogParser.Audio;
+using log4net;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -59,7 +60,8 @@ namespace EQLogParser
     private Task _mainTask;
     private Task _speakTask;
     private long _activityLastTicks;
-    private LineData _previous;
+    private const int MaxPreviousLines = 5000;
+    private readonly LinkedList<LineData> _previousLines = [];
     private bool _isTesting;
 
     internal TriggerProcessor(string id, string name, string playerName, string voice, int voiceRate,
@@ -76,8 +78,8 @@ namespace EQLogParser
       _voiceRate = voiceRate;
       _playerVolume = playerVolume;
       AudioManager.Instance.Add(CurrentCharacterId, voice);
-      TriggerStateManager.Instance.LexiconUpdateEvent += LexiconUpdateEvent;
-      TriggerStateManager.Instance.TrustedPlayersUpdateEvent += TrustedPlayersUpdateEvent;
+      TriggerStateDB.Instance.LexiconUpdateEvent += LexiconUpdateEvent;
+      TriggerStateDB.Instance.TrustedPlayersUpdateEvent += TrustedPlayersUpdateEvent;
     }
 
     internal long GetActivityLastTicks() => Interlocked.Read(ref _activityLastTicks);
@@ -94,8 +96,8 @@ namespace EQLogParser
     internal async Task StartAsync()
     {
       await GetActiveTriggersAsync();
-      _lexicon = TriggerUtil.ToLexiconDictionary(await TriggerStateManager.Instance.GetLexicon());
-      _trustedPlayers = [.. await TriggerStateManager.Instance.GetTrustedPlayers()];
+      _lexicon = TriggerUtil.ToLexiconDictionary(await TriggerStateDB.Instance.GetLexicon());
+      _trustedPlayers = [.. await TriggerStateDB.Instance.GetTrustedPlayers()];
     }
 
     internal async Task<List<string>> GetEnabledTriggersAsync()
@@ -119,7 +121,7 @@ namespace EQLogParser
 
       try
       {
-        AudioManager.Instance.Stop(CurrentCharacterId, remove);
+        AudioManager.Instance.StopAudio(CurrentCharacterId, remove);
 
         foreach (var kv in _timerLists)
         {
@@ -143,7 +145,7 @@ namespace EQLogParser
     public void LinkTo(BlockingCollection<LogReaderItem> collection)
     {
       // delay start until log is ready
-      AudioManager.Instance.Start(CurrentCharacterId);
+      AudioManager.Instance.StartAudio(CurrentCharacterId);
 
       _chatTask = Task.Run(() =>
       {
@@ -290,7 +292,7 @@ namespace EQLogParser
         foreach (var wrapper in _activeTriggersById.Values)
         {
           if (CheckLine(wrapper, lineData, out var matches, out var dynamicDuration, out var swTime) &&
-              CheckPreviousLine(wrapper, _previous, out var previousMatches, out var previousSwTime))
+              CheckPreviousLine(wrapper, _previousLines, lineData.BeginTime, out var previousMatches, out var previousSwTime))
           {
             swTime += previousSwTime;
             await HandleTriggerAsync(wrapper, lineData, matches, previousMatches, dynamicDuration, swTime, beginTicks);
@@ -314,7 +316,11 @@ namespace EQLogParser
       }
       finally
       {
-        _previous = lineData;
+        _previousLines.AddLast(lineData);
+        while (_previousLines.Count > MaxPreviousLines)
+        {
+          _previousLines.RemoveFirst();
+        }
         _activeTriggerSemaphore.Release();
       }
 
@@ -397,21 +403,61 @@ namespace EQLogParser
       return found;
     }
 
-    private static bool CheckPreviousLine(TriggerWrapper wrapper, LineData lineData, out Dictionary<string, string> matches, out long swTime)
+    internal static bool CheckPreviousLine(TriggerWrapper wrapper, LinkedList<LineData> previousLines, double currentBeginTime, out Dictionary<string, string> matches, out long swTime)
     {
-      var found = true;
-      swTime = 0;
       matches = null;
+      swTime = 0;
 
+      // No previous-line constraint configured: pass.
+      if (wrapper.PreviousRegex == null && string.IsNullOrEmpty(wrapper.ModifiedPreviousPattern))
+      {
+        return true;
+      }
+
+      // Constraint exists but we have nothing to compare against yet.
+      if (previousLines == null || previousLines.Count == 0)
+      {
+        return false;
+      }
+
+      var window = wrapper.TriggerData?.PreviousLineWindowSeconds ?? 0;
+
+      // Legacy behavior: only inspect the line directly before the current one.
+      if (window <= 0)
+      {
+        return MatchPreviousLine(wrapper, previousLines.Last!.Value, out matches, out swTime);
+      }
+
+      // Walk newest -> oldest, accept the first match within the window.
+      // The walk short-circuits on time, so its cost is bounded by the window, not the buffer.
+      for (var node = previousLines.Last; node != null; node = node.Previous)
+      {
+        if (currentBeginTime - node.Value.BeginTime > window) break;
+        if (MatchPreviousLine(wrapper, node.Value, out matches, out swTime))
+        {
+          return true;
+        }
+        if (wrapper.IsDisabled) return false;
+      }
+
+      return false;
+    }
+
+    private static bool MatchPreviousLine(TriggerWrapper wrapper, LineData lineData, out Dictionary<string, string> matches, out long swTime)
+    {
+      matches = null;
+      swTime = 0;
+
+      if (string.IsNullOrEmpty(lineData?.Action))
+      {
+        return false;
+      }
 
       long ts0;
+      var found = false;
+
       if (wrapper.PreviousRegex != null)
       {
-        if (string.IsNullOrEmpty(lineData?.Action))
-        {
-          return false;
-        }
-
         ts0 = Stopwatch.GetTimestamp();
         var success = false;
 
@@ -448,11 +494,6 @@ namespace EQLogParser
       }
       else if (!string.IsNullOrEmpty(wrapper.ModifiedPreviousPattern))
       {
-        if (string.IsNullOrEmpty(lineData?.Action))
-        {
-          return false;
-        }
-
         ts0 = Stopwatch.GetTimestamp();
         found = lineData.Action.Contains(wrapper.ModifiedPreviousPattern, StringComparison.OrdinalIgnoreCase);
         if (found) swTime = Stopwatch.GetTimestamp() - ts0;
@@ -707,7 +748,7 @@ namespace EQLogParser
 
         if (wrapper.HasLogTimeText)
         {
-          updatedDisplayText = updatedDisplayText.Replace(LogTimeCode, DateUtil.FormatSeconds(lineData.BeginTime), StringComparison.OrdinalIgnoreCase);
+          updatedDisplayText = updatedDisplayText.Replace(LogTimeCode, DateUtil.FormatDotNetTimeSeconds(lineData.BeginTime), StringComparison.OrdinalIgnoreCase);
         }
 
         await AddTextAsync(wrapper.TriggerData, updatedDisplayText);
@@ -730,7 +771,7 @@ namespace EQLogParser
         {
           if (wrapper.HasLogTimeSendToChat)
           {
-            updatedSendToChatText = updatedSendToChatText.Replace(LogTimeCode, DateUtil.FormatSeconds(lineData.BeginTime), StringComparison.OrdinalIgnoreCase);
+            updatedSendToChatText = updatedSendToChatText.Replace(LogTimeCode, DateUtil.FormatDotNetTimeSeconds(lineData.BeginTime), StringComparison.OrdinalIgnoreCase);
           }
           _ = MainActions.SendDiscordMessage(updatedSendToChatText, wrapper.TriggerData.ChatWebhook);
         }
@@ -854,7 +895,7 @@ namespace EQLogParser
 
       if (wrapper.HasLogTimeTimer)
       {
-        newTimerData.LogTime = DateUtil.FormatSeconds(lineData.BeginTime);
+        newTimerData.LogTime = DateUtil.FormatDotNetTimeSeconds(lineData.BeginTime);
       }
 
       // save line data if repeating timer
@@ -873,7 +914,7 @@ namespace EQLogParser
         {
           try
           {
-            await Task.Delay((int)diff * 1000, warningToken);
+            await Task.Delay((int)(diff * 1000), warningToken);
           }
           catch (OperationCanceledException)
           {
@@ -1119,7 +1160,7 @@ namespace EQLogParser
 
             if (speak.Wrapper.HasLogTimeSpeak && speak.BeginTime > 0)
             {
-              tts = tts.Replace(LogTimeCode, DateUtil.FormatSeconds(speak.BeginTime), StringComparison.OrdinalIgnoreCase);
+              tts = tts.Replace(LogTimeCode, DateUtil.FormatDotNetTimeSeconds(speak.BeginTime), StringComparison.OrdinalIgnoreCase);
             }
           }
 
@@ -1162,7 +1203,7 @@ namespace EQLogParser
 
       var requiredOverlayIds = new HashSet<string>(StringComparer.Ordinal);
       var activeTriggersById = new Dictionary<string, TriggerWrapper>();
-      var enabledTriggers = await TriggerStateManager.Instance.GetEnabledTriggers(CurrentCharacterId);
+      var enabledTriggers = await TriggerStateDB.Instance.GetEnabledTriggers(CurrentCharacterId);
       long triggerCount = 0;
 
       foreach (var enabled in enabledTriggers)
@@ -1662,8 +1703,8 @@ namespace EQLogParser
       _ready = false;
       await StopTriggersAsync(true).ConfigureAwait(false);
 
-      TriggerStateManager.Instance.LexiconUpdateEvent -= LexiconUpdateEvent;
-      TriggerStateManager.Instance.TrustedPlayersUpdateEvent -= TrustedPlayersUpdateEvent;
+      TriggerStateDB.Instance.LexiconUpdateEvent -= LexiconUpdateEvent;
+      TriggerStateDB.Instance.TrustedPlayersUpdateEvent -= TrustedPlayersUpdateEvent;
       _triggerLogCollection.CompleteAdding();
       _chatCollection.CompleteAdding();
       _speakCollection.CompleteAdding();

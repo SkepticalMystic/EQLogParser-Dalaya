@@ -1,3 +1,4 @@
+using EQLogParser.Audio;
 using log4net;
 using log4net.Appender;
 using log4net.Config;
@@ -106,6 +107,7 @@ namespace EQLogParser
         ConfigUtil.UpdateStatus($"RenderMode: {RenderOptions.ProcessRenderMode}");
 
         ConfigUtil.UpdateStatus("Validating Installed Voices");
+        EQLogParser.Audio.AudioManager.Initialize(AppCache);
         await LoadVoicesSafe();
 
         await ShowMain();
@@ -120,10 +122,11 @@ namespace EQLogParser
     protected override async void OnExit(ExitEventArgs e)
     {
       await TriggerManager.Instance.StopAsync();
-      await TriggerStateManager.Instance.Dispose();
+      await TriggerStateDB.Instance.Dispose();
 
       AudioManager.Instance.Dispose();
       AppCache.Dispose();
+      LifecycleManager.Shutdown();
       base.OnExit(e);
     }
 
@@ -253,7 +256,7 @@ namespace EQLogParser
         main.ConnectLocationChanged();
 
         // Start archive schedule if configured
-        FileUtil.SetArchiveSchedule();
+        LogArchiveManager.SetArchiveSchedule();
         ConfigUtil.UpdateStatus("Done");
 
         await Task.Run(async () =>

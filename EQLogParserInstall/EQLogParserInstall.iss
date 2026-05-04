@@ -6,7 +6,7 @@
 #endif
 
 #define MyAppName "EQLogParser-Dalaya"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.7"
 #define MyAppPublisher "SkepticalMystic"
 #define MyAppURL "https://github.com/SkepticalMystic/EQLogParser-Dalaya"
 #define MyAppExeName "EQLogParser-Dalaya.exe"
@@ -64,6 +64,7 @@ Source: "{#MyReleaseDir}\DotLiquid.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\EQLogParser-Dalaya.deps.json"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\EQLogParser-Dalaya.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\EQLogParser-Dalaya.runtimeconfig.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyReleaseDir}\EQLogParser.Audio.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\FontAwesome5.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\FontAwesome5.Net.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyReleaseDir}\LiteDB.dll"; DestDir: "{app}"; Flags: ignoreversion

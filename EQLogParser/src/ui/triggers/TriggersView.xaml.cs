@@ -1,4 +1,5 @@
-﻿using Syncfusion.Windows.PropertyGrid;
+﻿using EQLogParser.Audio;
+using Syncfusion.Windows.PropertyGrid;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -96,7 +97,6 @@ namespace EQLogParser
         "TimerType", "HorizontalAlignment", "VerticalAlignment", "VoiceRate", "Volume");
       AddEditor<WrapTextEditor>("EndEarlyTextToDisplay", "EndTextToDisplay", "TextToDisplay", "TextToShare",
         "WarningTextToDisplay", "Comments", "OverlayComments", "TextToSendToChat", "ChatWebhook");
-      AddEditorInstance(new RangeEditor(typeof(double), 0.2, 2.0), "DurationSeconds");
       AddEditorInstance(new TextSoundEditor(fileList), "SoundOrText");
       AddEditorInstance(new TextSoundEditor(fileList), "EndEarlySoundOrText");
       AddEditorInstance(new TextSoundEditor(fileList), "EndSoundOrText");
@@ -107,12 +107,13 @@ namespace EQLogParser
       AddEditorInstance(new RangeEditor(typeof(long), 1, 99999), "TimesToLoop");
       AddEditorInstance(new RangeEditor(typeof(double), 0, 99999), "RepeatedResetTime");
       AddEditorInstance(new RangeEditor(typeof(double), 0, 99999), "LockoutTime");
-      AddEditorInstance(new DurationEditor(2), "DurationTimeSpan");
+      AddEditorInstance(new RangeEditor(typeof(double), 0, 300), "PreviousLineWindowSeconds");
+      AddEditorInstance(new AdaptiveDurationEditor(), "DurationSeconds");
       AddEditorInstance(new RangeEditor(typeof(long), 1, 99999), "FadeDelay");
 
       // don't disconnect these so tree stays in-sync if hidden
-      TriggerStateManager.Instance.OverlayImportEvent += OverlayImportEvent;
-      TriggerStateManager.Instance.TriggerImportEvent += TriggerImportEvent;
+      TriggerStateDB.Instance.OverlayImportEvent += OverlayImportEvent;
+      TriggerStateDB.Instance.TriggerImportEvent += TriggerImportEvent;
       AudioManager.Instance.DeviceListChanged += AudioDeviceListChanged;
       MainActions.EventsThemeChanged += EventsThemeChanged;
       return;
@@ -176,7 +177,7 @@ namespace EQLogParser
 
     private async void TriggersViewOnInitialized(object sender, EventArgs e)
     {
-      if (await TriggerStateManager.Instance.GetConfig() is { } config)
+      if (await TriggerStateDB.Instance.GetConfig() is { } config)
       {
         characterView.SetConfig(config);
         await UpdateConfig(config);
@@ -308,7 +309,7 @@ namespace EQLogParser
       {
         _theConfig.IsEnabled = checkBox.IsChecked == true;
         await TriggerManager.Instance.StopTriggersAsync();
-        await TriggerStateManager.Instance.UpdateConfig(_theConfig);
+        await TriggerStateDB.Instance.UpdateConfig(_theConfig);
       }
     }
 
@@ -357,7 +358,7 @@ namespace EQLogParser
           basicCheckBox.Visibility = Visibility.Visible;
         }
 
-        await TriggerStateManager.Instance.UpdateConfig(_theConfig);
+        await TriggerStateDB.Instance.UpdateConfig(_theConfig);
       }
     }
 
@@ -403,9 +404,9 @@ namespace EQLogParser
       {
         voices.Visibility = Visibility.Visible;
         rateOption.Visibility = Visibility.Visible;
-        if (_currentCharacterId != TriggerStateManager.DefaultUser)
+        if (_currentCharacterId != TriggerStateDB.DefaultUser)
         {
-          _currentCharacterId = TriggerStateManager.DefaultUser;
+          _currentCharacterId = TriggerStateDB.DefaultUser;
           generalPropertyGrid.SelectedObject = null;
           secondaryPropertyGrid.SelectedObject = null;
           await theTreeView.EnableAndRefreshTriggers(true, _currentCharacterId);
@@ -458,14 +459,14 @@ namespace EQLogParser
             if (voices.SelectedValue is string voiceName)
             {
               _theConfig.Voice = voiceName;
-              await TriggerStateManager.Instance.UpdateConfig(_theConfig);
+              await TriggerStateDB.Instance.UpdateConfig(_theConfig);
               tts = voiceName;
             }
           }
           else if (Equals(sender, rateOption))
           {
             _theConfig.VoiceRate = rateOption.SelectedIndex;
-            await TriggerStateManager.Instance.UpdateConfig(_theConfig);
+            await TriggerStateDB.Instance.UpdateConfig(_theConfig);
             tts = rateOption.SelectedIndex == 0 ? "Default Voice Rate" : "Voice Rate " + rateOption.SelectedIndex;
           }
           else if (Equals(sender, volumeSlider))
@@ -562,15 +563,14 @@ namespace EQLogParser
       [
         // Trigger timer categories
         new { Name = timerDurationItem.CategoryName, IsEnabled = trigger && timerType > 0 },
-        new { Name = endEarlyPatternItem.CategoryName, IsEnabled = trigger && timerType > 0 && timerType != 2 },
-        new { Name = warningSecondsItem.CategoryName, IsEnabled = trigger && timerType > 0 && timerType != 2 },
+        new { Name = endEarlyPatternItem.CategoryName, IsEnabled = trigger && timerType > 0 },
+        new { Name = warningSecondsItem.CategoryName, IsEnabled = trigger && timerType > 0 },
         // Overlay categories
         new { Name = idleBrushItem.CategoryName, IsEnabled = isTimerOverlay && cooldownTimer }
       ]);
 
-      resetDurationItem.Visibility = (timerType > 0 && timerType != 2 && timerType != 4) ? Visibility.Visible : Visibility.Collapsed;
-      timerDurationItem.Visibility = (timerType > 0 && timerType != 2) ? Visibility.Visible : Visibility.Collapsed;
-      timerShortDurationItem.Visibility = timerType == 2 ? Visibility.Visible : Visibility.Collapsed;
+      resetDurationItem.Visibility = (timerType > 0 && timerType != 4) ? Visibility.Visible : Visibility.Collapsed;
+      timerDurationItem.Visibility = timerType > 0 ? Visibility.Visible : Visibility.Collapsed;
       loopingTimerItem.Visibility = timerType == 4 ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -649,7 +649,7 @@ namespace EQLogParser
               (trigger.TriggerResetBrush?.Color.ToHexString() != original.ResetColor);
           }
         }
-        else if (args.Property.Name == "DurationTimeSpan" && timerDurationItem.Visibility == Visibility.Collapsed)
+        else if (args.Property.Name == "DurationSeconds" && timerDurationItem.Visibility == Visibility.Collapsed)
         {
           triggerChange = false;
         }
@@ -849,7 +849,7 @@ namespace EQLogParser
       if (model is TriggerPropertyModel triggerModel)
       {
         await TriggerUtil.Copy(triggerModel.Node.TriggerData, model);
-        await TriggerStateManager.Instance.Update(triggerModel.Node);
+        await TriggerStateDB.Instance.Update(triggerModel.Node);
       }
       else
       {
@@ -870,7 +870,7 @@ namespace EQLogParser
         {
           var wasDefault = node.OverlayData?.IsDefault == true;
           await TriggerUtil.Copy(node.OverlayData, model);
-          await TriggerStateManager.Instance.Update(node);
+          await TriggerStateDB.Instance.Update(node);
 
           // if this overlay is changing to default, and it wasn't previously
           // then need to refresh Overlay tree
@@ -989,9 +989,9 @@ namespace EQLogParser
     {
       if (VisualParent != null && !_ready)
       {
-        TriggerStateManager.Instance.DeleteEvent += TriggerOverlayDeleteEvent;
-        TriggerStateManager.Instance.TriggerUpdateEvent += TriggerUpdateEvent;
-        TriggerStateManager.Instance.TriggerConfigUpdateEvent += TriggerConfigUpdateEvent;
+        TriggerStateDB.Instance.DeleteEvent += TriggerOverlayDeleteEvent;
+        TriggerStateDB.Instance.TriggerUpdateEvent += TriggerUpdateEvent;
+        TriggerStateDB.Instance.TriggerConfigUpdateEvent += TriggerConfigUpdateEvent;
         TriggerManager.Instance.EventsSelectTrigger += EventsSelectTrigger;
         TriggerManager.Instance.EventsUpdatingTriggers += EventsUpdatingTriggers;
         characterView.SelectedCharacterEvent += CharacterSelectedCharacterEvent;
@@ -1005,9 +1005,9 @@ namespace EQLogParser
     {
       _previewWindows.Values.ToList().ForEach(window => window.Close());
       _previewWindows.Clear();
-      TriggerStateManager.Instance.DeleteEvent -= TriggerOverlayDeleteEvent;
-      TriggerStateManager.Instance.TriggerUpdateEvent -= TriggerUpdateEvent;
-      TriggerStateManager.Instance.TriggerConfigUpdateEvent -= TriggerConfigUpdateEvent;
+      TriggerStateDB.Instance.DeleteEvent -= TriggerOverlayDeleteEvent;
+      TriggerStateDB.Instance.TriggerUpdateEvent -= TriggerUpdateEvent;
+      TriggerStateDB.Instance.TriggerConfigUpdateEvent -= TriggerConfigUpdateEvent;
       TriggerManager.Instance.EventsSelectTrigger -= EventsSelectTrigger;
       TriggerManager.Instance.EventsUpdatingTriggers -= EventsUpdatingTriggers;
       characterView.SelectedCharacterEvent -= CharacterSelectedCharacterEvent;
