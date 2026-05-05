@@ -31,7 +31,8 @@
       </Border>
       <syncfusion:ToolBarAdv Grid.Row="1" GripperVisibility="Hidden" Background="{DynamicResource ContentBackground}">
         <Button x:Name="addSourceButton" FontSize="{DynamicResource EQContentSize}" MinWidth="50" Margin="0,0,8,0" Padding="4,4,4,4" Click="AddSourceClick">Add</Button>
-        <Button x:Name="removeSourceButton" FontSize="{DynamicResource EQContentSize}" MinWidth="60" Padding="4,4,4,4" IsEnabled="False" Click="RemoveSourceClick">Remove</Button>
+        <Button x:Name="removeSourceButton" FontSize="{DynamicResource EQContentSize}" MinWidth="60" Margin="0,0,8,0" Padding="4,4,4,4" IsEnabled="False" Click="RemoveSourceClick">Remove</Button>
+        <Button x:Name="detectOffsetsButton" FontSize="{DynamicResource EQContentSize}" MinWidth="60" Padding="4,4,4,4" IsEnabled="False" Click="DetectOffsetsClick" ToolTip="Auto-detect timezone offsets between sources by aligning shared fights">Detect</Button>
       </syncfusion:ToolBarAdv>
       <syncfusion:SfDataGrid x:Name="sourcesGrid"
                              Grid.Row="2"
@@ -53,8 +54,15 @@
             <syncfusion:GridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                  <StackPanel.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="Set time offset..." Click="SetOffsetMenuClick" />
+                      <MenuItem Header="Reset offset to 0" Click="ResetOffsetMenuClick" />
+                    </ContextMenu>
+                  </StackPanel.ContextMenu>
                   <CheckBox Margin="8,0,0,0" FocusVisualStyle="{x:Null}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Click="SourceCheckboxClick" />
                   <TextBlock Margin="5,0,0,0" Padding="4,0,4,0" VerticalAlignment="Center" Text="{Binding SourcePlayer}" />
+                  <TextBlock Margin="0,0,0,0" Padding="0,0,4,0" VerticalAlignment="Center" FontWeight="Bold" Foreground="{DynamicResource PrimaryDarken}" Text="{Binding OffsetDisplay}" />
                   <TextBlock Margin="5,0,0,0" Padding="0,0,4,0" VerticalAlignment="Center" FontStyle="Italic" Opacity="0.7" Text="{Binding StatusText}" />
                 </StackPanel>
               </DataTemplate>

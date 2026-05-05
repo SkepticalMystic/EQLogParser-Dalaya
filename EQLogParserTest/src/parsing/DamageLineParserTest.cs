@@ -130,6 +130,57 @@ namespace EQLogParserTest
       Assert.AreEqual(108790u, r.Total);
     }
 
+    [TestMethod]
+    public void DalayaSelfDamage_ResolvesToInjectedPlayerName()
+    {
+      // Multi-log Raid Damage view: each source's parser is given the source player's name
+      // via PlayerManager.PlayerName. "from your X" must resolve to the source's name, not
+      // the live ConfigUtil.PlayerName, otherwise self-cast damage from non-active sources
+      // gets attributed to the live user and dedup against third-person observers fails.
+      var pm = new PlayerManager(autoSave: false);
+      pm.PlayerName = "Ezran";
+      var dlp = new EQLogParser.DamageLineParser(new DataManager(), pm);
+
+      var r = dlp.ParseLine("A gnoll has taken 108790 damage from your Mind Coil Rk. II.");
+      Assert.IsNotNull(r);
+      Assert.AreEqual("A gnoll", r.Defender);
+      Assert.AreEqual("Ezran", r.Attacker, "Self-cast attacker must come from injected PlayerManager.PlayerName");
+      Assert.AreEqual(108790u, r.Total);
+    }
+
+    [TestMethod]
+    public void DalayaSelfDamage_FallsBackToConfigUtilWhenNoOverride()
+    {
+      // When the override isn't set, PlayerManager.PlayerName falls back to ConfigUtil.PlayerName.
+      // Pin this so the live tailing flow keeps working — no caller is required to set the
+      // override explicitly.
+      var pm = new PlayerManager(autoSave: false);
+      // No PlayerName override.
+      var dlp = new EQLogParser.DamageLineParser(new DataManager(), pm);
+
+      var r = dlp.ParseLine("A gnoll has taken 108790 damage from your Mind Coil Rk. II.");
+      Assert.IsNotNull(r);
+      Assert.AreEqual("Selfie", r.Attacker, "Default fallback to ConfigUtil.PlayerName (set in TestInitialize)");
+    }
+
+    [TestMethod]
+    public void TwoIsolatedParsers_DoNotCrossContaminatePlayerName()
+    {
+      // Two isolated parse contexts with different PlayerName overrides must produce attacker
+      // values matching their respective sources. Static state would leak between sources and
+      // break the multi-source merge — guard against that regression.
+      var pmA = new PlayerManager(autoSave: false) { PlayerName = "PlayerA" };
+      var pmB = new PlayerManager(autoSave: false) { PlayerName = "PlayerB" };
+      var dlpA = new EQLogParser.DamageLineParser(new DataManager(), pmA);
+      var dlpB = new EQLogParser.DamageLineParser(new DataManager(), pmB);
+
+      var rA = dlpA.ParseLine("A gnoll has taken 100 damage from your Test Spell.");
+      var rB = dlpB.ParseLine("A gnoll has taken 100 damage from your Test Spell.");
+
+      Assert.AreEqual("PlayerA", rA.Attacker);
+      Assert.AreEqual("PlayerB", rB.Attacker);
+    }
+
     // =============== Misses / dodges / parries / blocks / invulnerable ===============
 
     [TestMethod]

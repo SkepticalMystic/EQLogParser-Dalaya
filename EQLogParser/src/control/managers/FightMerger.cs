@@ -10,6 +10,11 @@ namespace EQLogParser
   {
     public string SourcePlayer { get; init; }
     public List<Fight> Fights { get; init; } = [];
+
+    // Subtracted from this source's timestamps to align with the merged frame. Set by
+    // FightOffsetDetector or manually by the user. Sources with offset 0 anchor the merged
+    // frame; non-zero values shift this source's fights into that frame.
+    public double TimeOffsetSeconds { get; init; }
   }
 
   internal static class FightMerger
@@ -28,7 +33,7 @@ namespace EQLogParser
       var tagged = sources
         .Where(s => s != null && !string.IsNullOrEmpty(s.SourcePlayer) && s.Fights != null)
         .SelectMany(s => s.Fights.Where(f => f != null && !f.IsInactivity)
-          .Select(f => (s.SourcePlayer, Fight: f)))
+          .Select(f => (s.SourcePlayer, Offset: s.TimeOffsetSeconds, Fight: f)))
         .ToList();
 
       if (tagged.Count == 0)
@@ -38,7 +43,14 @@ namespace EQLogParser
 
       foreach (var cluster in ClusterByNameAndOverlap(tagged))
       {
-        merged.Add(BuildMergedFight(cluster));
+        // Per-cluster drift correction: fits a linear function for each non-anchor source
+        // from paired DamageRecord observations, applied on top of the constant offset. This
+        // compensates for clock drift that grows during a single fight (real-world up to 40+s
+        // over 3 minutes), which a constant offset alone leaves as inflated time windows for
+        // events only one source observed. Anchor sources and sources with too few paired
+        // events get no entry in the map and fall back to constant-offset only.
+        var drifts = FightDriftDetector.ComputeClusterDrifts(cluster);
+        merged.Add(BuildMergedFight(cluster, drifts));
       }
 
       return merged;
@@ -56,20 +68,21 @@ namespace EQLogParser
       return match.Success ? match.Groups[1].Value : null;
     }
 
-    private static IEnumerable<List<(string SourcePlayer, Fight Fight)>> ClusterByNameAndOverlap(
-      List<(string SourcePlayer, Fight Fight)> tagged)
+    private static IEnumerable<List<(string SourcePlayer, double Offset, Fight Fight)>> ClusterByNameAndOverlap(
+      List<(string SourcePlayer, double Offset, Fight Fight)> tagged)
     {
       foreach (var byName in tagged.GroupBy(t => t.Fight.Name))
       {
-        var sorted = byName.OrderBy(t => t.Fight.BeginTime).ToList();
-        List<(string, Fight)> current = null;
+        var sorted = byName.OrderBy(t => t.Fight.BeginTime - t.Offset).ToList();
+        List<(string, double, Fight)> current = null;
         var currentMaxLast = double.NegativeInfinity;
 
         foreach (var item in sorted)
         {
-          var last = double.IsNaN(item.Fight.LastTime) ? item.Fight.BeginTime : item.Fight.LastTime;
+          var begin = item.Fight.BeginTime - item.Offset;
+          var last = double.IsNaN(item.Fight.LastTime) ? begin : item.Fight.LastTime - item.Offset;
 
-          if (current == null || item.Fight.BeginTime > currentMaxLast)
+          if (current == null || begin > currentMaxLast)
           {
             if (current != null)
             {
@@ -92,17 +105,26 @@ namespace EQLogParser
       }
     }
 
-    private static Fight BuildMergedFight(List<(string SourcePlayer, Fight Fight)> cluster)
+    private static Fight BuildMergedFight(
+      List<(string SourcePlayer, double Offset, Fight Fight)> cluster,
+      Dictionary<string, DriftFunction> drifts)
     {
-      var damageBlocks = MergeBlocks(cluster, applyDsFilter: true, static f => f.DamageBlocks);
-      var tankingBlocks = MergeBlocks(cluster, applyDsFilter: false, static f => f.TankingBlocks);
+      var damageBlocks = MergeBlocks(cluster, drifts, applyDsFilter: true, static f => f.DamageBlocks);
+      var tankingBlocks = MergeBlocks(cluster, drifts, applyDsFilter: false, static f => f.TankingBlocks);
+
+      // Adjusted begin time across the cluster — every source's BeginTime is shifted by its
+      // offset and per-source drift before comparison, so the merged frame lines up with
+      // whichever source(s) have offset 0 (the anchor). BeginTimeString is rederived from the
+      // adjusted time so the displayed start matches the merged-frame BeginTime, not whichever
+      // source happened to sort first.
+      var beginTime = cluster.Min(c => AdjustTime(c.Fight.BeginTime, c.Offset, GetDrift(drifts, c.SourcePlayer)));
 
       var merged = new Fight
       {
         Name = cluster[0].Fight.Name,
         Dead = cluster.Any(c => c.Fight.Dead),
-        BeginTime = cluster.Min(c => c.Fight.BeginTime),
-        BeginTimeString = cluster[0].Fight.BeginTimeString
+        BeginTime = beginTime,
+        BeginTimeString = DateUtil.FormatDotNetDateSeconds(beginTime)
       };
       merged.DamageBlocks.AddRange(damageBlocks);
       merged.TankingBlocks.AddRange(tankingBlocks);
@@ -111,19 +133,59 @@ namespace EQLogParser
       return merged;
     }
 
-    // Multiset-max union across sources on a named block collection. DS filtering is damage-only:
-    // DS records are only visible in the DS holder's own log, and the parser stores the holder
-    // as the record's Attacker. Tanking blocks don't carry DS records so the filter is skipped.
+    // Apply offset and (optional) drift correction to a raw source timestamp. Drift is
+    // expressed as a linear function of the offset-adjusted time, so we subtract offset first,
+    // then subtract predicted drift.
+    private static double AdjustTime(double rawTime, double offset, DriftFunction drift)
+    {
+      var afterOffset = rawTime - offset;
+      return drift?.Correct(afterOffset) ?? afterOffset;
+    }
+
+    private static DriftFunction GetDrift(Dictionary<string, DriftFunction> drifts, string sourcePlayer)
+    {
+      return drifts != null && drifts.TryGetValue(sourcePlayer, out var d) ? d : null;
+    }
+
+    // Order-pair union across sources on a named block collection. For each unique DamageRecord,
+    // pairs the N-th observation from source A with the N-th from source B — every iteration
+    // consumes one entry from *every* source that still has observations remaining, then emits a
+    // single merged event. Total events emitted per record = max(observations from any source).
+    //
+    // Why no drift / time bound: real-world Dalaya logs from two players in a 3-minute boss
+    // fight show drift growing monotonically — first tick aligned, last tick drifted by 40+
+    // seconds. Any fixed time window misses the late-fight ticks and over-counts. Order
+    // pairing is invariant to drift: same-record observations within a single fight cluster
+    // are almost always the same set of physical events (the merger already restricts to a
+    // single name+time-overlap cluster), so the N-th from each source maps to the same event.
+    //
+    // Trade-off: if two sources independently miss disjoint genuinely-distinct same-record
+    // events (e.g. one source missed cast #1, the other missed cast #2 of an identical-damage
+    // recast), order pairing will under-count. This is rare — variable damage rolls usually
+    // distinguish DoT ticks across casts — and far less impactful than the 2× over-count this
+    // replaces.
+    //
+    // Multiset behavior preserved: quad attacks (4 identical hits at one timestamp from each
+    // source) order-pair into 4 emits, not 7. Asymmetric counts (4+3) emit 4. DS filtering is
+    // damage-only because the parser stores the DS holder as Attacker.
     private static List<ActionGroup> MergeBlocks(
-      List<(string SourcePlayer, Fight Fight)> cluster,
+      List<(string SourcePlayer, double Offset, Fight Fight)> cluster,
+      Dictionary<string, DriftFunction> drifts,
       bool applyDsFilter,
       Func<Fight, List<ActionGroup>> blocksSelector)
     {
-      var perSource = new List<Dictionary<(double Time, DamageRecord Record), int>>(cluster.Count);
-
-      foreach (var (sourcePlayer, sourceFight) in cluster)
+      var perRecord = new Dictionary<DamageRecord, List<double>[]>();
+      // Cache the drift function per source index so we don't dictionary-lookup per-action.
+      var driftBySource = new DriftFunction[cluster.Count];
+      for (var i = 0; i < cluster.Count; i++)
       {
-        var counts = new Dictionary<(double, DamageRecord), int>();
+        driftBySource[i] = GetDrift(drifts, cluster[i].SourcePlayer);
+      }
+
+      for (var sourceIdx = 0; sourceIdx < cluster.Count; sourceIdx++)
+      {
+        var (sourcePlayer, offset, sourceFight) = cluster[sourceIdx];
+        var drift = driftBySource[sourceIdx];
         foreach (var block in blocksSelector(sourceFight))
         {
           foreach (var action in block.Actions)
@@ -139,37 +201,71 @@ namespace EQLogParser
               continue;
             }
 
-            var key = (block.BeginTime, record);
-            counts[key] = counts.GetValueOrDefault(key) + 1;
+            if (!perRecord.TryGetValue(record, out var bySource))
+            {
+              bySource = new List<double>[cluster.Count];
+              for (var i = 0; i < cluster.Count; i++)
+              {
+                bySource[i] = [];
+              }
+              perRecord[record] = bySource;
+            }
+            bySource[sourceIdx].Add(AdjustTime(block.BeginTime, offset, drift));
           }
         }
-        perSource.Add(counts);
       }
 
-      var unioned = new Dictionary<(double Time, DamageRecord Record), int>();
-      foreach (var counts in perSource)
+      var emitted = new List<(double Time, DamageRecord Record)>();
+      var indices = new int[cluster.Count];
+
+      foreach (var (record, bySource) in perRecord)
       {
-        foreach (var kv in counts)
+        for (var s = 0; s < bySource.Length; s++)
         {
-          if (!unioned.TryGetValue(kv.Key, out var existing) || kv.Value > existing)
+          bySource[s].Sort();
+          indices[s] = 0;
+        }
+
+        while (true)
+        {
+          // Each iteration represents one physical event: consume the next unconsumed entry
+          // from every source that still has observations, take the earliest of those as the
+          // emit time. When a source runs out, surplus events from the others continue to
+          // emit alone.
+          var emitTime = double.PositiveInfinity;
+          var anyConsumed = false;
+          for (var s = 0; s < bySource.Length; s++)
           {
-            unioned[kv.Key] = kv.Value;
+            if (indices[s] < bySource[s].Count)
+            {
+              var t = bySource[s][indices[s]];
+              if (t < emitTime)
+              {
+                emitTime = t;
+              }
+              indices[s]++;
+              anyConsumed = true;
+            }
           }
+
+          if (!anyConsumed)
+          {
+            break;
+          }
+
+          emitted.Add((emitTime, record));
         }
       }
 
-      return unioned
-        .GroupBy(kv => kv.Key.Time)
+      return emitted
+        .GroupBy(e => e.Time)
         .OrderBy(g => g.Key)
         .Select(g =>
         {
           var ag = new ActionGroup { BeginTime = g.Key };
-          foreach (var kv in g)
+          foreach (var e in g)
           {
-            for (var i = 0; i < kv.Value; i++)
-            {
-              ag.Actions.Add(kv.Key.Record);
-            }
+            ag.Actions.Add(e.Record);
           }
           return ag;
         })

@@ -99,12 +99,13 @@ namespace EQLogParser
         IsSelected = true,
         Context = ParseContext.CreateIsolated()
       };
+      source.StatusText = "(parsing...)";
+
       // Tell this isolated PlayerRegistry the source's name so the parser resolves "you/your"
       // to the right player. Without this, every source resolves "your" to the live user
       // (ConfigUtil.PlayerName), which mis-attributes self-cast damage and breaks dedup —
       // identical hits land under different attackers across sources and don't merge.
       source.Context.PlayerRegistry.PlayerName = sourcePlayer;
-      source.StatusText = "(parsing...)";
 
       source.Context.FightManager.EventsNewFight += fight => source.AddFight(fight);
 
@@ -122,8 +123,85 @@ namespace EQLogParser
         new MessageWindow($"Failed to parse {Path.GetFileName(filePath)}:\n{ex.Message}", "Raid Damage").ShowDialog();
       }
 
+      // Auto-detect offsets once we have ≥2 sources. Runs on every add so a newly-loaded log
+      // gets aligned against the existing anchor without the user having to think about it.
+      // Sources the user has manually overridden could in theory be preserved, but since
+      // re-detection picks the largest source as anchor, an explicit Detect click after an
+      // override is always available.
+      if (_sources.Count(s => s.Fights.Count > 0) >= 2)
+      {
+        ApplyDetectedOffsets();
+      }
+
       RebuildMergedFights();
       UpdateFooterStatus();
+    }
+
+    private void ApplyDetectedOffsets()
+    {
+      var ready = _sources.Where(s => s.Fights.Count > 0).ToList();
+      if (ready.Count < 2)
+      {
+        return;
+      }
+
+      var detected = FightOffsetDetector.DetectAll(
+        ready.Select(s => (s.SourcePlayer, (IList<Fight>)s.Fights)));
+
+      foreach (var s in ready)
+      {
+        if (detected.TryGetValue(s.SourcePlayer, out var offset))
+        {
+          s.TimeOffsetSeconds = offset;
+        }
+      }
+    }
+
+    private void DetectOffsetsClick(object sender, RoutedEventArgs e)
+    {
+      ApplyDetectedOffsets();
+      RebuildMergedFights();
+    }
+
+    private void SetOffsetMenuClick(object sender, RoutedEventArgs e)
+    {
+      var source = ResolveSourceFromMenu(sender);
+      if (source == null)
+      {
+        return;
+      }
+
+      var dialog = new RaidOffsetDialog(source.SourcePlayer, source.TimeOffsetSeconds);
+      dialog.ShowDialog();
+      if (!dialog.IsOkClicked)
+      {
+        return;
+      }
+
+      source.TimeOffsetSeconds = dialog.OffsetSeconds;
+      RebuildMergedFights();
+    }
+
+    private void ResetOffsetMenuClick(object sender, RoutedEventArgs e)
+    {
+      var source = ResolveSourceFromMenu(sender);
+      if (source == null)
+      {
+        return;
+      }
+      source.TimeOffsetSeconds = 0;
+      RebuildMergedFights();
+    }
+
+    // Context menu items live inside the row's cell template, so DataContext walks up to the
+    // RaidDamageSource for the row the user right-clicked.
+    private static RaidDamageSource ResolveSourceFromMenu(object sender)
+    {
+      if (sender is FrameworkElement fe && fe.DataContext is RaidDamageSource rds)
+      {
+        return rds;
+      }
+      return null;
     }
 
     private static void ParseFile(RaidDamageSource source)
@@ -201,7 +279,12 @@ namespace EQLogParser
       }
 
       var fightSources = selectedSources
-        .Select(s => new FightSource { SourcePlayer = s.SourcePlayer, Fights = s.Fights })
+        .Select(s => new FightSource
+        {
+          SourcePlayer = s.SourcePlayer,
+          Fights = s.Fights,
+          TimeOffsetSeconds = s.TimeOffsetSeconds
+        })
         .ToList();
       var merged = FightMerger.MergeFromSources(fightSources);
 
@@ -271,6 +354,8 @@ namespace EQLogParser
       sourcesStatus.Text = _sources.Count == 0
         ? "No sources. Click Add to load an exported log."
         : $"{_sources.Count} source{(_sources.Count == 1 ? "" : "s")} • {selectedCount} selected";
+
+      detectOffsetsButton.IsEnabled = _sources.Count(s => s.Fights.Count > 0) >= 2;
     }
 
     private static string FormatDamage(long damage)
@@ -338,6 +423,41 @@ namespace EQLogParser
     {
       get => _statusText;
       set { _statusText = value; OnPropertyChanged(); }
+    }
+
+    // Subtracted from this source's timestamps to align with the merged frame. Set by
+    // FightOffsetDetector after parsing or manually by the user via "Set offset..." menu.
+    private double _timeOffsetSeconds;
+    public double TimeOffsetSeconds
+    {
+      get => _timeOffsetSeconds;
+      set
+      {
+        if (Math.Abs(_timeOffsetSeconds - value) < 0.5) return;
+        _timeOffsetSeconds = value;
+        OnPropertyChanged();
+        OnPropertyChanged(nameof(OffsetDisplay));
+      }
+    }
+
+    // Compact display for the source row. Empty for zero offset (the common case — anchor
+    // source and any aligned-clock sources). Examples: "+1h", "-30m", "+1h 30m".
+    public string OffsetDisplay
+    {
+      get
+      {
+        var seconds = (long)Math.Round(_timeOffsetSeconds);
+        if (seconds == 0) return "";
+
+        var sign = seconds < 0 ? "-" : "+";
+        var abs = Math.Abs(seconds);
+        var hours = abs / 3600;
+        var minutes = abs % 3600 / 60;
+
+        if (hours > 0 && minutes > 0) return $"{sign}{hours}h {minutes}m";
+        if (hours > 0) return $"{sign}{hours}h";
+        return $"{sign}{minutes}m";
+      }
     }
 
     public int FightCount => Fights.Count;
