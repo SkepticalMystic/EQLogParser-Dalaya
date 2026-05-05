@@ -99,6 +99,11 @@ namespace EQLogParser
         IsSelected = true,
         Context = ParseContext.CreateIsolated()
       };
+      // Tell this isolated PlayerRegistry the source's name so the parser resolves "you/your"
+      // to the right player. Without this, every source resolves "your" to the live user
+      // (ConfigUtil.PlayerName), which mis-attributes self-cast damage and breaks dedup —
+      // identical hits land under different attackers across sources and don't merge.
+      source.Context.PlayerRegistry.PlayerName = sourcePlayer;
       source.StatusText = "(parsing...)";
 
       source.Context.FightManager.EventsNewFight += fight => source.AddFight(fight);
