@@ -240,11 +240,11 @@ namespace EQLogParserTest
     [TestMethod]
     public void Merge_NonHitRecords_AdvanceAttackerTimeSegment()
     {
-      // NpcDamageManager.HandleDamage calls AddPlayerTime for EVERY record whose defender is an
+      // FightManager.HandleDamage calls AddPlayerTime for EVERY record whose defender is an
       // NPC — hits, misses, dodges, INVULNERABLE blocks, etc. — not just hit-type records. If
       // the merger's PopulateAggregates skips non-hit records for time segments, the merged
       // Fight's DamageSegments end earlier than the live path would, which shifts the "+Pets"
-      // aggregate union inside DamageStatsManager and makes the raid-damage DPS differ from
+      // aggregate union inside DamageStatsBuilder and makes the raid-damage DPS differ from
       // DPS Summary for the same fight. Pin this behavior: a miss at t=118 must extend the
       // attacker's segment past t=105 even though only the t=105 record is a hit.
       var hit = MakeDamage("Alice", "Bob", 100, Labels.Melee, "");

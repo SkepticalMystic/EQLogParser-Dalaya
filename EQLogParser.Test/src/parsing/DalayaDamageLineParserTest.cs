@@ -5,17 +5,17 @@ using EQLogParser;
 namespace EQLogParserTest
 {
   [TestClass]
-  public class DamageLineParserTest
+  public class DalayaDamageLineParserTest
   {
-    // These tests target Dalaya behavior (EMU Parsing toggle OFF). Dalaya's log format
-    // for spell damage is "X has taken N damage from AttackerName by SpellName." which
-    // is the reverse of live EQ; the parser always swaps the two fields when the EMU
-    // toggle is off.
+    // These tests target Dalaya behavior. Dalaya's log format for spell damage is
+    // "X has taken N damage from AttackerName by SpellName." which is the reverse of
+    // live EQ; the parser always swaps the two fields. (The EMU Parsing toggle that
+    // used to gate this was removed in 1.0.7 — Dalaya is itself an EMU server, so the
+    // toggle was always required to be off.)
 
     [TestInitialize]
     public void Setup()
     {
-      MainWindow.IsEmuParsingEnabled = false;
       ConfigUtil.PlayerName = "Selfie";
       DamageLineParser.Instance.ResetParseState();
     }
@@ -134,29 +134,29 @@ namespace EQLogParserTest
     public void DalayaSelfDamage_ResolvesToInjectedPlayerName()
     {
       // Multi-log Raid Damage view: each source's parser is given the source player's name
-      // via PlayerManager.PlayerName. "from your X" must resolve to the source's name, not
+      // via PlayerRegistry.PlayerName. "from your X" must resolve to the source's name, not
       // the live ConfigUtil.PlayerName, otherwise self-cast damage from non-active sources
       // gets attributed to the live user and dedup against third-person observers fails.
-      var pm = new PlayerManager(autoSave: false);
+      var pm = new PlayerRegistry(autoSave: false);
       pm.PlayerName = "Ezran";
-      var dlp = new EQLogParser.DamageLineParser(new DataManager(), pm);
+      var dlp = new EQLogParser.DamageLineParser(new EQDataStore(), pm);
 
       var r = dlp.ParseLine("A gnoll has taken 108790 damage from your Mind Coil Rk. II.");
       Assert.IsNotNull(r);
       Assert.AreEqual("A gnoll", r.Defender);
-      Assert.AreEqual("Ezran", r.Attacker, "Self-cast attacker must come from injected PlayerManager.PlayerName");
+      Assert.AreEqual("Ezran", r.Attacker, "Self-cast attacker must come from injected PlayerRegistry.PlayerName");
       Assert.AreEqual(108790u, r.Total);
     }
 
     [TestMethod]
     public void DalayaSelfDamage_FallsBackToConfigUtilWhenNoOverride()
     {
-      // When the override isn't set, PlayerManager.PlayerName falls back to ConfigUtil.PlayerName.
+      // When the override isn't set, PlayerRegistry.PlayerName falls back to ConfigUtil.PlayerName.
       // Pin this so the live tailing flow keeps working — no caller is required to set the
       // override explicitly.
-      var pm = new PlayerManager(autoSave: false);
+      var pm = new PlayerRegistry(autoSave: false);
       // No PlayerName override.
-      var dlp = new EQLogParser.DamageLineParser(new DataManager(), pm);
+      var dlp = new EQLogParser.DamageLineParser(new EQDataStore(), pm);
 
       var r = dlp.ParseLine("A gnoll has taken 108790 damage from your Mind Coil Rk. II.");
       Assert.IsNotNull(r);
@@ -169,10 +169,10 @@ namespace EQLogParserTest
       // Two isolated parse contexts with different PlayerName overrides must produce attacker
       // values matching their respective sources. Static state would leak between sources and
       // break the multi-source merge — guard against that regression.
-      var pmA = new PlayerManager(autoSave: false) { PlayerName = "PlayerA" };
-      var pmB = new PlayerManager(autoSave: false) { PlayerName = "PlayerB" };
-      var dlpA = new EQLogParser.DamageLineParser(new DataManager(), pmA);
-      var dlpB = new EQLogParser.DamageLineParser(new DataManager(), pmB);
+      var pmA = new PlayerRegistry(autoSave: false) { PlayerName = "PlayerA" };
+      var pmB = new PlayerRegistry(autoSave: false) { PlayerName = "PlayerB" };
+      var dlpA = new EQLogParser.DamageLineParser(new EQDataStore(), pmA);
+      var dlpB = new EQLogParser.DamageLineParser(new EQDataStore(), pmB);
 
       var rA = dlpA.ParseLine("A gnoll has taken 100 damage from your Test Spell.");
       var rB = dlpB.ParseLine("A gnoll has taken 100 damage from your Test Spell.");
@@ -282,10 +282,10 @@ namespace EQLogParserTest
       //
       // The parser does NOT auto-attribute ownership to ConfigUtil.PlayerName — doing so
       // corrupted pet-owner mappings in raid logs where other players' pets appear. Ownership
-      // is established via petmapping.txt, ChatManager's "My leader is X" detection, or the
+      // is established via petmapping.txt, ChatDB's "My leader is X" detection, or the
       // Pet Owners UI.
       var probePet = "TestProbePet_Unique";
-      Assert.IsFalse(PlayerManager.Instance.IsVerifiedPet(probePet));
+      Assert.IsFalse(PlayerRegistry.Instance.IsVerifiedPet(probePet));
 
       var r = DamageLineParser.Instance.ParseLine($"A gnoll has taken 108790 damage from {probePet}  by Gale of Blades.");
       Assert.IsNotNull(r);
@@ -294,9 +294,9 @@ namespace EQLogParserTest
       Assert.AreEqual(108790u, r.Total);
 
       // Verified pet — yes.
-      Assert.IsTrue(PlayerManager.Instance.IsVerifiedPet(probePet));
+      Assert.IsTrue(PlayerRegistry.Instance.IsVerifiedPet(probePet));
       // No owner auto-assigned. GetPlayerFromPet returns either null or Labels.Unassigned.
-      var owner = PlayerManager.Instance.GetPlayerFromPet(probePet);
+      var owner = PlayerRegistry.Instance.GetPlayerFromPet(probePet);
       Assert.IsTrue(string.IsNullOrEmpty(owner) || owner == Labels.Unassigned,
         $"Pet should have no auto-attributed owner, got: {owner}");
     }
@@ -322,7 +322,7 @@ namespace EQLogParserTest
     {
       // Dalaya pet misses ("Bonaparte  tries to hit NPC, but NPC is INVULNERABLE!") carry a
       // double-space after the pet name. The try/but miss branch emits a damage=0 record with
-      // the attacker name verbatim. Even zero-damage records flow into NpcDamageManager's time
+      // the attacker name verbatim. Even zero-damage records flow into FightManager's time
       // segments via AddPlayerTime, which populates _playerTimeRanges — so a "Bonaparte "
       // attacker produces a phantom DPS Summary row with only a Sec value and no damage.
       var r = DamageLineParser.Instance.ParseLine("Bonaparte  tries to hit Mistress Saitha, but Mistress Saitha is INVULNERABLE!");
@@ -342,7 +342,7 @@ namespace EQLogParserTest
       Assert.IsNotNull(r);
       Assert.AreEqual("Raiddmate", r.Attacker);
       Assert.AreEqual("Ice Comet", r.SubType);
-      Assert.IsFalse(PlayerManager.Instance.IsVerifiedPet("Raiddmate"));
+      Assert.IsFalse(PlayerRegistry.Instance.IsVerifiedPet("Raiddmate"));
     }
 
     // =============== Crit modifier ===============
