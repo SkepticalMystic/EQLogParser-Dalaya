@@ -861,5 +861,77 @@ namespace EQLogParserTest
     }
 
     #endregion
+
+    #region Dalaya/eqemu Crit Announcement (two-line pattern)
+    // Dalaya emits crits as a two-line pattern: an announcement first, then the actual damage line
+    // matching the parenthesized value. The handler stashes the announcement and applies the Crit
+    // modifier to the next matching damage record from the same attacker within 1 second.
+
+    [TestMethod]
+    public void TestCritAnnouncement_ScoresCriticalHit_MarksNextMelee()
+    {
+      Assert.IsNull(ParseAction("Damocles scores a critical hit! (64)"));
+      var hit = ParseAction("Damocles punches Kara`Kadar for 64 points of damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Damocles", hit.Attacker);
+      Assert.AreEqual("Kara`Kadar", hit.Defender);
+      Assert.AreEqual((uint)64, hit.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void TestCritAnnouncement_DeliversCriticalBlast_MarksNextDd()
+    {
+      Assert.IsNull(ParseAction("Owez delivers a critical blast! (2804)"));
+      var hit = ParseAction("Owez hit Kara`Kadar for 2804 points of non-melee damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Owez", hit.Attacker);
+      Assert.AreEqual((uint)2804, hit.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void TestCritAnnouncement_CripplingBlow_MarksNextMelee()
+    {
+      Assert.IsNull(ParseAction("Arilyn lands a Crippling Blow!(244)"));
+      var hit = ParseAction("Arilyn slashes Kara`Kadar for 244 points of damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Arilyn", hit.Attacker);
+      Assert.AreEqual((uint)244, hit.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void TestCritAnnouncement_FinishingBlow_MarksNextMelee()
+    {
+      Assert.IsNull(ParseAction("Vorgash scores a Finishing Blow!!"));
+      var hit = ParseAction("Vorgash crushes a target for 9999 points of damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Vorgash", hit.Attacker);
+      Assert.AreEqual((uint)9999, hit.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void TestCritAnnouncement_DifferentAttacker_DoesNotMark()
+    {
+      Assert.IsNull(ParseAction("Damocles scores a critical hit! (64)"));
+      var hit = ParseAction("Mayple slashes Kara`Kadar for 64 points of damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Mayple", hit.Attacker);
+      Assert.IsFalse(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void TestCritAnnouncement_BlastValueMismatch_DoesNotMark()
+    {
+      // Crit blast modifier requires the parenthesized value to match the next DD line's damage.
+      Assert.IsNull(ParseAction("Owez delivers a critical blast! (2804)"));
+      var hit = ParseAction("Owez hit Kara`Kadar for 1000 points of non-melee damage.");
+      Assert.IsNotNull(hit);
+      Assert.IsFalse(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    #endregion
   }
 }
