@@ -419,6 +419,89 @@ namespace EQLogParserTest
       DamageLineParser.Instance.Process(new LineData { Action = action, BeginTime = beginTime, Split = action.Split(' ') });
     }
 
+    // =============== Crit announcement -> next-line modifier transfer ===============
+    // Dalaya emits crits as a two-line pattern: an announcement first, then the actual damage line
+    // matching the parenthesized value. The handler stashes the announcement and applies the Crit
+    // modifier to the next matching damage record from the same attacker within 1 second.
+
+    [TestMethod]
+    public void CritAnnouncement_ScoresCriticalHit_MarksNextMelee()
+    {
+      var ann = DamageLineParser.Instance.ParseLine("Damocles scores a critical hit! (64)");
+      Assert.IsNull(ann);
+
+      var hit = DamageLineParser.Instance.ParseLine("Damocles punches Kara`Kadar for 64 points of damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Damocles", hit.Attacker);
+      Assert.AreEqual("Kara`Kadar", hit.Defender);
+      Assert.AreEqual(64u, hit.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void CritAnnouncement_DeliversCriticalBlast_MarksNextDd()
+    {
+      var ann = DamageLineParser.Instance.ParseLine("Owez delivers a critical blast! (2804)");
+      Assert.IsNull(ann);
+
+      var hit = DamageLineParser.Instance.ParseLine("Owez hit Kara`Kadar for 2804 points of non-melee damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Owez", hit.Attacker);
+      Assert.AreEqual(2804u, hit.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void CritAnnouncement_CripplingBlow_MarksNextMelee()
+    {
+      var ann = DamageLineParser.Instance.ParseLine("Arilyn lands a Crippling Blow!(244)");
+      Assert.IsNull(ann);
+
+      var hit = DamageLineParser.Instance.ParseLine("Arilyn slashes Kara`Kadar for 244 points of damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Arilyn", hit.Attacker);
+      Assert.AreEqual(244u, hit.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void CritAnnouncement_FinishingBlow_MarksNextMelee()
+    {
+      var ann = DamageLineParser.Instance.ParseLine("Vorgash scores a Finishing Blow!!");
+      Assert.IsNull(ann);
+
+      var hit = DamageLineParser.Instance.ParseLine("Vorgash crushes a target for 9999 points of damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Vorgash", hit.Attacker);
+      Assert.AreEqual(9999u, hit.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void CritAnnouncement_DifferentAttacker_DoesNotMark()
+    {
+      // The next damage line is from a different attacker; the stashed crit must not transfer.
+      var ann = DamageLineParser.Instance.ParseLine("Damocles scores a critical hit! (64)");
+      Assert.IsNull(ann);
+
+      var hit = DamageLineParser.Instance.ParseLine("Mayple slashes Kara`Kadar for 64 points of damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Mayple", hit.Attacker);
+      Assert.IsFalse(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void CritAnnouncement_BlastValueMismatch_DoesNotMark()
+    {
+      // Crit blast modifier requires the parenthesized value to match the next DD line's damage.
+      var ann = DamageLineParser.Instance.ParseLine("Owez delivers a critical blast! (2804)");
+      Assert.IsNull(ann);
+
+      var hit = DamageLineParser.Instance.ParseLine("Owez hit Kara`Kadar for 1000 points of non-melee damage.");
+      Assert.IsNotNull(hit);
+      Assert.IsFalse(LineModifiersParser.IsCrit(hit.ModifiersMask));
+    }
+
     // =============== Pass-through for unparseable lines ===============
 
     [TestMethod]
