@@ -60,10 +60,21 @@ namespace EQLogParser
     private static readonly string[] SpecialCodeKeys = ["Mana Burn", "Harm Touch", "Life Burn"];
 
     private static PendingDsData _pendingDs;
+    private static OldCritData _lastCrit;
+    private static DelayRecord _delayCritRecord;
 
     static DamageLineParser()
     {
       HitMap.Keys.ToList().ForEach(key => ReverseHitMap[HitMap[key]] = true); // add two-way mapping
+    }
+
+    // Test hook: clears per-line stash state (DS pending, crit announcement stashes) so one test
+    // doesn't leak state into the next.
+    internal static void ResetParseState()
+    {
+      _pendingDs = null;
+      _lastCrit = null;
+      _delayCritRecord = null;
     }
 
     public static void CheckSlainQueue(double currentTime)
@@ -160,11 +171,12 @@ namespace EQLogParser
       string defender = null;
 
       var isYou = split[0] is "You" or "Your";
+      long crippleDamageFix = -1;
       int byIndex = -1, forIndex = -1, pointsOfIndex = -1, endDamage = -1, byDamage = -1, extraIndex = -1;
       int fromDamage = -1, hasIndex = -1, haveIndex = -1, hitTypeIndex = -1, hitTypeAdd = -1, slainIndex = -1;
       int takenIndex = -1, tryIndex = -1, yourIndex = -1, isIndex = -1, nonMeleeIndex = -1, butIndex = -1;
       int missType = -1, attentionIndex = -1, failedIndex = -1, harmedIndex = -1;
-      int emuPetIndex = -1, absorbsIndex = -1;
+      int emuPetIndex = -1, absorbsIndex = -1, oldCritIndex = -1;
       string subType = null;
       var foundType = false;
 
@@ -320,6 +332,52 @@ namespace EQLogParser
                 }
               }
               break;
+            // Dalaya/eqemu critical DD announcement; the following damage line carries the actual hit.
+            // [Sun May 03 20:48:56 2026] Owez delivers a critical blast! (2804)
+            // [Sun May 03 20:48:56 2026] Owez hit Kara`Kadar for 2804 points of non-melee damage.
+            case "blast!":
+              if (stop == i && i > 3 && split.Length > stop && split[i - 1] == "critical" && split[i - 3] == "delivers")
+              {
+                attacker = string.Join(" ", split, 0, i - 3);
+                attacker = UpdateAttacker(attacker, Labels.Dd);
+                _lastCrit = new OldCritData { Attacker = attacker, BeginTime = lineData.BeginTime, Value = split[stop + 1] };
+                return null;
+              }
+              break;
+            // Dalaya/eqemu critical melee announcement; pairs with the next melee damage line of equal damage.
+            // [Sun May 03 20:48:48 2026] Damocles scores a critical hit! (64)
+            // [Sun May 03 20:48:48 2026] You punch Kara`Kadar for 64 points of damage.
+            case "hit!":
+              if (stop == i && i > 3 && split.Length > stop && split[i - 1] == "critical" && split[i - 3] == "scores")
+              {
+                oldCritIndex = i - 3;
+              }
+              break;
+            // Crippling Blow — note the buggy "Blow!(1234)" with no space between Blow! and the parenthesized damage.
+            // [Thu Jan 23 21:37:44 2025] Arilyn lands a Crippling Blow!(244)
+            case "Crippling":
+              if (stop == i + 1 && i > 2 && split.Length > stop && split[i - 1] == "a" && split[i - 2] == "lands" && split[i + 1].StartsWith("Blow!", StringComparison.Ordinal))
+              {
+                var span = split[i + 1].AsSpan();
+                if (span.IndexOf('(') is var index and > -1)
+                {
+                  crippleDamageFix = TextUtils.ParseUInt(span.Slice(index)[1..^1]);
+                }
+
+                oldCritIndex = i - 2;
+              }
+              break;
+            // Finishing Blow announcement; behaves like a DD crit marker — the next melee line for this attacker
+            // carries the hit, but no damage value is in the announcement (so we use the empty-Value match path).
+            case "Blow!!":
+              if (stop == i && i > 3 && split[i - 1] == "Finishing" && split[i - 3] == "scores")
+              {
+                attacker = string.Join(" ", split, 0, i - 3);
+                attacker = UpdateAttacker(attacker, Labels.Unk);
+                _lastCrit = new OldCritData { Attacker = attacker, BeginTime = lineData.BeginTime };
+                return null;
+              }
+              break;
             default:
               if (slainIndex == -1 && i > 0 && i < stop && tryIndex == -1 && !foundType)
               {
@@ -459,6 +517,15 @@ namespace EQLogParser
         attacker = UpdateAttacker(attacker, subType);
         defender = UpdateDefender(defender, attacker);
         record = CreateDamageRecord(lineData, split, stop, attacker, defender, damage, Labels.Melee, subType);
+
+        // Apply Crit modifier when this melee record matches a recent Finishing Blow!! announcement
+        // (which carries no damage value — empty-Value path).
+        if (record != null && _lastCrit != null && string.Equals(_lastCrit.Attacker, record.Attacker, StringComparison.OrdinalIgnoreCase) &&
+          (lineData.BeginTime - _lastCrit.BeginTime) <= 1 && string.IsNullOrEmpty(_lastCrit.Value))
+        {
+          record.ModifiersMask = LineModifiersParser.Crit;
+          _lastCrit = null;
+        }
 
         // Resolve pending Dalaya DS: the line immediately before a melee hit is the DS proc on the attacker.
         // attacker = the NPC; defender = the player who owns the damage shield.
@@ -752,6 +819,37 @@ namespace EQLogParser
 
         record = CreateDamageRecord(lineData, split, stop, attacker, defender, damage, Labels.Dd, subType);
         record.AttackerOwner = record.AttackerOwner ?? attackerOwner;
+
+        // Apply Crit modifier when this DD record matches a recent "delivers a critical blast! (N)"
+        // announcement: same attacker, within 1s, and the parenthesized value matches this hit's damage.
+        if (record != null && _lastCrit != null && string.Equals(_lastCrit.Attacker, record.Attacker, StringComparison.OrdinalIgnoreCase) &&
+          (lineData.BeginTime - _lastCrit.BeginTime) <= 1 && _lastCrit.Value?.Length > 2 &&
+          _lastCrit.Value.AsSpan(1, _lastCrit.Value.Length - 2).SequenceEqual(split[pointsOfIndex - 1].AsSpan()))
+        {
+          record.ModifiersMask = LineModifiersParser.Crit;
+          _lastCrit = null;
+        }
+      }
+      // [Thu Jan 23 21:36:37 2025] Vorgash scores a critical hit! (780)
+      // [Thu Jan 23 21:37:44 2025] Arilyn lands a Crippling Blow!(244)
+      // Stash a synthetic crit-marker record from the announcement; the real damage on the next melee
+      // line gets the Crit flag transferred to it via the post-emit hook below.
+      else if (oldCritIndex > -1 && (crippleDamageFix > -1 || (split.Length > stop + 1 && split[stop + 1].Length > 2)))
+      {
+        var damage = crippleDamageFix != -1 ? (uint)crippleDamageFix : TextUtils.ParseUInt(split[stop + 1].AsSpan(1, split[stop + 1].Length - 2));
+        if (damage != uint.MaxValue)
+        {
+          attacker = string.Join(" ", split, 0, oldCritIndex);
+          attacker = UpdateAttacker(attacker, Labels.Unk);
+
+          var damageRecord = CreateDamageRecord(lineData, split, stop, attacker, Labels.Unk, damage, Labels.Melee, "Hits");
+          if (damageRecord != null)
+          {
+            damageRecord.ModifiersMask = LineModifiersParser.Crit;
+          }
+
+          _delayCritRecord = new DelayRecord { Record = damageRecord, BeginTime = lineData.BeginTime };
+        }
       }
       // [Fri Mar 04 21:28:19 2022] A failed reclaimer tries to punch YOU, but YOUR magical skin absorbs the blow!
       // [Mon Aug 05 02:05:12 2019] An enchanted Syldon stalker tries to crush YOU, but YOU parry!
@@ -931,6 +1029,15 @@ namespace EQLogParser
 
       if (record != null)
       {
+        // Transfer the Crit flag stashed by "scores a critical hit!" / "lands a Crippling Blow!"
+        // onto the next real damage record from the same attacker within 1s.
+        if (_delayCritRecord != null && (lineData.BeginTime - _delayCritRecord.BeginTime) <= 1 &&
+          string.Equals(record.Attacker, _delayCritRecord.Record.Attacker, StringComparison.OrdinalIgnoreCase))
+        {
+          record.ModifiersMask = _delayCritRecord.Record.ModifiersMask;
+          _delayCritRecord = null;
+        }
+
         if (!checkLineType && !InIgnoreList(defender))
         {
           if (resist != SpellResist.Undefined && defender != attacker &&
@@ -1206,6 +1313,19 @@ namespace EQLogParser
           !name.EndsWith("Mother", StringComparison.OrdinalIgnoreCase);
       }
       return ignore;
+    }
+
+    private class OldCritData
+    {
+      internal string Attacker { get; init; }
+      internal double BeginTime { get; init; }
+      internal string Value { get; init; }
+    }
+
+    private class DelayRecord
+    {
+      internal DamageRecord Record { get; init; }
+      internal double BeginTime { get; init; }
     }
 
     // Dalaya damage shield: holds a "X was hit by non-melee" line until the triggering melee hit identifies the DS owner
