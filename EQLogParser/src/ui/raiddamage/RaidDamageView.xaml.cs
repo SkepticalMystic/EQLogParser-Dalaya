@@ -86,9 +86,20 @@ namespace EQLogParser
         return;
       }
 
-      if (_sources.Any(s => string.Equals(s.SourcePlayer, sourcePlayer, StringComparison.Ordinal)))
+      // Block the exact same file path under any source — that's always a double-load.
+      if (_sources.Any(s => s.FilePaths.Any(p => string.Equals(p, filePath, StringComparison.OrdinalIgnoreCase))))
       {
-        new MessageWindow($"A source for {sourcePlayer} is already loaded.", "Raid Damage").ShowDialog();
+        new MessageWindow($"This file is already loaded:\n{Path.GetFileName(filePath)}", "Raid Damage").ShowDialog();
+        return;
+      }
+
+      // If another file for this same player is already loaded, append to that existing source
+      // so its isolated Context sees the union of fights. Users splitting one player's raid
+      // night across multiple per-fight clips need this.
+      var existing = _sources.FirstOrDefault(s => string.Equals(s.SourcePlayer, sourcePlayer, StringComparison.Ordinal));
+      if (existing != null)
+      {
+        await AppendFileToSource(existing, filePath);
         return;
       }
 
@@ -99,6 +110,7 @@ namespace EQLogParser
         IsSelected = true,
         Context = ParseContext.CreateIsolated()
       };
+      source.FilePaths.Add(filePath);
       source.StatusText = "(parsing...)";
 
       // Tell this isolated PlayerRegistry the source's name so the parser resolves "you/your"
@@ -114,8 +126,8 @@ namespace EQLogParser
 
       try
       {
-        await Task.Run(() => ParseFile(source));
-        source.StatusText = $"({source.FightCount} fights, {FormatDamage(source.TotalDamage)})";
+        await Task.Run(() => ParseFile(source, filePath));
+        source.StatusText = FormatSourceStatus(source);
       }
       catch (Exception ex)
       {
@@ -204,10 +216,10 @@ namespace EQLogParser
       return null;
     }
 
-    private static void ParseFile(RaidDamageSource source)
+    private static void ParseFile(RaidDamageSource source, string filePath)
     {
-      var processor = new LogProcessor(source.FilePath, source.Context);
-      using var fs = new FileStream(source.FilePath, FileMode.Open, FileAccess.Read,
+      var processor = new LogProcessor(filePath, source.Context);
+      using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read,
         FileShare.ReadWrite | FileShare.Delete);
       using var reader = new StreamReader(fs);
       string line;
@@ -224,6 +236,46 @@ namespace EQLogParser
         }
         processor.ProcessSync(line, DateUtil.ToDotNetSeconds(dt));
       }
+    }
+
+    // Parse an additional log file into an existing source's Context so the merger sees one
+    // logical observer regardless of how many separate clips that player provided. Caller is
+    // responsible for ensuring filePath is not already on any source.
+    private async Task AppendFileToSource(RaidDamageSource source, string filePath)
+    {
+      source.FilePaths.Add(filePath);
+      source.StatusText = $"(parsing {Path.GetFileName(filePath)}...)";
+      UpdateFooterStatus();
+
+      try
+      {
+        await Task.Run(() => ParseFile(source, filePath));
+        source.StatusText = FormatSourceStatus(source);
+      }
+      catch (Exception ex)
+      {
+        source.StatusText = "(append failed)";
+        new MessageWindow($"Failed to parse {Path.GetFileName(filePath)}:\n{ex.Message}", "Raid Damage").ShowDialog();
+        return;
+      }
+
+      // Newly-merged fights can shift offset detection — re-run the alignment pass if there
+      // are ≥2 sources, same as the first-load path.
+      if (_sources.Count(s => s.Fights.Count > 0) >= 2)
+      {
+        ApplyDetectedOffsets();
+      }
+
+      RebuildMergedFights();
+      UpdateFooterStatus();
+    }
+
+    private static string FormatSourceStatus(RaidDamageSource source)
+    {
+      var fightAndDmg = $"{source.FightCount} fights, {FormatDamage(source.TotalDamage)}";
+      return source.FilePaths.Count > 1
+        ? $"({source.FilePaths.Count} files: {fightAndDmg})"
+        : $"({fightAndDmg})";
     }
 
     private void RemoveSourceClick(object sender, RoutedEventArgs e)
@@ -406,10 +458,17 @@ namespace EQLogParser
 
   internal class RaidDamageSource : INotifyPropertyChanged
   {
+    // The first log file added for this player. Additional files appended via AddSource land
+    // in FilePaths but keep this as the primary path for display/back-compat.
     public string FilePath { get; set; }
     public string SourcePlayer { get; set; }
     public ParseContext Context { get; set; }
     public List<Fight> Fights { get; } = [];
+
+    // All log files contributing to this source (>=1). Lets one player provide multiple
+    // partial logs (e.g. per-fight clips) that get parsed into the same isolated Context so
+    // the merger sees them as one logical observer.
+    public List<string> FilePaths { get; } = [];
 
     private bool _isSelected;
     public bool IsSelected
