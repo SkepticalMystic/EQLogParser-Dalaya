@@ -26,8 +26,10 @@ namespace EQLogParser
     // When true, MergeBlocks emits a one-shot diagnostic per cluster that detects
     // dedup-key splits — records that share (Attacker, Defender, Total) but landed in
     // different perRecord buckets due to a metadata difference (ModifiersMask,
-    // AttackerOwner, Type/SubType, etc.). Used to root-cause cross-TZ over-count.
-    internal static bool MergeDiagnosticsEnabled = true;
+    // AttackerOwner, Type/SubType, etc.). Off by default; toggleable from
+    // Help → "Log Merge Diagnostics" and persisted under ConfigUtil "LogMergeDiagnostics".
+    // MainWindow reads the setting at startup and reflects user toggles back here.
+    internal static bool MergeDiagnosticsEnabled;
 
     private static readonly Regex EqLogFileRegex =
       new(@"^eqlog_([^_]+)_[^.]+\.txt$", RegexOptions.IgnoreCase | RegexOptions.Compiled);

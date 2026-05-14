@@ -460,6 +460,12 @@
               <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Visibility="Visible" Icon="Solid_Info" />
             </MenuItem.Icon>
           </MenuItem>
+          <Separator />
+          <MenuItem x:Name="logMergeDiagnostics" Header="Log _Merge Diagnostics (Raid Damage)" Click="ToggleLogMergeDiagnosticsClick">
+            <MenuItem.Icon>
+              <fa:ImageAwesome x:Name="logMergeDiagnosticsIcon" Style="{StaticResource EQIconStyle}" Visibility="Hidden" Icon="Solid_Check" />
+            </MenuItem.Icon>
+          </MenuItem>
         </MenuItem>
       </Menu>
       <TextBlock x:Name="initialText" Margin="100,0,0,2" Visibility="Hidden" Text="" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{DynamicResource EQGoodForegroundBrush}"/>
