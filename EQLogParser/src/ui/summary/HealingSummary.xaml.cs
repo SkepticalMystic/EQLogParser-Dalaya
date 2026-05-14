@@ -16,11 +16,29 @@ namespace EQLogParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     private readonly DispatcherTimer _selectionTimer;
+    private readonly HealingStatsBuilder _healingStatsBuilder;
+    private readonly IHealingSummaryHost _host;
     private bool _ready;
 
-    public HealingSummary()
+    // XAML requires a public parameterless ctor. The main Healing Summary tab instantiates
+    // the control via XAML and gets the live singleton + MainActions forwarding. Other hosts
+    // (e.g. the Raid Damage window's Healing tab) construct directly via the injected overload
+    // so the two views can't stomp on each other's state or events.
+    public HealingSummary() : this(HealingStatsBuilder.Instance, new MainActionsHealingHost(), null) { }
+
+    internal HealingSummary(HealingStatsBuilder healingStatsManager, IHealingSummaryHost host, string columnPersistenceKey)
     {
+      _healingStatsBuilder = healingStatsManager;
+      _host = host;
       InitializeComponent();
+
+      // Override the XAML default Tag="HealingSummaryColumns" so multiple HealingSummary
+      // instances (main tab + embedded raid-damage view) persist column visibility under
+      // separate ConfigUtil keys and don't overwrite each other on save.
+      if (!string.IsNullOrEmpty(columnPersistenceKey))
+      {
+        selectedColumns.Tag = columnPersistenceKey;
+      }
 
       var list = EQDataStore.Instance.GetClassList();
       list.Insert(0, Resource.ANY_CLASS);
@@ -107,8 +125,8 @@ namespace EQLogParser
       });
     }
 
-    private void CopyToEqClick(object sender, RoutedEventArgs e) => MainActions.CopyToEqClick(Labels.HealParse);
-    private void CopyTopHealsToEqClick(object sender, RoutedEventArgs e) => MainActions.CopyToEqClick(Labels.TopHealParse);
+    private void CopyToEqClick(object sender, RoutedEventArgs e) => _host.CopyToEqClick(Labels.HealParse);
+    private void CopyTopHealsToEqClick(object sender, RoutedEventArgs e) => _host.CopyToEqClick(Labels.TopHealParse);
     private void DataGridSelectionChanged(object sender, GridSelectionChangedEventArgs e) => DataGridSelectionChanged();
 
     private void DataGridCopyContent(object sender, GridCopyPasteEventArgs e)
@@ -262,7 +280,7 @@ namespace EQLogParser
       if (name == "Healing")
       {
         var selected = GetSelectedStats();
-        HealingStatsBuilder.Instance.FireChartEvent("UPDATE", selected);
+        _healingStatsBuilder.FireChartEvent("UPDATE", selected);
       }
     }
 
@@ -273,7 +291,7 @@ namespace EQLogParser
         var selectionChanged = new PlayerStatsSelectionChangedEventArgs();
         selectionChanged.Selected.AddRange(selected);
         selectionChanged.CurrentStats = CurrentStats;
-        MainActions.FireHealingSelectionChanged(selectionChanged);
+        _host.FireHealingSelectionChanged(selectionChanged);
       });
     }
 
@@ -287,7 +305,7 @@ namespace EQLogParser
 
       if (statOptions.MinSeconds < statOptions.MaxSeconds || statOptions.MaxSeconds == -1)
       {
-        _ = Task.Run(() => HealingStatsBuilder.Instance.RebuildTotalStats(statOptions)).ContinueWith(t =>
+        _ = Task.Run(() => _healingStatsBuilder.RebuildTotalStats(statOptions)).ContinueWith(t =>
           Log.Error($"Problem building healing stats.", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
       }
     }
@@ -296,10 +314,10 @@ namespace EQLogParser
     {
       if (VisualParent != null && !_ready)
       {
-        HealingStatsBuilder.Instance.EventsGenerationStatus += EventsGenerationStatus;
-        FightManager.Instance.EventsClearedActiveData += EventsClearedActiveData;
-        MainActions.EventsChartOpened += EventsChartOpened;
-        MainActions.EventsHealingSummaryOptionsChanged += EventsHealingSummaryOptionsChanged;
+        _healingStatsBuilder.EventsGenerationStatus += EventsGenerationStatus;
+        _host.EventsClearedActiveData += EventsClearedActiveData;
+        _host.EventsChartOpened += EventsChartOpened;
+        _host.EventsHealingSummaryOptionsChanged += EventsHealingSummaryOptionsChanged;
         EventsHealingSummaryOptionsChanged();
         _ready = true;
       }
@@ -307,13 +325,14 @@ namespace EQLogParser
 
     public void HideContent()
     {
-      HealingStatsBuilder.Instance.EventsGenerationStatus -= EventsGenerationStatus;
-      FightManager.Instance.EventsClearedActiveData -= EventsClearedActiveData;
-      MainActions.EventsChartOpened -= EventsChartOpened;
+      _healingStatsBuilder.EventsGenerationStatus -= EventsGenerationStatus;
+      _host.EventsClearedActiveData -= EventsClearedActiveData;
+      _host.EventsChartOpened -= EventsChartOpened;
+      _host.EventsHealingSummaryOptionsChanged -= EventsHealingSummaryOptionsChanged;
       ClearData();
 
       // healing always rebuilds and doesn't have a simple way to reset to all data
-      _ = Task.Run(() => HealingStatsBuilder.Instance.RebuildTotalStats(new GenerateStatsOptions())).ContinueWith(t =>
+      _ = Task.Run(() => _healingStatsBuilder.RebuildTotalStats(new GenerateStatsOptions())).ContinueWith(t =>
         Log.Error("Problem building healing stats", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
       _ready = false;
     }

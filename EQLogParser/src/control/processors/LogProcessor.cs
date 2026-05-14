@@ -10,13 +10,27 @@ namespace EQLogParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     private readonly string _fileName;
+    private readonly ParseContext _context;
     private long _lineCount;
     private Task _readTask;
     private volatile bool _isDisposed;
 
-    internal LogProcessor(string fileName)
+    // Default ctor delegates to the live singleton context. Background parse flows construct
+    // their own NpcDamageManager and pass a custom ParseContext.
+    internal LogProcessor(string fileName) : this(fileName, ParseContext.Live(null)) { }
+
+    internal LogProcessor(string fileName, ParseContext context)
     {
       _fileName = fileName ?? string.Empty;
+      _context = context;
+    }
+
+    // Synchronous entry point for background parse flows (e.g. Raid Damage window loading an
+    // exported log). Reuses DoPreProcess so chat skipping, double-line splitting, and the
+    // parser chain all behave the same as the live tailing flow.
+    internal void ProcessSync(string line, double dateTime)
+    {
+      DoPreProcess(line, dateTime, false);
     }
 
     public void LinkTo(BlockingCollection<LogReaderItem> collection)
@@ -80,17 +94,17 @@ namespace EQLogParser
           }
         }
 
-        if (PreLineParser.NeedProcessing(lineData))
+        if (_context.PreLineParser.NeedProcessing(lineData))
         {
           // may as well split once if most things use it
           lineData.Split = lineData.Action.Split(' ');
-          if (!DamageLineParser.Process(lineData))
+          if (!_context.DamageLineParser.Process(lineData))
           {
-            if (!HealingLineParser.Process(lineData))
+            if (!_context.HealingLineParser.Process(lineData))
             {
-              if (!MiscLineParser.Process(lineData))
+              if (!_context.MiscLineParser.Process(lineData))
               {
-                CastLineParser.Process(lineData);
+                _context.CastLineParser.Process(lineData);
               }
             }
           }

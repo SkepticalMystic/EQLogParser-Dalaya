@@ -37,20 +37,40 @@ namespace EQLogParser
     // NPC damage processing state (merged from NpcDamageManager)
     internal double LastFightProcessTime = double.NaN;
     private int _currentNpcId = 1;
-    private static readonly ConcurrentDictionary<string, bool> RecentSpellCache = [];
+    // Per-context cache — was static, moved to instance so a background parse's recent-spell state
+    // doesn't leak into the live context's attacker-attribution logic.
+    private readonly Dictionary<string, bool> RecentSpellCache = [];
     private readonly ConcurrentDictionary<string, bool> _validCombo = [];
     private readonly SimpleObjectCache<DamageRecord> _damageCache = new();
     private const int RecentSpellTime = 300;
 
-    internal FightManager()
+    private readonly List<Defender> _defenders = [];
+
+    private readonly EQDataStore _dataStore;
+    private readonly PlayerRegistry _playerRegistry;
+    private readonly DamageLineParser _damageLineParser;
+
+    public FightManager() : this(EQDataStore.Instance, PlayerRegistry.Instance, DamageLineParser.Instance, registerLifecycle: true) { }
+
+    public FightManager(EQDataStore dataStore, PlayerRegistry playerRegistry, DamageLineParser damageLineParser)
+      : this(dataStore, playerRegistry, damageLineParser, registerLifecycle: false) { }
+
+    private FightManager(EQDataStore dataStore, PlayerRegistry playerRegistry, DamageLineParser damageLineParser, bool registerLifecycle)
     {
-      PlayerRegistry.Instance.EventsNewVerifiedPlayer += (name) => RemoveFight(name);
-      PlayerRegistry.Instance.EventsNewVerifiedPet += (name) => RemoveFight(name);
+      _dataStore = dataStore;
+      _playerRegistry = playerRegistry;
+      _damageLineParser = damageLineParser;
 
-      DamageLineParser.EventsDamageProcessed += HandleDamageProcessed;
-      DamageLineParser.EventsNewTaunt += HandleNewTaunt;
+      _playerRegistry.EventsNewVerifiedPlayer += (name) => RemoveFight(name);
+      _playerRegistry.EventsNewVerifiedPet += (name) => RemoveFight(name);
 
-      LifecycleManager.Register(this);
+      _damageLineParser.EventsDamageProcessed += HandleDamageProcessed;
+      _damageLineParser.EventsNewTaunt += HandleNewTaunt;
+
+      if (registerLifecycle)
+      {
+        LifecycleManager.Register(this);
+      }
     }
 
     public void CheckExpireFights(double currentTime)
@@ -226,7 +246,7 @@ namespace EQLogParser
       }
 
       // cache recent player spells to help determine who the caster was
-      var isAttackerPlayer = PlayerRegistry.Instance.IsPetOrPlayerOrMerc(record.Attacker) || record.Attacker == Labels.Rs;
+      var isAttackerPlayer = _playerRegistry.IsPetOrPlayerOrMerc(record.Attacker) || record.Attacker == Labels.Rs;
       if (isAttackerPlayer && record.Type is Labels.Dd or Labels.Dot or Labels.Proc)
       {
         RecentSpellCache[record.SubType] = true;
@@ -242,7 +262,7 @@ namespace EQLogParser
         if (record.AttackerIsSpell && defender)
         {
           // check if it's really a player being hit
-          defender = !PlayerRegistry.Instance.IsPetOrPlayerOrMerc(record.Defender);
+          defender = !_playerRegistry.IsPetOrPlayerOrMerc(record.Defender);
 
           if (defender)
           {
@@ -410,7 +430,7 @@ namespace EQLogParser
 
       var isAttackerPlayerSpell = IsAttackerPlayerSpell(record);
       isAttackerPlayer = isAttackerPlayer || isAttackerPlayerSpell;
-      var isDefenderPlayer = PlayerRegistry.Instance.IsPetOrPlayerOrMerc(record.Defender);
+      var isDefenderPlayer = _playerRegistry.IsPetOrPlayerOrMerc(record.Defender);
       var isAttackerNpc = IsAttackerNpc(record, isAttackerPlayerSpell, isAttackerPlayer);
       var isDefenderNpc = IsDefenderNpc(record, isAttackerPlayerSpell, isDefenderPlayer) || isAttackerPlayer;
 
@@ -473,19 +493,19 @@ namespace EQLogParser
       return record.Attacker.Equals(record.Defender, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsAttackerPlayerSpell(DamageRecord record)
+    private bool IsAttackerPlayerSpell(DamageRecord record)
     {
       return record.AttackerIsSpell && RecentSpellCache.ContainsKey(record.Attacker);
     }
 
-    private static bool IsAttackerNpc(DamageRecord record, bool isAttackerPlayerSpell, bool isAttackerPlayer)
+    private bool IsAttackerNpc(DamageRecord record, bool isAttackerPlayerSpell, bool isAttackerPlayer)
     {
-      return (!isAttackerPlayer && EQDataStore.Instance.IsKnownNpc(record.Attacker)) || (record.AttackerIsSpell && !isAttackerPlayerSpell);
+      return (!isAttackerPlayer && _dataStore.IsKnownNpc(record.Attacker)) || (record.AttackerIsSpell && !isAttackerPlayerSpell);
     }
 
-    private static bool IsDefenderNpc(DamageRecord record, bool isAttackerPlayerSpell, bool isDefenderPlayer)
+    private bool IsDefenderNpc(DamageRecord record, bool isAttackerPlayerSpell, bool isDefenderPlayer)
     {
-      return (!isDefenderPlayer && EQDataStore.Instance.IsKnownNpc(record.Defender)) || isAttackerPlayerSpell;
+      return (!isDefenderPlayer && _dataStore.IsKnownNpc(record.Defender)) || isAttackerPlayerSpell;
     }
   }
 }

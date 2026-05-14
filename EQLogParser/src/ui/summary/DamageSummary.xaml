@@ -85,6 +85,7 @@
                             SelectionMode="Extended"
                             SelectionChanged="DataGridSelectionChanged"
                             ShowRowHeader="True">
+
       <syncfusion:SfTreeGrid.Resources>
         <Style TargetType="syncfusion:TreeGridRowHeaderCell">
           <Setter Property="Template">

@@ -28,15 +28,24 @@ namespace EQLogParser
     private List<Fight> _selected;
     private string _title;
 
-    internal TankingStatsBuilder()
+    private readonly EQDataStore _dataStore;
+    private readonly PlayerRegistry _playerRegistry;
+    private readonly FightManager _fightManager;
+
+    internal TankingStatsBuilder() : this(EQDataStore.Instance, PlayerRegistry.Instance, FightManager.Instance) { }
+
+    internal TankingStatsBuilder(EQDataStore dataStore, PlayerRegistry playerRegistry, FightManager fightManager)
     {
-      lock (_lock)
+      _dataStore = dataStore;
+      _playerRegistry = playerRegistry;
+      _fightManager = fightManager;
+      _fightManager.EventsClearedActiveData += (_) =>
       {
-        FightManager.Instance.EventsClearedActiveData += (_) =>
+        lock (_lock)
         {
           Reset();
-        };
-      }
+        }
+      };
     }
 
     internal void RebuildTotalStats(GenerateStatsOptions options)
@@ -267,7 +276,7 @@ namespace EQLogParser
               var filteredTimeRange = StatsUtil.FilterTimeRange(timeRange, startTime, stopTime);
               stats.TotalSeconds = filteredTimeRange.GetTotal();
 
-              var playerClass = PlayerRegistry.Instance.GetPlayerClass(stats.OrigName, lastTime);
+              var playerClass = _playerRegistry.GetPlayerClass(stats.OrigName, lastTime);
               stats.ClassName = playerClass;
               playerClasses.TryAdd(stats.OrigName, playerClass);
 

@@ -30,9 +30,18 @@ namespace EQLogParser
     private StatsGenerationEvent _lastStatsEvent;
     private string _title;
 
-    internal DamageStatsBuilder()
+    private readonly EQDataStore _dataStore;
+    private readonly PlayerRegistry _playerRegistry;
+    private readonly FightManager _fightManager;
+
+    internal DamageStatsBuilder() : this(EQDataStore.Instance, PlayerRegistry.Instance, FightManager.Instance) { }
+
+    internal DamageStatsBuilder(EQDataStore dataStore, PlayerRegistry playerRegistry, FightManager fightManager)
     {
-      FightManager.Instance.EventsClearedActiveData += (bool serverChanged) =>
+      _dataStore = dataStore;
+      _playerRegistry = playerRegistry;
+      _fightManager = fightManager;
+      _fightManager.EventsClearedActiveData += (bool serverChanged) =>
       {
         lock (_lock)
         {
@@ -273,7 +282,7 @@ namespace EQLogParser
                     }
                     else if (isValid)
                     {
-                      var isAttackerPet = PlayerRegistry.Instance.IsVerifiedPet(record.Attacker);
+                      var isAttackerPet = _playerRegistry.IsVerifiedPet(record.Attacker);
                       var isNewFrame = StatsUtil.CheckNewFrame(prevPlayerTimes, stats.Name, block.BeginTime);
 
                       _raidTotals.Total += record.Total;
@@ -391,7 +400,7 @@ namespace EQLogParser
                 }
               }
 
-              var playerClass = PlayerRegistry.Instance.GetPlayerClass(stats.OrigName, lastTime);
+              var playerClass = _playerRegistry.GetPlayerClass(stats.OrigName, lastTime);
               stats.ClassName = playerClass;
               playerClasses.TryAdd(stats.OrigName, playerClass);
 
@@ -494,7 +503,7 @@ namespace EQLogParser
 
     private void UpdatePetMapping(DamageRecord damage)
     {
-      var petName = PlayerRegistry.Instance.GetPlayerFromPet(damage.Attacker);
+      var petName = _playerRegistry.GetPlayerFromPet(damage.Attacker);
       if ((!string.IsNullOrEmpty(petName) && petName != Labels.Unassigned) || !string.IsNullOrEmpty(petName = damage.AttackerOwner))
       {
         if (!_playerPets.TryGetValue(petName, out var mapping))

@@ -150,6 +150,7 @@ namespace EQLogParser
       SyncFusionUtil.AddDocument(dockSite, typeof(NpcStatsViewer), "spellResistsWindow", "Spell Resists");
       SyncFusionUtil.AddDocument(dockSite, typeof(SpellDamageStatsViewer), "spellDamageStatsWindow", "Spell Damage");
       SyncFusionUtil.AddDocument(dockSite, typeof(TauntStatsViewer), "tauntStatsWindow", "Taunt Usage");
+      SyncFusionUtil.AddDocument(dockSite, typeof(RaidDamageView), "raidDamageWindow", "Raid Damage");
       SyncFusionUtil.AddDocument(dockSite, typeof(DamageSummary), "damageSummaryWindow", "DPS Summary", true);
     }
 
@@ -888,7 +889,7 @@ namespace EQLogParser
                     // stray Fight entries on re-parse.
                     if (defenderNames != null)
                     {
-                      var damageRecord = DamageLineParser.ParseLine(action);
+                      var damageRecord = DamageLineParser.Instance.ParseLine(action);
                       if (damageRecord != null && !defenderNames.Contains(damageRecord.Defender))
                       {
                         continue;

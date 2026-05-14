@@ -44,12 +44,66 @@ namespace EQLogParser
     private volatile bool _petMappingUpdated;
     private volatile bool _playersUpdated;
 
-    private PlayerRegistry()
+    private PlayerRegistry() : this(autoSave: true) { }
+
+    internal PlayerRegistry(bool autoSave)
     {
       // Populate generated pets
       ConfigUtil.ReadList(@"data\petnames.txt").ForEach(line => _gameGeneratedPets[line.TrimEnd()] = 1);
-      _saveTimer = new Timer(SaveTimerTick, null, _saveInterval, _saveInterval);
-      LifecycleManager.Register(this);
+
+      // Autosave writes petmapping.txt and registers for app-wide lifecycle (clear/shutdown).
+      // Background parse contexts (raid damage isolated parse) pass false so the off-log
+      // parse can't overwrite the live user's pet mapping or be paged by lifecycle events.
+      if (autoSave)
+      {
+        _saveTimer = new Timer(SaveTimerTick, null, _saveInterval, _saveInterval);
+        LifecycleManager.Register(this);
+      }
+    }
+
+    // Seeds this PlayerRegistry's classification state from another (typically the live
+    // singleton). Needed when spinning up an isolated parse context so that fresh parses
+    // don't misclassify known players/pets as NPCs. Copies are shallow (string → byte/string
+    // dictionaries); subsequent mutations on either side stay independent.
+    internal void SeedFrom(PlayerRegistry other)
+    {
+      if (other == null || ReferenceEquals(other, this))
+      {
+        return;
+      }
+      foreach (var kv in other._verifiedPlayers) _verifiedPlayers[kv.Key] = kv.Value;
+      foreach (var kv in other._verifiedPets) _verifiedPets[kv.Key] = kv.Value;
+      foreach (var kv in other._petToPlayer) _petToPlayer[kv.Key] = kv.Value;
+      foreach (var kv in other._mercs) _mercs[kv.Key] = kv.Value;
+    }
+
+    // The player whose log is being parsed in this context. Defaults to the live
+    // ConfigUtil.PlayerName but the multi-log raid damage flow assigns each isolated
+    // PlayerRegistry the source player's name so "you/your/yourself" resolves to the
+    // right person rather than the user running the app.
+    private string _playerName;
+    internal string PlayerName
+    {
+      get => _playerName ?? ConfigUtil.PlayerName;
+      set => _playerName = value;
+    }
+
+    // Instance variant of ReplacePlayer that uses this context's PlayerName for the
+    // second-person resolution. Parsers should call this on _playerRegistry rather than
+    // the static ReplacePlayer so each isolated context attributes self-cast damage
+    // correctly.
+    internal string ReplacePlayer(string name, string alternative)
+    {
+      var result = name;
+      if (ThirdPerson.Contains(name))
+      {
+        result = alternative;
+      }
+      else if (SecondPerson.Contains(name))
+      {
+        result = PlayerName;
+      }
+      return result;
     }
 
     internal bool IsVerifiedPlayer(string name) => !string.IsNullOrEmpty(name) && (name == Labels.Unassigned || SecondPerson.Contains(name)
@@ -107,6 +161,29 @@ namespace EQLogParser
       if (needEvent)
       {
         EventsNewPetMapping?.Invoke(new PetMapping(pet, player));
+      }
+    }
+
+    // Adds a pet→owner mapping ONLY if the pet doesn't already have one. Used by the Dalaya
+    // double-space pet detection in DamageLineParser, which has no way to know the pet's real
+    // owner and previously guessed ConfigUtil.PlayerName for every named pet in the log.
+    // In raid logs that guess clobbered correct mappings (from petmapping.txt, manual edits,
+    // or chat parsing). This variant preserves existing mappings so the parser can no longer
+    // overwrite them with wrong guesses.
+    internal void AddPetToPlayerIfUnmapped(string pet, string player)
+    {
+      pet = pet?.Trim();
+      if (!string.IsNullOrEmpty(pet) && !string.IsNullOrEmpty(player))
+      {
+        lock (_lock)
+        {
+          if (!_petToPlayer.ContainsKey(pet) && !IsVerifiedPlayer(pet))
+          {
+            _petToPlayer[pet] = player;
+            EventsNewPetMapping?.Invoke(new PetMapping(pet, player));
+            _petMappingUpdated = true;
+          }
+        }
       }
     }
 
@@ -614,22 +691,6 @@ namespace EQLogParser
         };
       }
       return UnkIconName;
-    }
-
-    internal static string ReplacePlayer(string name, string alternative)
-    {
-      var result = name;
-
-      if (ThirdPerson.Contains(name))
-      {
-        result = alternative;
-      }
-      else if (SecondPerson.Contains(name))
-      {
-        result = ConfigUtil.PlayerName;
-      }
-
-      return result;
     }
 
     internal static int FindPossiblePlayerName(string part, out bool isCrossServer, int start = 0, int stop = -1, char end = char.MaxValue)

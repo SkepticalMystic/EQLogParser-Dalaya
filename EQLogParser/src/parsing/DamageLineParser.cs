@@ -8,23 +8,22 @@ using System.Text.RegularExpressions;
 
 namespace EQLogParser
 {
-  internal static partial class DamageLineParser
+  internal partial class DamageLineParser
   {
-    public static event Action<DamageProcessedEvent> EventsDamageProcessed;
-    public static event Action<TauntEvent> EventsNewTaunt;
+    // The default singleton. The live parse pipeline uses this. A background parse context
+    // creates its own DamageLineParser instance with independent mutable state and events.
+    internal static DamageLineParser Instance { get; } = new();
+
+    // Instance events — scoped to this parser's context, so a second context's events don't
+    // fan out to the main NpcDamageManager.
+    public event Action<DamageProcessedEvent> EventsDamageProcessed;
+    public event Action<TauntEvent> EventsNewTaunt;
+
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     private static readonly Regex CheckEyeRegex = EyeRegex();
+
+    // Immutable lookup tables — shared safely across contexts.
     private static readonly Dictionary<string, bool> ReverseHitMap = [];
-    private static readonly Dictionary<string, string> SpellTypeCache = [];
-    private static readonly List<string> SlainQueue = [];
-    private static double _slainTime = double.NaN;
-    private static string _previousAction;
-    internal static IEQDataStore DataManager;
-    internal static IFightManager FightManager;
-
-    private static IEQDataStore DM => DataManager ?? EQLogParser.EQDataStore.Instance;
-    private static IFightManager FM => FightManager ?? EQLogParser.FightManager.Instance;
-
     private static readonly Dictionary<string, string> HitMap = new()
     {
       { "bash", "bashes" }, { "backstab", "backstabs" }, { "bite", "bites" }, { "claw", "claws" }, { "crush", "crushes" },
@@ -59,25 +58,82 @@ namespace EQLogParser
 
     private static readonly string[] SpecialCodeKeys = ["Mana Burn", "Harm Touch", "Life Burn"];
 
-    private static PendingDsData _pendingDs;
-    private static OldCritData _lastCrit;
-    private static DelayRecord _delayCritRecord;
+    // Per-context mutable state — carries between ParseLine/Process calls within one context.
+    // Per-instance so a background parse (e.g. raid damage) doesn't share or stomp the live
+    // context's slain queue, recent-action history, or pending DS hold.
+    private readonly Dictionary<string, string> SpellTypeCache = [];
+    private readonly List<string> SlainQueue = [];
+    private double _slainTime = double.NaN;
+    private string _previousAction;
+    private PendingDsData _pendingDs;
+    private OldCritData _lastCrit;
+    private DelayRecord _delayCritRecord;
+
+    // Injected collaborators — the default ctor binds these to the live singletons; an
+    // isolated parse context can supply its own EQDataStore/PlayerRegistry so parse side effects
+    // (pet mappings, verified players, active fights) don't contaminate the live session.
+    // Typed as interfaces so tests can inject Moq stand-ins.
+    private readonly IEQDataStore _dataStore;
+    private readonly PlayerRegistry _playerRegistry;
+
+    // FightManager is set after construction (FightManager constructs with a DamageLineParser
+    // reference, so we use property injection here to avoid the construction cycle). Live
+    // contexts default to the live singleton; isolated contexts (raid damage) assign their
+    // own isolated FightManager via ParseContext.CreateIsolated. Tests inject an IFightManager
+    // mock by setting this property directly.
+    private IFightManager _fightManager;
+    internal IFightManager FightManager
+    {
+      get => _fightManager ?? EQLogParser.FightManager.Instance;
+      set => _fightManager = value;
+    }
+
+    public DamageLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance) { }
+
+    public DamageLineParser(IEQDataStore dataStore, PlayerRegistry playerRegistry)
+    {
+      _dataStore = dataStore;
+      _playerRegistry = playerRegistry;
+    }
 
     static DamageLineParser()
     {
       HitMap.Keys.ToList().ForEach(key => ReverseHitMap[HitMap[key]] = true); // add two-way mapping
     }
 
-    // Test hook: clears per-line stash state (DS pending, crit announcement stashes) so one test
-    // doesn't leak state into the next.
-    internal static void ResetParseState()
+    // Test hook: resets mutable state on this context.
+    internal void ResetParseState()
     {
+      _slainTime = double.NaN;
+      _previousAction = null;
       _pendingDs = null;
       _lastCrit = null;
       _delayCritRecord = null;
+      lock (SlainQueue) { SlainQueue.Clear(); }
     }
 
-    public static void CheckSlainQueue(double currentTime)
+    // Test hook: re-raise exceptions so tests can see root cause instead of the silent catch in ParseLine.
+    internal DamageRecord ParseLineOrThrow(string action)
+    {
+      if (string.IsNullOrEmpty(action))
+      {
+        return null;
+      }
+      var lineData = new LineData { Action = action };
+      var split = lineData.Action.Split(' ');
+      if (split.Length < 2)
+      {
+        return null;
+      }
+      var stop = FindStop(split);
+      if (split.Length > 1 && stop >= 1 && split[stop] == "died." && !string.IsNullOrEmpty(string.Join(" ", split, 0, stop)))
+      {
+        return null;
+      }
+      return ParseLine(true, lineData, split, stop);
+    }
+
+    public void CheckSlainQueue(double currentTime)
     {
       lock (SlainQueue)
       {
@@ -86,7 +142,7 @@ namespace EQLogParser
         {
           foreach (var slain in CollectionsMarshal.AsSpan(SlainQueue))
           {
-            FM.RemoveActiveFight(slain);
+            FightManager.RemoveActiveFight(slain);
           }
 
           SlainQueue.Clear();
@@ -95,7 +151,7 @@ namespace EQLogParser
       }
     }
 
-    public static bool Process(LineData lineData)
+    public bool Process(LineData lineData)
     {
       var processed = false;
 
@@ -132,7 +188,7 @@ namespace EQLogParser
       return processed;
     }
 
-    public static DamageRecord ParseLine(string action)
+    public DamageRecord ParseLine(string action)
     {
       DamageRecord record = null;
 
@@ -163,7 +219,7 @@ namespace EQLogParser
       return record;
     }
 
-    private static DamageRecord ParseLine(bool checkLineType, LineData lineData, string[] split, int stop)
+    private DamageRecord ParseLine(bool checkLineType, LineData lineData, string[] split, int stop)
     {
       DamageRecord record = null;
       var resist = SpellResist.Undefined;
@@ -479,7 +535,7 @@ namespace EQLogParser
           }
           else
           {
-            attacker = ConfigUtil.PlayerName;
+            attacker = _playerRegistry.PlayerName;
             defender = string.Join(" ", split, 0, takenIndex);
           }
 
@@ -490,7 +546,7 @@ namespace EQLogParser
         {
           var damage = TextUtils.ParseUInt(split[extraIndex + 1]);
           var spell = string.Join(" ", split, fromDamage + 3, stop - fromDamage - 3);
-          var spellData = DM.GetDamagingSpellByName(spell);
+          var spellData = _dataStore.GetDamagingSpellByName(spell);
           resist = spellData?.Resist ?? SpellResist.Undefined;
           attacker = UpdateAttacker(attacker, spell);
           defender = UpdateDefender(defender, attacker);
@@ -556,8 +612,8 @@ namespace EQLogParser
           spell = spell[..^1];
           attacker = string.Join(" ", split, 0, hitTypeIndex);
           // Dalaya double-space on named pets leaves a trailing space ("Bonaparte  hit X for…").
-          // Same normalization as the melee branch — without it, direct-damage records for
-          // Bonaparte end up in a separate DPS Summary row from the melee/DoT records.
+          // Same normalization as the melee branch at ~line 556 — without it, direct-damage
+          // records for Bonaparte end up in a separate DPS Summary row from the melee/DoT records.
           attacker = attacker.TrimEnd();
           defender = string.Join(" ", split, hitTypeIndex + 1, forIndex - hitTypeIndex - 1);
           var type = GetTypeFromSpell(spell, Labels.Dd);
@@ -567,11 +623,11 @@ namespace EQLogParser
           // extra way to check for pets
           if (spell.StartsWith("Elemental Conversion", StringComparison.Ordinal))
           {
-            PlayerRegistry.Instance.AddVerifiedPet(defender);
+            _playerRegistry.AddVerifiedPet(defender);
             if (PlayerRegistry.IsPossiblePlayerName(attacker))
             {
-              PlayerRegistry.Instance.AddVerifiedPlayer(attacker, lineData.BeginTime);
-              PlayerRegistry.Instance.AddPetToPlayer(defender, attacker);
+              _playerRegistry.AddVerifiedPlayer(attacker, lineData.BeginTime);
+              _playerRegistry.AddPetToPlayer(defender, attacker);
             }
           }
 
@@ -623,19 +679,19 @@ namespace EQLogParser
               // stored name and the damage record name are consistent.
               attacker = attacker.Trim();
               // Mark as a verified pet but DO NOT guess the owner. Earlier code attributed
-              // every named pet in the log to ConfigUtil.PlayerName, which silently corrupted
+              // every named pet in the log to _playerRegistry.PlayerName, which silently corrupted
               // pet ownership in raid logs where other players' pets appear (e.g. Kateila's
               // Fireballs getting reassigned to Ezran just because Ezran is parsing the log).
               // Real ownership comes from three sources:
               //   1. petmapping.txt (loaded at startup)
               //   2. ChatManager's "My leader is X" detection (automatic when pets announce)
               //   3. Pet Owners UI (manual user assignment)
-              PlayerRegistry.Instance.AddVerifiedPet(attacker);
+              _playerRegistry.AddVerifiedPet(attacker);
             }
             else
             {
               // No trailing space = another player in the group/raid
-              PlayerRegistry.Instance.AddVerifiedPlayer(attacker, lineData.BeginTime);
+              _playerRegistry.AddVerifiedPlayer(attacker, lineData.BeginTime);
             }
           }
 
@@ -652,7 +708,7 @@ namespace EQLogParser
         }
         else if (yourIndex > -1)
         {
-          attacker = ConfigUtil.PlayerName;
+          attacker = _playerRegistry.PlayerName;
           spell = string.Join(" ", split, yourIndex + 1, stop - yourIndex);
           spell = (!string.IsNullOrEmpty(spell) && spell[^1] == '.') ? spell[..^1] : Labels.Dot;
         }
@@ -666,11 +722,11 @@ namespace EQLogParser
         if (!string.IsNullOrEmpty(attacker) && !string.IsNullOrEmpty(spell))
         {
           string type;
-          var spellData = DM.GetDamagingSpellByName(spell);
+          var spellData = _dataStore.GetDamagingSpellByName(spell);
 
           // Old (eqemu) if attacker is actually a spell then swap attacker and spell
           // Spells don't change on eqemu servers so this should always be a spell even with old spell data
-          if (spellData == null && DM.IsOldSpell(attacker))
+          if (spellData == null && _dataStore.IsOldSpell(attacker))
           {
             // check that we can't find a spell where the player name is
             (attacker, spell) = (spell, attacker);
@@ -701,7 +757,7 @@ namespace EQLogParser
         }
 
         var label = Labels.OtherDmg;
-        if (DM.GetDamagingSpellByName(spell) is { } spellData)
+        if (_dataStore.GetDamagingSpellByName(spell) is { } spellData)
         {
           resist = spellData.Resist;
 
@@ -746,7 +802,7 @@ namespace EQLogParser
 
         if (isYou)
         {
-          defender = ConfigUtil.PlayerName;
+          defender = _playerRegistry.PlayerName;
         }
         else
         {
@@ -786,9 +842,9 @@ namespace EQLogParser
           if (split[emuPetIndex + 1].EndsWith(")", StringComparison.OrdinalIgnoreCase))
           {
             var player = split[emuPetIndex + 1][..^1];
-            PlayerRegistry.Instance.AddVerifiedPlayer(player, lineData.BeginTime);
-            PlayerRegistry.Instance.AddVerifiedPet(attacker);
-            PlayerRegistry.Instance.AddPetToPlayer(attacker, player);
+            _playerRegistry.AddVerifiedPlayer(player, lineData.BeginTime);
+            _playerRegistry.AddVerifiedPet(attacker);
+            _playerRegistry.AddPetToPlayer(attacker, player);
             attackerOwner = player;
           }
         }
@@ -946,13 +1002,13 @@ namespace EQLogParser
       {
         var killer = string.Join(" ", split, 5, stop - 4);
         killer = killer.Length > 1 && killer[^1] == '!' ? killer[..^1] : killer;
-        var slain = ConfigUtil.PlayerName;
+        var slain = _playerRegistry.PlayerName;
         UpdateSlain(slain, killer, lineData);
       }
       // [Mon Apr 19 02:22:09 2021] You have slain a failed bodyguard!
       else if (!checkLineType && slainIndex == 2 && isYou && split[1] == "have")
       {
-        var killer = ConfigUtil.PlayerName;
+        var killer = _playerRegistry.PlayerName;
         var slain = string.Join(" ", split, 3, stop - 2);
         slain = slain.Length > 1 && slain[^1] == '!' ? slain[..^1] : slain;
         UpdateSlain(slain, killer, lineData);
@@ -971,14 +1027,14 @@ namespace EQLogParser
         {
           if (attentionIndex == (split.Length - 1) && split.Length > 3 && split[1] == "capture" && ParseNpcName(split, 3, out var npc))
           {
-            var taunt = new TauntRecord { Player = ConfigUtil.PlayerName, Success = true, Npc = TextUtils.ToUpper(npc) };
+            var taunt = new TauntRecord { Player = _playerRegistry.PlayerName, Success = true, Npc = TextUtils.ToUpper(npc) };
             EventsNewTaunt?.Invoke(new TauntEvent { BeginTime = lineData.BeginTime, Record = taunt });
           }
           else if (attentionIndex == (split.Length - 1) && failedIndex == 2 && split.Length > 6 && split[1] == "have" && split[3] == "to")
           {
             var taunt = new TauntRecord
             {
-              Player = ConfigUtil.PlayerName,
+              Player = _playerRegistry.PlayerName,
               Success = false,
               Npc = TextUtils.ToUpper(TextUtils.ParseSpellOrNpc(split, 5))
             };
@@ -1041,7 +1097,7 @@ namespace EQLogParser
         if (!checkLineType && !InIgnoreList(defender))
         {
           if (resist != SpellResist.Undefined && defender != attacker &&
-            (attacker == ConfigUtil.PlayerName || PlayerRegistry.Instance.GetPlayerFromPet(attacker) == ConfigUtil.PlayerName))
+            (attacker == _playerRegistry.PlayerName || _playerRegistry.GetPlayerFromPet(attacker) == _playerRegistry.PlayerName))
           {
             RecordsStore.Instance.UpdateNpcSpellStats(defender, resist);
           }
@@ -1107,15 +1163,15 @@ namespace EQLogParser
       return false;
     }
 
-    private static void UpdateSlain(string slain, string killer, LineData lineData)
+    private void UpdateSlain(string slain, string killer, LineData lineData)
     {
       if (!string.IsNullOrEmpty(slain) && killer != null && !InIgnoreList(slain)) // killer may not be known so empty string is OK
       {
-        killer = killer.Length > 2 ? PlayerRegistry.ReplacePlayer(killer, killer) : killer;
-        slain = PlayerRegistry.ReplacePlayer(slain, slain);
+        killer = killer.Length > 2 ? _playerRegistry.ReplacePlayer(killer, killer) : killer;
+        slain = _playerRegistry.ReplacePlayer(slain, slain);
 
         // clear your ADPS if you died
-        if (slain == ConfigUtil.PlayerName)
+        if (slain == _playerRegistry.PlayerName)
         {
           AdpsTracker.Instance.Clear();
         }
@@ -1129,7 +1185,7 @@ namespace EQLogParser
           {
             // we also use upper case now
             slain = TextUtils.ToUpper(slain);
-            if (!SlainQueue.Contains(slain) && FM.GetFight(slain) != null)
+            if (!SlainQueue.Contains(slain) && FightManager.GetFight(slain) != null)
             {
               SlainQueue.Add(slain);
               _slainTime = currentTime;
@@ -1149,7 +1205,7 @@ namespace EQLogParser
       }
     }
 
-    private static DamageRecord CreateDamageRecord(LineData lineData, string[] split, int stop, string attacker, string defender,
+    private DamageRecord CreateDamageRecord(LineData lineData, string[] split, int stop, string attacker, string defender,
       uint damage, string type, string subType, bool attackerIsSpell = false)
     {
       DamageRecord record = null;
@@ -1162,7 +1218,7 @@ namespace EQLogParser
         {
           // improve this later so maybe the string doesn't have to be re-joined
           var modifiers = string.Join(" ", split, stop + 1, split.Length - stop - 1);
-          modifiersMask = LineModifiersParser.ParseDamage(attacker, modifiers[1..^1], currentTime, !attackerIsSpell);
+          modifiersMask = LineModifiersParser.ParseDamage(_playerRegistry, attacker, modifiers[1..^1], currentTime, !attackerIsSpell);
         }
 
         // check for pets
@@ -1189,7 +1245,7 @@ namespace EQLogParser
       return record;
     }
 
-    private static string UpdateAttacker(string attacker, string subType)
+    private string UpdateAttacker(string attacker, string subType)
     {
       if (string.IsNullOrEmpty(attacker))
       {
@@ -1202,21 +1258,21 @@ namespace EQLogParser
       else
       {
         // Needed to replace 'You' and 'you', etc
-        attacker = PlayerRegistry.ReplacePlayer(attacker, attacker);
+        attacker = _playerRegistry.ReplacePlayer(attacker, attacker);
       }
 
       attacker = TextUtils.ToUpper(attacker);
       return attacker;
     }
 
-    private static string UpdateDefender(string defender, string attacker)
+    private string UpdateDefender(string defender, string attacker)
     {
       // Needed to replace 'You' and 'you', etc
-      var updated = PlayerRegistry.ReplacePlayer(defender, attacker);
+      var updated = _playerRegistry.ReplacePlayer(defender, attacker);
       return TextUtils.ToUpper(updated);
     }
 
-    private static void CheckOwner(string name, out string owner)
+    private void CheckOwner(string name, out string owner)
     {
       owner = null;
       if (!string.IsNullOrEmpty(name))
@@ -1227,11 +1283,11 @@ namespace EQLogParser
           if (PlayerRegistry.IsPossiblePlayerName(name, pIndex))
           {
             var player = name[..pIndex];
-            if (PlayerRegistry.Instance.IsVerifiedPlayer(player))
+            if (_playerRegistry.IsVerifiedPlayer(player))
             {
               owner = player;
-              PlayerRegistry.Instance.AddVerifiedPet(name);
-              PlayerRegistry.Instance.AddPetToPlayer(name, owner);
+              _playerRegistry.AddVerifiedPet(name);
+              _playerRegistry.AddPetToPlayer(name, owner);
             }
           }
         }
@@ -1270,7 +1326,7 @@ namespace EQLogParser
       return false;
     }
 
-    private static string GetTypeFromSpell(string name, string type)
+    private string GetTypeFromSpell(string name, string type)
     {
       var key = StatsUtil.CreateRecordKey(type, name);
       if (string.IsNullOrEmpty(key) || !SpellTypeCache.TryGetValue(key, out var result))
@@ -1278,8 +1334,8 @@ namespace EQLogParser
         result = type;
         if (!string.IsNullOrEmpty(key))
         {
-          var spellName = DM.AbbreviateSpellName(name);
-          var data = DM.GetSpellByAbbrv(spellName);
+          var spellName = _dataStore.AbbreviateSpellName(name);
+          var data = _dataStore.GetSpellByAbbrv(spellName);
           if (data != null)
           {
             if (data.Damaging == 2)

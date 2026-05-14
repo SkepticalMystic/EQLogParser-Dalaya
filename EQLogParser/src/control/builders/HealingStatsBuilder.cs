@@ -37,9 +37,18 @@ namespace EQLogParser
     private bool _isLimited;
     internal static readonly string[] Separator = [" @"];
 
-    internal HealingStatsBuilder()
+    private readonly EQDataStore _dataStore;
+    private readonly PlayerRegistry _playerRegistry;
+    private readonly FightManager _fightManager;
+
+    internal HealingStatsBuilder() : this(EQDataStore.Instance, PlayerRegistry.Instance, FightManager.Instance) { }
+
+    internal HealingStatsBuilder(EQDataStore dataStore, PlayerRegistry playerRegistry, FightManager fightManager)
     {
-      FightManager.Instance.EventsClearedActiveData += (_) =>
+      _dataStore = dataStore;
+      _playerRegistry = playerRegistry;
+      _fightManager = fightManager;
+      _fightManager.EventsClearedActiveData += (_) =>
       {
         lock (_lock)
         {
@@ -187,7 +196,7 @@ namespace EQLogParser
                         }
                       }
 
-                      if (PlayerRegistry.Instance.IsPetOrPlayerOrMerc(allHeals[j].Item2.Healed) ||
+                      if (_playerRegistry.IsPetOrPlayerOrMerc(allHeals[j].Item2.Healed) ||
                         PlayerRegistry.IsPossiblePlayerName(allHeals[j].Item2.Healed))
                       {
                         if (healingValidator.IsValid(allHeals[j].Item1, allHeals[j].Item2, currentSpellCounts, previousSpellCounts, ignoreRecords))
@@ -500,7 +509,7 @@ namespace EQLogParser
               }
 
               UpdateStats(_raidTotals, stats, _healerSpellTimeRanges, _healerHealedTimeRanges, _healerHealedSpellTimeRanges, false);
-              var playerClass = PlayerRegistry.Instance.GetPlayerClass(stats.OrigName, lastTime);
+              var playerClass = _playerRegistry.GetPlayerClass(stats.OrigName, lastTime);
               stats.ClassName = playerClass;
               playerClasses.TryAdd(stats.OrigName, playerClass);
 

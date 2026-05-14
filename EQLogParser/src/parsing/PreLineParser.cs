@@ -1,16 +1,22 @@
-﻿using System;
+using System;
 
 namespace EQLogParser
 {
   internal class PreLineParser
   {
-    // Process things that can easily identify a player
-    private PreLineParser()
-    {
+    internal static PreLineParser Instance { get; } = new();
 
+    private readonly PlayerRegistry _playerRegistry;
+
+    public PreLineParser() : this(PlayerRegistry.Instance) { }
+
+    public PreLineParser(PlayerRegistry playerRegistry)
+    {
+      _playerRegistry = playerRegistry;
     }
 
-    internal static bool NeedProcessing(LineData lineData)
+    // Process things that can easily identify a player
+    internal bool NeedProcessing(LineData lineData)
     {
       var found = false;
       var action = lineData.Action;
@@ -19,7 +25,7 @@ namespace EQLogParser
       {
         if (action.Length > 20 && action.StartsWith("Targeted (Player)", StringComparison.OrdinalIgnoreCase))
         {
-          PlayerRegistry.Instance.AddVerifiedPlayer(action[19..], lineData.BeginTime);
+          _playerRegistry.AddVerifiedPlayer(action[19..], lineData.BeginTime);
           found = true; // ignore anything that starts with Targeted
         }
         else if (action.EndsWith(" joined the raid.", StringComparison.OrdinalIgnoreCase) && !action.StartsWith("You have", StringComparison.OrdinalIgnoreCase))
@@ -27,7 +33,7 @@ namespace EQLogParser
           if (PlayerRegistry.IsPossiblePlayerName(action, action.Length - 17))
           {
             var test = action[..^17];
-            PlayerRegistry.Instance.AddVerifiedPlayer(test, lineData.BeginTime);
+            _playerRegistry.AddVerifiedPlayer(test, lineData.BeginTime);
             found = true;
           }
         }
@@ -36,11 +42,11 @@ namespace EQLogParser
           var test = action[..^22];
           if (PlayerRegistry.IsPossiblePlayerName(test))
           {
-            PlayerRegistry.Instance.AddVerifiedPlayer(test, lineData.BeginTime);
+            _playerRegistry.AddVerifiedPlayer(test, lineData.BeginTime);
           }
           else
           {
-            PlayerRegistry.Instance.AddMerc(test);
+            _playerRegistry.AddMerc(test);
           }
 
           found = true;
@@ -50,7 +56,7 @@ namespace EQLogParser
           var test = action[..^19];
           if (PlayerRegistry.IsPossiblePlayerName(test))
           {
-            PlayerRegistry.Instance.AddVerifiedPlayer(test, lineData.BeginTime);
+            _playerRegistry.AddVerifiedPlayer(test, lineData.BeginTime);
             found = true;
           }
         }
@@ -59,11 +65,11 @@ namespace EQLogParser
           var test = action[..^20];
           if (PlayerRegistry.IsPossiblePlayerName(test))
           {
-            PlayerRegistry.Instance.AddVerifiedPlayer(test, lineData.BeginTime);
+            _playerRegistry.AddVerifiedPlayer(test, lineData.BeginTime);
           }
           else
           {
-            PlayerRegistry.Instance.AddMerc(test);
+            _playerRegistry.AddMerc(test);
           }
 
           found = true;
@@ -73,7 +79,7 @@ namespace EQLogParser
           var test = action[..^32];
           if (PlayerRegistry.IsPossiblePlayerName(test))
           {
-            PlayerRegistry.Instance.AddVerifiedPlayer(test, lineData.BeginTime);
+            _playerRegistry.AddVerifiedPlayer(test, lineData.BeginTime);
             found = true;
           }
         }
@@ -82,7 +88,7 @@ namespace EQLogParser
           var end = PlayerRegistry.FindPossiblePlayerName(action, out var isCrossServer, 21, -1, ' ');
           if (end != -1 && !isCrossServer && action.AsSpan()[end..].StartsWith(" takes a drink ", StringComparison.OrdinalIgnoreCase))
           {
-            PlayerRegistry.Instance.AddVerifiedPlayer(action[21..end], lineData.BeginTime);
+            _playerRegistry.AddVerifiedPlayer(action[21..end], lineData.BeginTime);
             found = true;
           }
         }

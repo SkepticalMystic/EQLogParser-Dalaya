@@ -23,16 +23,26 @@ namespace EQLogParser
     public static readonly List<string> GroupNumbers = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
     private static readonly List<string> NoRostersList = ["No Raid Rosters Found"];
     private readonly DispatcherTimer _selectionTimer;
+    private readonly DamageStatsBuilder _damageStatsBuilder;
+    private readonly IDamageSummaryHost _host;
     private int _currentGroupCount;
     private readonly ViewOptionRegistry _viewOptions;
     private bool _ready;
 
-    // Group view tracking for incremental updates
+    // Group view tracking for incremental updates (master Group View feature)
     private List<GroupEntry> _groupEntries;
     private PlayerStats _currentEditPlayer = null!;
 
-    public DamageSummary()
+    // XAML requires a public parameterless ctor. The main DPS Summary tab instantiates the
+    // control via XAML and gets the live singleton + MainActions forwarding. Other hosts
+    // (e.g. the Raid Damage window) construct via the injected overload so the two views
+    // can't stomp on each other's state or events.
+    public DamageSummary() : this(DamageStatsBuilder.Instance, new MainActionsHost(), null) { }
+
+    internal DamageSummary(DamageStatsBuilder damageStatsBuilder, IDamageSummaryHost host, string columnPersistenceKey)
     {
+      _damageStatsBuilder = damageStatsBuilder;
+      _host = host;
       InitializeComponent();
 
       _viewOptions = new ViewOptionRegistry();
@@ -48,6 +58,14 @@ namespace EQLogParser
       CreateClassMenuItems(menuItemShowSpellCasts, DataGridSpellCastsByClassClick, false, DataGridShowSpellCastsClick);
       CreateClassMenuItems(menuItemShowBreakdown, DataGridShowBreakdownByClassClick, false, DataGridShowBreakdownClick);
       CreateClassMenuItems(menuItemSetPlayerClass, DataGridSetPlayerClassClick, true);
+
+      // Override the XAML default Tag="DamageSummaryColumns" so multiple DamageSummary
+      // instances (main tab + embedded raid-damage view) persist column visibility under
+      // separate ConfigUtil keys and don't overwrite each other on save.
+      if (!string.IsNullOrEmpty(columnPersistenceKey))
+      {
+        selectedColumns.Tag = columnPersistenceKey;
+      }
 
       // call after everything else is initialized
       InitSummaryTable(title, dataGrid, selectedColumns, classesList);
@@ -143,7 +161,7 @@ namespace EQLogParser
       });
     }
 
-    private void CopyToEqClick(object sender, RoutedEventArgs e) => MainActions.CopyToEqClick(Labels.DamageParse);
+    private void CopyToEqClick(object sender, RoutedEventArgs e) => _host.CopyToEqClick(Labels.DamageParse);
     internal override bool IsPetsCombined() => _viewOptions?.GetSelectedOptionName() == Labels.PetPlayerOption;
     private void DataGridSelectionChanged(object sender, GridSelectionChangedEventArgs e) => DataGridSelectionChanged();
 
@@ -411,21 +429,6 @@ namespace EQLogParser
     private void CleanupGroupTracking()
     {
       _groupEntries?.Clear();
-    }
-
-    private void EventsDamageSummaryOptionsChanged(string option = null)
-    {
-      var statOptions = new GenerateStatsOptions
-      {
-        MinSeconds = (long)minTimeChooser.Value,
-        MaxSeconds = ((long)maxTimeChooser.Value > 0) ? (long)maxTimeChooser.Value : -1
-      };
-
-      if (statOptions.MinSeconds < statOptions.MaxSeconds || statOptions.MaxSeconds == -1)
-      {
-        _ = Task.Run(() => DamageStatsBuilder.Instance.RebuildTotalStats(statOptions)).ContinueWith(t =>
-          Log.Error("Problem building damage stats.", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
-      }
     }
 
     private void EditGroupMouseLeftButton(object sender, MouseButtonEventArgs e)
@@ -810,7 +813,7 @@ namespace EQLogParser
       if (name == "Damage")
       {
         var selected = GetSelectedStats();
-        DamageStatsBuilder.Instance.FireChartEvent("UPDATE", selected);
+        _damageStatsBuilder.FireChartEvent("UPDATE", selected);
       }
     }
 
@@ -848,21 +851,36 @@ namespace EQLogParser
         var selectionChanged = new PlayerStatsSelectionChangedEventArgs();
         selectionChanged.Selected.AddRange(selected);
         selectionChanged.CurrentStats = CurrentStats;
-        MainActions.FireDamageSelectionChanged(selectionChanged);
+        _host.FireDamageSelectionChanged(selectionChanged);
       });
+    }
+
+    private void EventsDamageSummaryOptionsChanged(string option = null)
+    {
+      var statOptions = new GenerateStatsOptions
+      {
+        MinSeconds = (long)minTimeChooser.Value,
+        MaxSeconds = ((long)maxTimeChooser.Value > 0) ? (long)maxTimeChooser.Value : -1
+      };
+
+      if (statOptions.MinSeconds < statOptions.MaxSeconds || statOptions.MaxSeconds == -1)
+      {
+        _ = Task.Run(() => _damageStatsBuilder.RebuildTotalStats(statOptions)).ContinueWith(t =>
+          Log.Error("Problem building damage stats.", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+      }
     }
 
     private void ContentLoaded(object sender, RoutedEventArgs e)
     {
       if (VisualParent != null && !_ready)
       {
-        DamageStatsBuilder.Instance.EventsGenerationStatus += EventsGenerationStatus;
-        FightManager.Instance.EventsClearedActiveData += EventsClearedActiveData;
-        MainActions.EventsChartOpened += EventsChartOpened;
-        MainActions.EventsDamageSummaryOptionsChanged += EventsDamageSummaryOptionsChanged;
+        _damageStatsBuilder.EventsGenerationStatus += EventsGenerationStatus;
+        _host.EventsClearedActiveData += EventsClearedActiveData;
+        _host.EventsChartOpened += EventsChartOpened;
+        _host.EventsDamageSummaryOptionsChanged += EventsDamageSummaryOptionsChanged;
         RaidRosterStore.EventsRosterUpdated += OnRosterUpdated;
 
-        if (DamageStatsBuilder.Instance.GetLastStats() is { } stats)
+        if (_damageStatsBuilder.GetLastStats() is { } stats)
         {
           EventsGenerationStatus(stats);
         }
@@ -877,10 +895,10 @@ namespace EQLogParser
 
     public void HideContent()
     {
-      DamageStatsBuilder.Instance.EventsGenerationStatus -= EventsGenerationStatus;
-      FightManager.Instance.EventsClearedActiveData -= EventsClearedActiveData;
-      MainActions.EventsDamageSummaryOptionsChanged -= EventsDamageSummaryOptionsChanged;
-      MainActions.EventsChartOpened -= EventsChartOpened;
+      _damageStatsBuilder.EventsGenerationStatus -= EventsGenerationStatus;
+      _host.EventsClearedActiveData -= EventsClearedActiveData;
+      _host.EventsDamageSummaryOptionsChanged -= EventsDamageSummaryOptionsChanged;
+      _host.EventsChartOpened -= EventsChartOpened;
       RaidRosterStore.EventsRosterUpdated -= OnRosterUpdated;
 
       if (_viewOptions?.GetSelectedOptionName() == Labels.ByGroupOption)
@@ -892,7 +910,7 @@ namespace EQLogParser
 
       if ((long)minTimeChooser.Value != 0 || (long)maxTimeChooser.Value != (long)maxTimeChooser.MaxValue)
       {
-        DamageStatsBuilder.Instance.RebuildTotalStats(new GenerateStatsOptions(), true);
+        _damageStatsBuilder.RebuildTotalStats(new GenerateStatsOptions(), true);
       }
 
       _ready = false;

@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace EQLogParser
 {
-  internal static class CastLineParser
+  internal class CastLineParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     private static readonly char[] OldSpellChars = ['<', '>'];
@@ -22,7 +22,20 @@ namespace EQLogParser
       "Companion's Aegis", "Second Wind Ward", "Zeal of the Elements"
     ];
 
-    public static bool Process(LineData lineData)
+    internal static CastLineParser Instance { get; } = new();
+
+    private readonly EQDataStore _dataStore;
+    private readonly PlayerRegistry _playerRegistry;
+
+    public CastLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance) { }
+
+    public CastLineParser(EQDataStore dataStore, PlayerRegistry playerRegistry)
+    {
+      _dataStore = dataStore;
+      _playerRegistry = playerRegistry;
+    }
+
+    public bool Process(LineData lineData)
     {
       try
       {
@@ -51,7 +64,7 @@ namespace EQLogParser
           if (split[0] == "You")
           {
             isYou = true;
-            player = ConfigUtil.PlayerName;
+            player = _playerRegistry.PlayerName;
             if (split[1] == "activate" && split.Length > 2)
             {
               spellName = TextUtils.ParseSpellOrNpc([.. split], 2);
@@ -109,7 +122,7 @@ namespace EQLogParser
 
             if (split[0] == "Your")
             {
-              player = ConfigUtil.PlayerName;
+              player = _playerRegistry.PlayerName;
             }
             else if (split[0].Length > 3 && split[0][^1] == 's' && split[0][^2] == '\'')
             {
@@ -135,7 +148,7 @@ namespace EQLogParser
                 }
               }
 
-              var spellData = EQDataStore.Instance.GetSpellByName(spellName);
+              var spellData = _dataStore.GetSpellByName(spellName);
 
               if (spellData != null)
               {
@@ -144,15 +157,15 @@ namespace EQLogParser
               else
               {
                 // unknown spell
-                spellData = EQDataStore.Instance.AddUnknownSpell(spellName);
+                spellData = _dataStore.AddUnknownSpell(spellName);
               }
 
               var cast = new SpellCast { Caster = string.Intern(player), Spell = string.Intern(spellName), SpellData = spellData };
               RecordsStore.Instance.Add(cast, currentTime);
 
-              if (!spellData.IsUnknown && EQDataStore.Instance.GetSpellClass(spellData.Name) is { } theClass)
+              if (!spellData.IsUnknown && _dataStore.GetSpellClass(spellData.Name) is { } theClass)
               {
-                PlayerRegistry.Instance.SetActivePlayerClass(player, theClass, 2, currentTime);
+                _playerRegistry.SetActivePlayerClass(player, theClass, 2, currentTime);
               }
 
               if (specialKey != null && spellData != null)
@@ -184,7 +197,7 @@ namespace EQLogParser
       return false;
     }
 
-    private static bool CheckLandsOnMessages(string[] split, double beginTime)
+    private bool CheckLandsOnMessages(string[] split, double beginTime)
     {
       // ZONE EVENT - moved here to keep it in the same thread as lands on message parsing
       if (split.Length > 3 && split[1] == "have" && split[2] == "entered")
@@ -219,21 +232,21 @@ namespace EQLogParser
       }
 
       // lands on you
-      if (EQDataStore.Instance.TryGetLandsOnYou(split, out var searchResult))
+      if (_dataStore.TryGetLandsOnYou(split, out var searchResult))
       {
-        AddReceived(ConfigUtil.PlayerName, searchResult);
+        AddReceived(_playerRegistry.PlayerName, searchResult);
         return true;
       }
 
       // wear off you
-      if (EQDataStore.Instance.TryGetWearOff(split, out searchResult))
+      if (_dataStore.TryGetWearOff(split, out searchResult))
       {
-        AddReceived(ConfigUtil.PlayerName, searchResult, true);
+        AddReceived(_playerRegistry.PlayerName, searchResult, true);
         return true;
       }
 
       // lands on other
-      if (EQDataStore.Instance.TryGetLandsOnOther(split, out searchResult, out var target))
+      if (_dataStore.TryGetLandsOnOther(split, out searchResult, out var target))
       {
         AddReceived(target, searchResult);
 
@@ -241,13 +254,13 @@ namespace EQLogParser
         if (searchResult.SpellData[0].Target == (int)SpellTarget.Pet || searchResult.SpellData[0].Target == (int)SpellTarget.Pet2)
         {
           // dont change a pet into a player by accident
-          if (searchResult.SpellData.Count == 1 && !PlayerRegistry.Instance.IsVerifiedPet(target) && !PlayerRegistry.Instance.IsVerifiedPlayer(target))
+          if (searchResult.SpellData.Count == 1 && !_playerRegistry.IsVerifiedPet(target) && !_playerRegistry.IsVerifiedPlayer(target))
           {
             foreach (var spell in PetSpells)
             {
               if (searchResult.SpellData[0].Name?.StartsWith(spell, StringComparison.OrdinalIgnoreCase) == true)
               {
-                PlayerRegistry.Instance.AddVerifiedPet(target);
+                _playerRegistry.AddVerifiedPet(target);
                 break;
               }
             }

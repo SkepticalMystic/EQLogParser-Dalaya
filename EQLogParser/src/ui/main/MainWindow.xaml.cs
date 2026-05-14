@@ -118,6 +118,12 @@ namespace EQLogParser
       // Hardware Acceleration
       hardwareAccelIcon.Visibility = ConfigUtil.IfSet("HardwareAcceleration") ? Visibility.Visible : Visibility.Hidden;
 
+      // Raid Damage merge diagnostics (off by default). Logs per-cluster dedup-split details
+      // to EQLogParser.log — useful when investigating cross-source over-counts.
+      var mergeDiag = ConfigUtil.IfSet("LogMergeDiagnostics");
+      logMergeDiagnosticsIcon.Visibility = mergeDiag ? Visibility.Visible : Visibility.Hidden;
+      FightMerger.MergeDiagnosticsEnabled = mergeDiag;
+
       // upgrade
       if (ConfigUtil.IfSet("TriggersWatchForGINA"))
       {
@@ -377,6 +383,7 @@ namespace EQLogParser
     private void ToggleHardwareAccelClick(object sender, RoutedEventArgs e) => MainActions.ToggleSetting("HardwareAcceleration", hardwareAccelIcon);
     private void ToggleExportFormattedCsvClick(object sender, RoutedEventArgs e) => MainActions.ToggleSetting("ExportFormattedCsv", exportFormattedCsvIcon);
     private void ToggleHideOnMinimizeClick(object sender, RoutedEventArgs e) => MainActions.ToggleSetting("HideWindowOnMinimize", enableHideOnMinimizeIcon);
+    private void ToggleLogMergeDiagnosticsClick(object sender, RoutedEventArgs e) => FightMerger.MergeDiagnosticsEnabled = MainActions.ToggleSetting("LogMergeDiagnostics", logMergeDiagnosticsIcon);
     private void LocationChangedEvent(object sender, EventArgs e) => SaveWindowSize();
     private void CloseLogClick(object sender, EventArgs e) => CloseLogFile(true);
 

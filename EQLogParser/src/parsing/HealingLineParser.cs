@@ -8,12 +8,18 @@ namespace EQLogParser
   {
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
 
-    private HealingLineParser()
-    {
+    internal static HealingLineParser Instance { get; } = new();
 
+    private readonly PlayerRegistry _playerRegistry;
+
+    public HealingLineParser() : this(PlayerRegistry.Instance) { }
+
+    public HealingLineParser(PlayerRegistry playerRegistry)
+    {
+      _playerRegistry = playerRegistry;
     }
 
-    public static bool Process(LineData lineData)
+    public bool Process(LineData lineData)
     {
       var action = lineData.Action;
       try
@@ -24,8 +30,8 @@ namespace EQLogParser
           var record = HandleHealed(action, index, lineData.BeginTime);
           if (record != null)
           {
-            record.Healer = PlayerRegistry.ReplacePlayer(record.Healer, record.Healed);
-            record.Healed = PlayerRegistry.ReplacePlayer(record.Healed, record.Healer);
+            record.Healer = _playerRegistry.ReplacePlayer(record.Healer, record.Healed);
+            record.Healed = _playerRegistry.ReplacePlayer(record.Healed, record.Healer);
             RecordsStore.Instance.Add(record, lineData.BeginTime);
             return true;
           }
@@ -51,7 +57,7 @@ namespace EQLogParser
       return false;
     }
 
-    private static HealRecord HandleHealed(string part, int optional, double beginTime)
+    private HealRecord HandleHealed(string part, int optional, double beginTime)
     {
       // [Sun Feb 24 21:00:58 2019] Foob's promised interposition is fulfilled Foob healed himself for 44238 hit points by Promised Interposition Heal V. (Lucky Critical)
       // [Sun Feb 24 21:01:01 2019] Rowanoak is soothed by Brell's Soothing Wave. Farzi healed Rowanoak for 524 hit points by Brell's Sacred Soothing Wave.
@@ -226,20 +232,20 @@ namespace EQLogParser
 
         // check for pets
         var possessive = healed.IndexOf("`s ", StringComparison.Ordinal);
-        if (possessive > -1 && PlayerRegistry.Instance.IsVerifiedPlayer(healed[..possessive]))
+        if (possessive > -1 && _playerRegistry.IsVerifiedPlayer(healed[..possessive]))
         {
-          PlayerRegistry.Instance.AddVerifiedPet(healed);
+          _playerRegistry.AddVerifiedPet(healed);
         }
 
         // found a bst/mag/nec pet
         if (spell?.StartsWith("Mend Companion", StringComparison.Ordinal) == true || spell?.StartsWith("Warder's Shielding", StringComparison.Ordinal) == true ||
           spell?.StartsWith("Might of the Wild Spirits", StringComparison.Ordinal) == true)
         {
-          PlayerRegistry.Instance.AddVerifiedPet(healed);
+          _playerRegistry.AddVerifiedPet(healed);
           if (PlayerRegistry.IsPossiblePlayerName(healer))
           {
-            PlayerRegistry.Instance.AddVerifiedPlayer(healer, beginTime);
-            PlayerRegistry.Instance.AddPetToPlayer(healed, healer);
+            _playerRegistry.AddVerifiedPlayer(healer, beginTime);
+            _playerRegistry.AddPetToPlayer(healed, healer);
           }
         }
 
@@ -266,7 +272,7 @@ namespace EQLogParser
           var firstParen = part.LastIndexOf('(', part.Length - 4);
           if (firstParen > -1)
           {
-            record.ModifiersMask = LineModifiersParser.ParseHeal(record.Healer,
+            record.ModifiersMask = LineModifiersParser.ParseHeal(_playerRegistry, record.Healer,
               part.Substring(firstParen + 1, part.Length - 1 - firstParen - 1), beginTime);
           }
         }

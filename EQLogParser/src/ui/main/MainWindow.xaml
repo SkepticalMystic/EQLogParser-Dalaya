@@ -95,6 +95,11 @@
                 <fa:ImageAwesome x:Name="damageChartIcon" Tag="damageChartWindow" Loaded="WindowIconLoaded" Style="{StaticResource EQIconStyle}" Visibility="Hidden" Icon="Solid_Check" />
               </MenuItem.Icon>
             </MenuItem>
+            <MenuItem x:Name="raidDamageMenuItem" Click="MenuItemWindowClick" Header="_Raid Damage (Multi-Log)">
+              <MenuItem.Icon>
+                <fa:ImageAwesome x:Name="raidDamageIcon" Tag="raidDamageWindow" Loaded="WindowIconLoaded" Style="{StaticResource EQIconStyle}" Visibility="Hidden" Icon="Solid_Check" />
+              </MenuItem.Icon>
+            </MenuItem>
           </MenuItem>
           <MenuItem x:Name="healingView" Header="_Healing">
             <MenuItem.Icon>
@@ -453,6 +458,12 @@
           <MenuItem Header="_About" Click="AboutClick" IsEnabled="True">
             <MenuItem.Icon>
               <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Visibility="Visible" Icon="Solid_Info" />
+            </MenuItem.Icon>
+          </MenuItem>
+          <Separator />
+          <MenuItem x:Name="logMergeDiagnostics" Header="Log _Merge Diagnostics (Raid Damage)" Click="ToggleLogMergeDiagnosticsClick">
+            <MenuItem.Icon>
+              <fa:ImageAwesome x:Name="logMergeDiagnosticsIcon" Style="{StaticResource EQIconStyle}" Visibility="Hidden" Icon="Solid_Check" />
             </MenuItem.Icon>
           </MenuItem>
         </MenuItem>
