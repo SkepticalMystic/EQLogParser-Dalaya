@@ -1,7 +1,9 @@
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace EQLogParser
@@ -19,6 +21,14 @@ namespace EQLogParser
 
   internal static class FightMerger
   {
+    private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
+
+    // When true, MergeBlocks emits a one-shot diagnostic per cluster that detects
+    // dedup-key splits — records that share (Attacker, Defender, Total) but landed in
+    // different perRecord buckets due to a metadata difference (ModifiersMask,
+    // AttackerOwner, Type/SubType, etc.). Used to root-cause cross-TZ over-count.
+    internal static bool MergeDiagnosticsEnabled = true;
+
     private static readonly Regex EqLogFileRegex =
       new(@"^eqlog_([^_]+)_[^.]+\.txt$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -109,8 +119,8 @@ namespace EQLogParser
       List<(string SourcePlayer, double Offset, Fight Fight)> cluster,
       Dictionary<string, DriftFunction> drifts)
     {
-      var damageBlocks = MergeBlocks(cluster, drifts, applyDsFilter: true, static f => f.DamageBlocks);
-      var tankingBlocks = MergeBlocks(cluster, drifts, applyDsFilter: false, static f => f.TankingBlocks);
+      var damageBlocks = MergeBlocks(cluster, drifts, applyDsFilter: true, static f => f.DamageBlocks, "damage");
+      var tankingBlocks = MergeBlocks(cluster, drifts, applyDsFilter: false, static f => f.TankingBlocks, "tanking");
 
       // Adjusted begin time across the cluster — every source's BeginTime is shifted by its
       // offset and per-source drift before comparison, so the merged frame lines up with
@@ -172,7 +182,8 @@ namespace EQLogParser
       List<(string SourcePlayer, double Offset, Fight Fight)> cluster,
       Dictionary<string, DriftFunction> drifts,
       bool applyDsFilter,
-      Func<Fight, List<ActionGroup>> blocksSelector)
+      Func<Fight, List<ActionGroup>> blocksSelector,
+      string blockKind)
     {
       var perRecord = new Dictionary<DamageRecord, List<double>[]>();
       // Cache the drift function per source index so we don't dictionary-lookup per-action.
@@ -213,6 +224,13 @@ namespace EQLogParser
             bySource[sourceIdx].Add(AdjustTime(block.BeginTime, offset, drift));
           }
         }
+      }
+
+      CollapseModifierMaskVariants(perRecord);
+
+      if (MergeDiagnosticsEnabled)
+      {
+        LogDedupSplitDiagnostics(cluster, perRecord, blockKind);
       }
 
       var emitted = new List<(double Time, DamageRecord Record)>();
@@ -270,6 +288,253 @@ namespace EQLogParser
           return ag;
         })
         .ToList();
+    }
+
+    // Identity for "the same physical hit" — everything that should match across sources
+    // when dedup is working, omitting ModifiersMask because crit/lucky/twincast announcements
+    // are paired to the damage line within a 1-second window and that pairing fails per-
+    // source under network jitter / log-line ordering. Same-hit records with divergent
+    // masks get collapsed by CollapseModifierMaskVariants below.
+    private readonly record struct LooseDamageKey(
+      string Attacker, string AttackerOwner, string Defender, string DefenderOwner,
+      bool AttackerIsSpell, uint Total, uint OverTotal, string Type, string SubType);
+
+    private static LooseDamageKey GetLooseKey(DamageRecord r) =>
+      new(r.Attacker, r.AttackerOwner, r.Defender, r.DefenderOwner,
+          r.AttackerIsSpell, r.Total, r.OverTotal, r.Type, r.SubType);
+
+    // Collapse buckets that share a loose key but disagree only on ModifiersMask. The
+    // default ModifiersMask of -1 means "no modifier announcement was parsed" — it's a
+    // sentinel for missing information, not an explicit "this hit had no modifiers" (which
+    // would be 0). When sources disagree, OR all concrete (>= 0) masks together — that's
+    // the union of modifier announcements any source saw — and route every observation into
+    // a single bucket so the order-pair dedup counts it once instead of once per variant.
+    private static void CollapseModifierMaskVariants(Dictionary<DamageRecord, List<double>[]> perRecord)
+    {
+      if (perRecord.Count < 2) return;
+
+      var groups = new Dictionary<LooseDamageKey, List<DamageRecord>>();
+      foreach (var record in perRecord.Keys)
+      {
+        var key = GetLooseKey(record);
+        if (!groups.TryGetValue(key, out var list))
+        {
+          list = [];
+          groups[key] = list;
+        }
+        list.Add(record);
+      }
+
+      foreach (var variants in groups.Values)
+      {
+        if (variants.Count < 2) continue;
+
+        short unifiedMask = -1;
+        foreach (var v in variants)
+        {
+          var m = v.ModifiersMask;
+          if (m >= 0)
+          {
+            unifiedMask = unifiedMask < 0 ? m : (short)(unifiedMask | m);
+          }
+        }
+
+        // Pick the primary variant: one that already carries the unified mask if such
+        // exists, so we can keep its dictionary key and avoid an allocation. Otherwise
+        // the first variant becomes the merge target and we'll swap its key out.
+        DamageRecord primary = null;
+        foreach (var v in variants)
+        {
+          if (v.ModifiersMask == unifiedMask)
+          {
+            primary = v;
+            break;
+          }
+        }
+        var needsCloneKey = primary == null;
+        primary ??= variants[0];
+
+        var mergedTimes = perRecord[primary];
+        foreach (var v in variants)
+        {
+          if (ReferenceEquals(v, primary)) continue;
+          var otherTimes = perRecord[v];
+          for (var s = 0; s < mergedTimes.Length; s++)
+          {
+            mergedTimes[s].AddRange(otherTimes[s]);
+          }
+          perRecord.Remove(v);
+        }
+
+        if (needsCloneKey)
+        {
+          perRecord.Remove(primary);
+          var unified = CloneWithMask(primary, unifiedMask);
+          perRecord[unified] = mergedTimes;
+        }
+      }
+    }
+
+    private static DamageRecord CloneWithMask(DamageRecord src, short mask) => new()
+    {
+      Attacker = src.Attacker,
+      AttackerOwner = src.AttackerOwner,
+      Defender = src.Defender,
+      DefenderOwner = src.DefenderOwner,
+      AttackerIsSpell = src.AttackerIsSpell,
+      Total = src.Total,
+      OverTotal = src.OverTotal,
+      Type = src.Type,
+      SubType = src.SubType,
+      ModifiersMask = mask
+    };
+
+    // Detects dedup-key splits: records that share (Attacker, Defender, Total) but were
+    // bucketed into separate perRecord entries because another field (ModifiersMask,
+    // AttackerOwner, Type, etc.) differs across sources. Each split causes the merger to
+    // over-emit. Reports per-cluster excess events + damage and the desync field.
+    private static void LogDedupSplitDiagnostics(
+      List<(string SourcePlayer, double Offset, Fight Fight)> cluster,
+      Dictionary<DamageRecord, List<double>[]> perRecord,
+      string blockKind)
+    {
+      if (perRecord.Count == 0)
+      {
+        return;
+      }
+
+      var fightName = cluster[0].Fight.Name ?? "(unnamed)";
+      var sourceList = string.Join(",", cluster.Select(c => c.SourcePlayer));
+
+      // Group by loose key (Attacker, Defender, Total) — what the dedup *should* match.
+      var loose = new Dictionary<(string Attacker, string Defender, long Total), List<(DamageRecord Record, int[] Counts)>>();
+      foreach (var (record, bySource) in perRecord)
+      {
+        var counts = new int[bySource.Length];
+        for (var s = 0; s < bySource.Length; s++)
+        {
+          counts[s] = bySource[s].Count;
+        }
+        var key = (record.Attacker ?? "", record.Defender ?? "", record.Total);
+        if (!loose.TryGetValue(key, out var variants))
+        {
+          variants = [];
+          loose[key] = variants;
+        }
+        variants.Add((record, counts));
+      }
+
+      long totalCurrentEmits = 0;
+      long totalOptimisticEmits = 0;
+      long totalExcessEvents = 0;
+      long totalExcessDamage = 0;
+
+      var fieldHistogram = new Dictionary<string, (long Events, long Damage)>();
+      var samples = new List<string>();
+
+      foreach (var (key, variants) in loose)
+      {
+        // Sum of "current" emits across variants: max source count per variant.
+        long currentEmits = 0;
+        foreach (var v in variants)
+        {
+          var max = 0;
+          for (var s = 0; s < v.Counts.Length; s++)
+          {
+            if (v.Counts[s] > max) max = v.Counts[s];
+          }
+          currentEmits += max;
+        }
+
+        // Optimistic emits if variants were collapsed: max across sources of (sum of all variant counts in that source).
+        long optimisticEmits = 0;
+        for (var s = 0; s < cluster.Count; s++)
+        {
+          long sourceSum = 0;
+          foreach (var v in variants)
+          {
+            sourceSum += v.Counts[s];
+          }
+          if (sourceSum > optimisticEmits) optimisticEmits = sourceSum;
+        }
+
+        totalCurrentEmits += currentEmits;
+        totalOptimisticEmits += optimisticEmits;
+
+        if (variants.Count < 2)
+        {
+          continue;
+        }
+
+        var excess = currentEmits - optimisticEmits;
+        if (excess <= 0)
+        {
+          continue;
+        }
+
+        totalExcessEvents += excess;
+        var excessDamage = excess * key.Total;
+        totalExcessDamage += excessDamage;
+
+        var desyncField = IdentifyDesyncFields(variants.Select(v => v.Record).ToList());
+        if (!fieldHistogram.TryGetValue(desyncField, out var fh))
+        {
+          fh = (0, 0);
+        }
+        fieldHistogram[desyncField] = (fh.Events + excess, fh.Damage + excessDamage);
+
+        if (samples.Count < 15)
+        {
+          var perSourceCounts = new List<string>(cluster.Count);
+          for (var s = 0; s < cluster.Count; s++)
+          {
+            var perVariant = string.Join("/", variants.Select(v => v.Counts[s].ToString()));
+            perSourceCounts.Add($"{cluster[s].SourcePlayer}=[{perVariant}]");
+          }
+          var variantDescs = string.Join(" || ", variants.Select(v => DescribeRecord(v.Record)));
+          samples.Add($"{key.Attacker} -> {key.Defender} for {key.Total} excess={excess} desync={desyncField} " +
+                      $"perSource={{{string.Join(", ", perSourceCounts)}}} variants=[{variantDescs}]");
+        }
+      }
+
+      Log.Info($"[MergeDiag] cluster='{fightName}' kind={blockKind} sources=[{sourceList}] " +
+               $"uniqueLooseKeys={loose.Count} currentEmits={totalCurrentEmits} optimisticEmits={totalOptimisticEmits} " +
+               $"excessEvents={totalExcessEvents} excessDamage={totalExcessDamage:N0}");
+
+      if (totalExcessEvents == 0)
+      {
+        return;
+      }
+
+      foreach (var (field, value) in fieldHistogram.OrderByDescending(kv => kv.Value.Damage))
+      {
+        Log.Info($"[MergeDiag]   desyncField={field} excessEvents={value.Events} excessDamage={value.Damage:N0}");
+      }
+
+      foreach (var sample in samples)
+      {
+        Log.Info($"[MergeDiag]   sample: {sample}");
+      }
+    }
+
+    private static string IdentifyDesyncFields(List<DamageRecord> variants)
+    {
+      var diffs = new List<string>();
+      var first = variants[0];
+      if (variants.Any(v => v.AttackerOwner != first.AttackerOwner)) diffs.Add("AttackerOwner");
+      if (variants.Any(v => v.DefenderOwner != first.DefenderOwner)) diffs.Add("DefenderOwner");
+      if (variants.Any(v => v.AttackerIsSpell != first.AttackerIsSpell)) diffs.Add("AttackerIsSpell");
+      if (variants.Any(v => v.OverTotal != first.OverTotal)) diffs.Add("OverTotal");
+      if (variants.Any(v => v.Type != first.Type)) diffs.Add("Type");
+      if (variants.Any(v => v.SubType != first.SubType)) diffs.Add("SubType");
+      if (variants.Any(v => v.ModifiersMask != first.ModifiersMask)) diffs.Add("ModifiersMask");
+      return diffs.Count == 0 ? "(none)" : string.Join("+", diffs);
+    }
+
+    private static string DescribeRecord(DamageRecord r)
+    {
+      return $"Owner={r.AttackerOwner ?? "null"} DefOwner={r.DefenderOwner ?? "null"} IsSpell={r.AttackerIsSpell} " +
+             $"Type={r.Type ?? "null"} SubType={r.SubType ?? "null"} Mods=0x{r.ModifiersMask:X} OT={r.OverTotal}";
     }
 
     private static void PopulateAggregates(Fight fight)

@@ -656,15 +656,130 @@ namespace EQLogParserTest
         "Fast source's lone event must stay at its original time — no drift function applies to the anchor");
     }
 
+    // Modifier-mask wildcard merge: real-world Dalaya logs disagree on whether a damage
+    // line carries the Crit flag because the parser pairs "X scores a critical hit! (N)"
+    // to the next damage line via a 1-second window, and EQ's 1-sec timestamp granularity
+    // means the pairing fires in some sources' logs and not others. Same physical hit
+    // ends up as two DamageRecord keys — Mods=-1 (unparsed) and Mods=Crit — and the
+    // dedup splits them. The merger collapses those mask variants into one.
+
+    [TestMethod]
+    public void Merge_MaskUnset_VsCrit_CollapsedToCrit()
+    {
+      var unset = MakeDamage("Alice", "Bob", 500, Labels.Dd, "Direct Damage", mask: -1);
+      var crit = MakeDamage("Alice", "Bob", 500, Labels.Dd, "Direct Damage", mask: LineModifiersParser.Crit);
+
+      var fightA = MakeFight("Bob", 100, 110, (105, unset));
+      var fightB = MakeFight("Bob", 100, 110, (105, crit));
+
+      var merged = FightMerger.MergeFromSources(new[]
+      {
+        new FightSource { SourcePlayer = "Alice", Fights = new List<Fight> { fightA } },
+        new FightSource { SourcePlayer = "Carol", Fights = new List<Fight> { fightB } }
+      });
+
+      Assert.AreEqual(1, merged.Count);
+      Assert.AreEqual(1, TotalActions(merged[0]));
+      Assert.AreEqual(500u, merged[0].DamageTotal);
+      var emitted = (DamageRecord)merged[0].DamageBlocks[0].Actions[0];
+      Assert.AreEqual(LineModifiersParser.Crit, emitted.ModifiersMask, "Unified mask should carry the captured Crit bit");
+    }
+
+    [TestMethod]
+    public void Merge_DistinctConcreteMasks_Unioned()
+    {
+      var critOnly = MakeDamage("Alice", "Bob", 500, Labels.Dd, "Direct Damage", mask: LineModifiersParser.Crit);
+      var luckyOnly = MakeDamage("Alice", "Bob", 500, Labels.Dd, "Direct Damage", mask: 4 /* Lucky */);
+
+      var fightA = MakeFight("Bob", 100, 110, (105, critOnly));
+      var fightB = MakeFight("Bob", 100, 110, (105, luckyOnly));
+
+      var merged = FightMerger.MergeFromSources(new[]
+      {
+        new FightSource { SourcePlayer = "Alice", Fights = new List<Fight> { fightA } },
+        new FightSource { SourcePlayer = "Carol", Fights = new List<Fight> { fightB } }
+      });
+
+      Assert.AreEqual(1, TotalActions(merged[0]));
+      var emitted = (DamageRecord)merged[0].DamageBlocks[0].Actions[0];
+      Assert.AreEqual(LineModifiersParser.Crit | 4, emitted.ModifiersMask, "Mask should be the union of both sources' bits");
+    }
+
+    [TestMethod]
+    public void Merge_SameMaskBothSources_StillDeduped()
+    {
+      var rec = MakeDamage("Alice", "Bob", 500, Labels.Dd, "Direct Damage", mask: LineModifiersParser.Crit);
+
+      var fightA = MakeFight("Bob", 100, 110, (105, rec));
+      var fightB = MakeFight("Bob", 100, 110, (105, rec));
+
+      var merged = FightMerger.MergeFromSources(new[]
+      {
+        new FightSource { SourcePlayer = "Alice", Fights = new List<Fight> { fightA } },
+        new FightSource { SourcePlayer = "Carol", Fights = new List<Fight> { fightB } }
+      });
+
+      Assert.AreEqual(1, TotalActions(merged[0]));
+      Assert.AreEqual(500u, merged[0].DamageTotal);
+    }
+
+    [TestMethod]
+    public void Merge_DifferentSubTypes_NotCollapsed()
+    {
+      // Same attacker/defender/total but different physical attack types (e.g. a kick and
+      // a punch that both roll 58). These are legitimately distinct events — the mask
+      // wildcard must NOT merge them since the loose key already differs on SubType.
+      var crushes = MakeDamage("Alice", "Bob", 58, Labels.Melee, "Crushes", mask: -1);
+      var punches = MakeDamage("Alice", "Bob", 58, Labels.Melee, "Punches", mask: -1);
+
+      var fightA = MakeFight("Bob", 100, 110, (105, crushes));
+      var fightB = MakeFight("Bob", 100, 110, (105, punches));
+
+      var merged = FightMerger.MergeFromSources(new[]
+      {
+        new FightSource { SourcePlayer = "Alice", Fights = new List<Fight> { fightA } },
+        new FightSource { SourcePlayer = "Carol", Fights = new List<Fight> { fightB } }
+      });
+
+      Assert.AreEqual(2, TotalActions(merged[0]), "Crushes and Punches stay as separate physical hits");
+      Assert.AreEqual(116u, merged[0].DamageTotal);
+    }
+
+    [TestMethod]
+    public void Merge_ThreeSources_PartialMaskCapture_OneEmit()
+    {
+      // Real-world Dalaya pattern: Ezran saw the crit announcement, Illi missed it
+      // (1-sec window failed), Kateila saw it. Expect ONE emit per physical hit, not three.
+      var unset = MakeDamage("Damocles", "Skoal the Malignant", 1870, Labels.Melee, "Punches", mask: -1);
+      var crit = MakeDamage("Damocles", "Skoal the Malignant", 1870, Labels.Melee, "Punches", mask: LineModifiersParser.Crit);
+
+      var ezran = MakeFight("Skoal the Malignant", 100, 110, (105, crit));
+      var illi = MakeFight("Skoal the Malignant", 100, 110, (105, unset));
+      var kateila = MakeFight("Skoal the Malignant", 100, 110, (105, crit));
+
+      var merged = FightMerger.MergeFromSources(new[]
+      {
+        new FightSource { SourcePlayer = "Ezran", Fights = new List<Fight> { ezran } },
+        new FightSource { SourcePlayer = "Illi", Fights = new List<Fight> { illi } },
+        new FightSource { SourcePlayer = "Kateila", Fights = new List<Fight> { kateila } }
+      });
+
+      Assert.AreEqual(1, TotalActions(merged[0]), "All three observed one physical hit; emit it once");
+      Assert.AreEqual(1870u, merged[0].DamageTotal);
+      var emitted = (DamageRecord)merged[0].DamageBlocks[0].Actions[0];
+      Assert.AreEqual(LineModifiersParser.Crit, emitted.ModifiersMask);
+    }
+
     // Helpers
 
-    private static DamageRecord MakeDamage(string attacker, string defender, uint total, string type, string subType) => new()
+    private static DamageRecord MakeDamage(string attacker, string defender, uint total, string type, string subType, short mask = 0) => new()
     {
       Attacker = attacker,
       Defender = defender,
       Total = total,
       Type = type,
-      SubType = subType
+      SubType = subType,
+      ModifiersMask = mask
     };
 
     private static Fight MakeFight(string name, double beginTime, double lastTime, params (double Time, DamageRecord Record)[] records)
