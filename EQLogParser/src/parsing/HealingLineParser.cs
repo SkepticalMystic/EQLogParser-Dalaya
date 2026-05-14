@@ -1,5 +1,6 @@
 ﻿using log4net;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace EQLogParser
@@ -10,13 +11,60 @@ namespace EQLogParser
 
     internal static HealingLineParser Instance { get; } = new();
 
+    // Dalaya-only: "<Healer> performs an exceptional heal! (N)" is a third-person crit
+    // announcement. We treat these as crit markers paired to existing heal records (same
+    // model as live-EQ "(Critical)" inline modifiers and Dalaya melee-crit pairing in
+    // DamageLineParser). Lines that don't pair within a 1s window are discarded —
+    // fabricating phantom heal records for unobservable third-party heals would inflate
+    // raid healing totals the same way fabricating phantom damage records would.
+    private const string ExceptionalHealMarker = " performs an exceptional heal! (";
+    private const double ExceptionalPairWindowSeconds = 1.0;
+
     private readonly PlayerRegistry _playerRegistry;
+
+    // Buffers for bidirectional crit pairing. Announcements can arrive before OR after
+    // the heal line they belong to within the same log second.
+    private readonly List<PendingExceptional> _pendingExceptionals = [];
+    private readonly List<RecentHeal> _recentHeals = [];
 
     public HealingLineParser() : this(PlayerRegistry.Instance) { }
 
     public HealingLineParser(PlayerRegistry playerRegistry)
     {
       _playerRegistry = playerRegistry;
+    }
+
+    // Test hook: clear pairing buffers between tests.
+    internal void ResetParseState()
+    {
+      _pendingExceptionals.Clear();
+      _recentHeals.Clear();
+    }
+
+    // Test entry point: parse a single action line and return the resulting record
+    // without writing to RecordsStore. Applies the same "you"/"your" resolution AND
+    // exceptional-heal crit pairing as Process so tests can assert against the final
+    // attribution. Returns null for announcement lines (they have no record of their
+    // own — they only modify a paired heal record).
+    internal HealRecord ParseLine(string action, double beginTime = 0d)
+    {
+      if (string.IsNullOrEmpty(action) || action.Length < 23)
+      {
+        return null;
+      }
+
+      var index = action.LastIndexOf(" healed ", action.Length, StringComparison.Ordinal);
+      if (index > -1)
+      {
+        return ParseHealLine(action, index, beginTime);
+      }
+
+      var markerIndex = action.IndexOf(ExceptionalHealMarker, StringComparison.Ordinal);
+      if (markerIndex > 0 && action[^1] == ')')
+      {
+        TryPairExceptional(action, markerIndex, beginTime);
+      }
+      return null;
     }
 
     public bool Process(LineData lineData)
@@ -27,14 +75,20 @@ namespace EQLogParser
         int index;
         if (action.Length >= 23 && (index = action.LastIndexOf(" healed ", action.Length, StringComparison.Ordinal)) > -1)
         {
-          var record = HandleHealed(action, index, lineData.BeginTime);
+          var record = ParseHealLine(action, index, lineData.BeginTime);
           if (record != null)
           {
-            record.Healer = _playerRegistry.ReplacePlayer(record.Healer, record.Healed);
-            record.Healed = _playerRegistry.ReplacePlayer(record.Healed, record.Healer);
             RecordsStore.Instance.Add(record, lineData.BeginTime);
             return true;
           }
+        }
+        else if (action.Length >= ExceptionalHealMarker.Length + 3 && action[^1] == ')'
+          && (index = action.IndexOf(ExceptionalHealMarker, StringComparison.Ordinal)) > 0)
+        {
+          // No record produced — pairs to an already-stored heal record (or a future one).
+          // Either way the line is "consumed" by this parser, so return true to stop the chain.
+          TryPairExceptional(action, index, lineData.BeginTime);
+          return true;
         }
       }
       catch (ArgumentNullException ne)
@@ -127,6 +181,15 @@ namespace EQLogParser
           {
             // assign owner of ward as healer
             healer = test[..wardIndex];
+          }
+          // Dalaya: "Your <Spell> healed <Target> for N damage." — the spell name
+          // lives in the prefix rather than after " by " at the end. Fallback so it
+          // doesn't collide with live-EQ "Your ward heals you as it breaks! You" which
+          // already hits the .! branch above.
+          else if (test.StartsWith("Your ", StringComparison.Ordinal) && test.Length > 5)
+          {
+            healer = "You";
+            spell = test[5..];
           }
         }
       }
@@ -280,5 +343,107 @@ namespace EQLogParser
 
       return record;
     }
+
+    // Parse a "... healed ..." line through HandleHealed, normalize the healer/healed
+    // names, check for a pending exceptional-heal announcement that matches this record,
+    // and remember the record for a future announcement.
+    private HealRecord ParseHealLine(string action, int healedIndex, double beginTime)
+    {
+      var record = HandleHealed(action, healedIndex, beginTime);
+      if (record == null)
+      {
+        return null;
+      }
+
+      record.Healer = _playerRegistry.ReplacePlayer(record.Healer, record.Healed);
+      record.Healed = _playerRegistry.ReplacePlayer(record.Healed, record.Healer);
+
+      // Backward pairing: did an "X performs an exceptional heal! (N)" line arrive in the
+      // last second whose healer/amount match this record? If so, mark this heal as a crit.
+      TrimPendingExceptionals(beginTime);
+      for (var i = 0; i < _pendingExceptionals.Count; i++)
+      {
+        var pending = _pendingExceptionals[i];
+        if (pending.Amount == record.Total && string.Equals(pending.Healer, record.Healer, StringComparison.Ordinal))
+        {
+          record.ModifiersMask = ApplyCrit(record.ModifiersMask);
+          _pendingExceptionals.RemoveAt(i);
+          break;
+        }
+      }
+
+      // Forward pairing: announcement may still arrive after this line. Remember the
+      // record so a subsequent announcement within the window can update it.
+      TrimRecentHeals(beginTime);
+      _recentHeals.Add(new RecentHeal(beginTime, record));
+      return record;
+    }
+
+    // Pair an "X performs an exceptional heal! (N)" announcement with a recent or future
+    // heal record. Same model as DamageLineParser's _lastCrit pairing for "delivers a
+    // critical blast! (N)" announcements.
+    private void TryPairExceptional(string action, int markerIndex, double beginTime)
+    {
+      if (markerIndex < 2 || markerIndex > 64)
+      {
+        return;
+      }
+
+      var amountStart = markerIndex + ExceptionalHealMarker.Length;
+      var closeParen = action.Length - 1;
+      if (closeParen <= amountStart)
+      {
+        return;
+      }
+
+      var amount = TextUtils.ParseUInt(action.AsSpan(amountStart, closeParen - amountStart));
+      if (amount == uint.MaxValue || amount == 0)
+      {
+        // (0) means "no crit on this cast" — nothing to mark.
+        return;
+      }
+
+      var healer = action[..markerIndex];
+
+      // Backward pairing: look for an already-parsed heal record from this healer with
+      // this exact amount in the last 1s.
+      TrimRecentHeals(beginTime);
+      for (var i = _recentHeals.Count - 1; i >= 0; i--)
+      {
+        var entry = _recentHeals[i];
+        if (entry.Record.Total == amount && string.Equals(entry.Record.Healer, healer, StringComparison.Ordinal))
+        {
+          entry.Record.ModifiersMask = ApplyCrit(entry.Record.ModifiersMask);
+          _recentHeals.RemoveAt(i);
+          return;
+        }
+      }
+
+      // Forward pairing: stash until the matching heal line arrives. If it never does
+      // (unobservable third-party heal), the entry ages out in TrimPendingExceptionals.
+      TrimPendingExceptionals(beginTime);
+      _pendingExceptionals.Add(new PendingExceptional(beginTime, string.Intern(healer), amount));
+    }
+
+    private void TrimPendingExceptionals(double now)
+    {
+      while (_pendingExceptionals.Count > 0 && now - _pendingExceptionals[0].Time > ExceptionalPairWindowSeconds)
+      {
+        _pendingExceptionals.RemoveAt(0);
+      }
+    }
+
+    private void TrimRecentHeals(double now)
+    {
+      while (_recentHeals.Count > 0 && now - _recentHeals[0].Time > ExceptionalPairWindowSeconds)
+      {
+        _recentHeals.RemoveAt(0);
+      }
+    }
+
+    private static short ApplyCrit(short mask) => mask < 0 ? LineModifiersParser.Crit : (short)(mask | LineModifiersParser.Crit);
+
+    private readonly record struct PendingExceptional(double Time, string Healer, uint Amount);
+    private readonly record struct RecentHeal(double Time, HealRecord Record);
   }
 }
