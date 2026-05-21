@@ -62,7 +62,7 @@
     </StackPanel>
     <syncfusion:SfTreeGrid x:Name="dataGrid"
                             AllowAutoSizingExpanderColumn="False"
-                            AllowDraggingColumns="True"
+                            AllowDraggingColumns="False"
                             AllowResizingColumns="True"
                             AllowSelectionOnPointerPressed="True"
                             AllowSorting="True"
