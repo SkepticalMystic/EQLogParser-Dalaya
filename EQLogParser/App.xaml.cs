@@ -145,7 +145,7 @@ namespace EQLogParser
     private static void InitializeLogging()
     {
       var appDataRoamingPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-      var logsFolderPath = Path.Combine(appDataRoamingPath, "EQLogParser", "logs");
+      var logsFolderPath = Path.Combine(appDataRoamingPath, "EQLogParser-Dalaya", "logs");
 
       var fileAppender = new RollingFileAppender
       {
