@@ -7,7 +7,7 @@
         xmlns:listCollection="clr-namespace:System.Collections;assembly=mscorlib"
         x:Class="EQLogParser.MainWindow"
         Icon="EQLogParser.ico"
-        Title="EQLogParser"
+        Title="EQLogParser-Dalaya"
         Closing="WindowClosing"
         ResizeMode="CanResize"
         BorderBrush="{DynamicResource ContentBackgroundAlt3}"
