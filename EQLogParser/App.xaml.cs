@@ -28,7 +28,6 @@ namespace EQLogParser
     internal const string ParserHome = "https://eqlogparser.kizant.net";
     internal static double DefaultHeight = SystemParameters.PrimaryScreenHeight * 0.75;
     internal static double DefaultWidth = SystemParameters.PrimaryScreenWidth * 0.85;
-    internal static string ReleaseNotesUrl = $"{ParserHome}/releasenotes.html";
     internal static string Version = "";
     internal static WindowState LastWindowState = WindowState.Normal;
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
@@ -100,9 +99,6 @@ namespace EQLogParser
         var osVersion = Environment.OSVersion;
         Version = ResourceAssembly.GetName().Version!.ToString()[..^2];
         Log.Info($"EQLogParser: {Version}, OS: {osVersion.VersionString}, DotNet: {Environment.Version}, RenderMode: {RenderOptions.ProcessRenderMode}");
-
-        var urlVersion = Version.Replace(".", "-");
-        ReleaseNotesUrl = $"{ParserHome}/releasenotes.html#{urlVersion}";
 
         ConfigUtil.UpdateStatus($"RenderMode: {RenderOptions.ProcessRenderMode}");
 
