@@ -1,0 +1,91 @@
+<syncfusion:ChromelessWindow x:Class="EQLogParser.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+        xmlns:fa="http://schemas.fontawesome.com/icons/"
+        Title="About EQLogParser-Dalaya"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        TitleBarHeight="{DynamicResource EQTableHeaderRowHeight}"
+        TitleFontSize="{DynamicResource EQContentSize}"
+        TitleBarForeground="{DynamicResource PrimaryDarken}"
+        Icon="EQLogParser.ico"
+        TitleTextAlignment="Left"
+        WindowStyle="ToolWindow"
+        UseLayoutRounding="True"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="WidthAndHeight"
+        Width="440">
+  <StackPanel Margin="24,16,24,16">
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,16">
+      <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Icon="Solid_InfoCircle"
+                       Foreground="{DynamicResource EQMenuIconBrush}"
+                       Height="36" Width="36" Margin="0,0,14,0" VerticalAlignment="Center"/>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock Text="EQLogParser-Dalaya" FontSize="{DynamicResource EQTitleSize}"
+                   FontWeight="Bold" Foreground="{DynamicResource PrimaryDarken}"/>
+        <TextBlock x:Name="versionText" FontSize="{DynamicResource EQContentSize}"
+                   Foreground="{DynamicResource ContentForegroundAlt}"/>
+      </StackPanel>
+    </StackPanel>
+
+    <TextBlock TextWrapping="Wrap" Margin="0,0,0,10"
+               FontSize="{DynamicResource EQContentSize}"
+               Foreground="{DynamicResource PrimaryDarken}"
+               Text="EverQuest log parser, customized for the Dalaya emulation server."/>
+
+    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4"
+               FontSize="{DynamicResource EQContentSize}"
+               Foreground="{DynamicResource PrimaryDarken}">
+      <Run Text="Forked from "/><Hyperlink NavigateUri="https://github.com/kauffman12/EQLogParser" RequestNavigate="HyperlinkRequestNavigate">EQLogParser</Hyperlink><Run Text=" by kauffman12."/>
+    </TextBlock>
+
+    <Grid Margin="0,10,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+      <TextBlock Grid.Row="0" Grid.Column="0" Text="Fork:" Margin="0,2,12,2"
+                 FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
+      <TextBlock Grid.Row="0" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
+        <Hyperlink NavigateUri="https://github.com/SkepticalMystic/EQLogParser-Dalaya"
+                   RequestNavigate="HyperlinkRequestNavigate">github.com/SkepticalMystic/EQLogParser-Dalaya</Hyperlink>
+      </TextBlock>
+      <TextBlock Grid.Row="1" Grid.Column="0" Text="Issues:" Margin="0,2,12,2"
+                 FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
+      <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
+        <Hyperlink NavigateUri="https://github.com/SkepticalMystic/EQLogParser-Dalaya/issues"
+                   RequestNavigate="HyperlinkRequestNavigate">Report a problem</Hyperlink>
+      </TextBlock>
+      <TextBlock Grid.Row="2" Grid.Column="0" Text="Upstream:" Margin="0,2,12,2"
+                 FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
+      <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
+        <Hyperlink NavigateUri="https://eqlogparser.kizant.net"
+                   RequestNavigate="HyperlinkRequestNavigate">eqlogparser.kizant.net</Hyperlink>
+      </TextBlock>
+      <TextBlock Grid.Row="3" Grid.Column="0" Text="Server:" Margin="0,2,12,2"
+                 FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
+      <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
+        <Hyperlink NavigateUri="https://dalaya.org"
+                   RequestNavigate="HyperlinkRequestNavigate">dalaya.org</Hyperlink>
+      </TextBlock>
+    </Grid>
+
+    <TextBlock TextWrapping="Wrap" Margin="0,16,0,0"
+               FontSize="{DynamicResource EQContentSize}"
+               Foreground="{DynamicResource ContentForegroundAlt}"
+               Text="UI controls powered by Syncfusion Essential Studio."/>
+
+    <Button x:Name="okButton" Content="OK" HorizontalAlignment="Right"
+            Height="{DynamicResource EQButtonHeight}" MinWidth="80"
+            Padding="15,0,15,0"
+            Foreground="{DynamicResource PrimaryDarken}"
+            Margin="0,16,0,0" Click="OkClick" IsDefault="True" IsCancel="True"/>
+  </StackPanel>
+</syncfusion:ChromelessWindow>

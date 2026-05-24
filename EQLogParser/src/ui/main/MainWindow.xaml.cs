@@ -364,7 +364,7 @@ namespace EQLogParser
     private void ConfigureOverlayClick(object sender, RoutedEventArgs e) => CloseDamageOverlay(true);
     private void MainWindowSizeChanged(object sender, EventArgs e) => SaveWindowSize();
     private void RestoreTableColumnsClick(object sender, RoutedEventArgs e) => DataGridUtil.RestoreAllTableColumns();
-    private void AboutClick(object sender, RoutedEventArgs e) => MainActions.OpenFileWithDefault($"{App.ParserHome}");
+    private void AboutClick(object sender, RoutedEventArgs e) => new AboutWindow().ShowDialog();
     private void RestoreClick(object sender, RoutedEventArgs e) => MainActions.Restore();
     private void OpenCreateWavClick(object sender, RoutedEventArgs e) => new WavCreatorWindow().ShowDialog();
     private void OpenSoundsFolderClick(object sender, RoutedEventArgs e) => MainActions.OpenFileWithDefault("\"" + @"data\sounds" + "\"");

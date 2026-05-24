@@ -41,7 +41,7 @@ namespace EQLogParser
       minimizeItem.Visible = false;
 
       var aboutItem = new ToolStripMenuItem("About");
-      aboutItem.Click += (s, e) => MainActions.OpenFileWithDefault($"{App.ParserHome}");
+      aboutItem.Click += (s, e) => new AboutWindow().ShowDialog();
       notifyIcon.ContextMenuStrip.Items.Add(aboutItem);
       notifyIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
 
