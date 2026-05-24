@@ -14,7 +14,7 @@ Mapping (see CLAUDE.md and DataManager.ParseCustomSpellData):
     parser col  source col   meaning
     0           0            spell id
     1           1            spell name
-    6           -            target type     (hard-coded "5")
+    6           98           target type     (Pet=14 enables auto pet detection)
     8           -            damaging flag   (1 if any of src[6..8] non-empty)
     15, 16      -            ambiguity flags (hard-coded "1", "1")
     17          6            lands-on-you message
@@ -43,6 +43,7 @@ def convert_line(src_fields: list[str]) -> str:
     lands_on_you = src_fields[6]
     lands_on_other = src_fields[7]
     wear_off = src_fields[8]
+    target = src_fields[98] if len(src_fields) > 98 else "5"
     damaging = "1" if (lands_on_you or lands_on_other or wear_off) else "0"
 
     return "^".join([
@@ -52,7 +53,7 @@ def convert_line(src_fields: list[str]) -> str:
         "0",              # 3  Duration
         "0",              # 4  Beneficial
         "0",              # 5  MaxHits
-        "5",              # 6  Target
+        target,           # 6  Target
         "0",              # 7  ClassMask
         damaging,         # 8  Damaging
         "0",              # 9  CombatSkill
