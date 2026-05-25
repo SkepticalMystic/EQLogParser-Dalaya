@@ -1,5 +1,7 @@
 # spells.txt rebuild
 
+> **Purpose:** Procedure for rebuilding [`EQLogParser/data/spells.txt`](../../EQLogParser/data/spells.txt) from Dalaya's game-format `spells_us.txt`. Run after each Dalaya patch that updates spells. See also memory `project_spells_rebuild`.
+
 Repeatable conversion of Dalaya's game-format `spells_us.txt` into the parser-format `EQLogParser/data/spells.txt`. Run after each game patch that updates `spells_us.txt`.
 
 ## When to run

@@ -1,5 +1,7 @@
 # EQLogParser C# Coding Standards
 
+> **Purpose:** Detailed C# style and convention reference for this project (encoding, formatting, naming, patterns). Consult before writing or modifying C# code; the short-form checklist lives in [`../AGENTS.md`](../AGENTS.md).
+
 ## File Encoding
 
 - All `.cs` files must be saved as **UTF-8 without BOM** (Byte Order Mark)

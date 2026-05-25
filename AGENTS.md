@@ -1,5 +1,7 @@
 # Project Rules & Guidelines
 
+> **Purpose:** Behavioral rules and post-implementation checklist for AI agents working on this codebase. Consult before code changes; pair with [`docs/CodingStandards.md`](docs/CodingStandards.md) for detailed C# style.
+
 You are an expert AI assistant tasked with maintaining this C#/WPF/.net 8.0 project.
 
 ## Core Principles
