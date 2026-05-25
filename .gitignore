@@ -11,3 +11,7 @@ EQLogParserInstall/Output/
 CLAUDE.md
 BACKLOG.md
 .opencode
+# Captured fixtures and snapshot baselines for the integration regression tests
+# (see EQLogParser.Test/src/integration). Each developer's logs + JSON baselines
+# stay local — see memory `project_baseline_regression_test` for rationale.
+EQLogParser.Test/Resources/baseline-logs/
