@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
-using System.Windows.Data;
 
 namespace EQLogParser
 {
@@ -29,9 +27,6 @@ namespace EQLogParser
     private readonly ConcurrentDictionary<string, bool> _recordNeedsEvent = new();
     private readonly Dictionary<string, NpcResistStats> _npcSpellStatsDict = [];
     private readonly List<RecordList> _playerAmbiguityCastCache = [];
-    // observables
-    private readonly object _collectionLock = new();
-    internal readonly ObservableCollection<QuickShareRecord> AllQuickShareRecords = [];
     private readonly Timer _eventTimer;
 
     private static readonly string[] TimedRecordTypes =
@@ -50,7 +45,6 @@ namespace EQLogParser
 
     private RecordsStore()
     {
-      BindingOperations.EnableCollectionSynchronization(AllQuickShareRecords, _collectionLock);
       LifecycleManager.Register(this);
 
       // initialize dictionaries
@@ -103,11 +97,6 @@ namespace EQLogParser
       lock (_playerAmbiguityCastCache)
       {
         _playerAmbiguityCastCache.Clear();
-      }
-
-      lock (_collectionLock)
-      {
-        AllQuickShareRecords.Clear();
       }
 
       lock (_npcSpellStatsDict)
@@ -184,17 +173,7 @@ namespace EQLogParser
       }
     }
 
-    internal void Add(QuickShareRecord action)
-    {
-      lock (_collectionLock)
-      {
-        if (AllQuickShareRecords.Count == 0 || AllQuickShareRecords[0].Key != action.Key ||
-          !AllQuickShareRecords[0].BeginTime.Equals(action.BeginTime))
-        {
-          AllQuickShareRecords.Insert(0, action);
-        }
-      }
-    }
+
 
     internal IEnumerable<NpcResistStats> GetAllNpcResistStats()
     {
@@ -230,14 +209,6 @@ namespace EQLogParser
             yield return (list.BeginTime, (SpellCast)list.Records[j]);
           }
         }
-      }
-    }
-
-    internal bool IsQuickShareMine(string key)
-    {
-      lock (_collectionLock)
-      {
-        return AllQuickShareRecords.FirstOrDefault(share => share.IsMine && share.Key == key) != null;
       }
     }
 

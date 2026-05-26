@@ -7,7 +7,7 @@ namespace EQLogParser
   {
     public AboutWindow()
     {
-      MainActions.SetCurrentTheme(this);
+      ThemeConfig.SetCurrentTheme(this);
       InitializeComponent();
       Owner = MainActions.GetOwner();
       versionText.Text = $"v{App.Version}";

@@ -56,7 +56,7 @@ namespace EQLogParser
     public Timeline()
     {
       InitializeComponent();
-      MainActions.EventsThemeChanged += EventsThemeChanged;
+      ThemeConfig.EventsThemeChanged += EventsThemeChanged;
     }
 
     // timelineType 0 = tanking, 1 = dps, 2 = healing
@@ -1197,7 +1197,7 @@ namespace EQLogParser
     {
       if (!_disposedValue)
       {
-        MainActions.EventsThemeChanged -= EventsThemeChanged;
+        ThemeConfig.EventsThemeChanged -= EventsThemeChanged;
         _selectedStats = null;
         _disposedValue = true;
       }

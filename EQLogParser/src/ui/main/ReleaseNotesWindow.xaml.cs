@@ -9,7 +9,7 @@ namespace EQLogParser
   {
     public ReleaseNotesWindow()
     {
-      MainActions.SetCurrentTheme(this);
+      ThemeConfig.SetCurrentTheme(this);
       InitializeComponent();
       Owner = MainActions.GetOwner();
       LoadReleaseNotes();
