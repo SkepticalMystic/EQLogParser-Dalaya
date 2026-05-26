@@ -620,6 +620,9 @@ namespace EQLogParser
           var damage = TextUtils.ParseUInt(split[pointsOfIndex - 1]);
           SpellResistMap.TryGetValue(split[byDamage - 1], out resist);
 
+          attacker = UpdateAttacker(attacker, spell);
+          defender = UpdateDefender(defender, attacker);
+
           // extra way to check for pets
           if (spell.StartsWith("Elemental Conversion", StringComparison.Ordinal))
           {
@@ -631,8 +634,6 @@ namespace EQLogParser
             }
           }
 
-          attacker = UpdateAttacker(attacker, spell);
-          defender = UpdateDefender(defender, attacker);
           record = CreateDamageRecord(lineData, split, stop, attacker, defender, damage, type, spell);
         }
       }

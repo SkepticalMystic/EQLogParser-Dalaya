@@ -101,11 +101,11 @@ namespace EQLogParser
         Log.Info($"EQLogParser: {Version}, OS: {osVersion.VersionString}, DotNet: {Environment.Version}, RenderMode: {RenderOptions.ProcessRenderMode}");
 
         ConfigUtil.UpdateStatus($"RenderMode: {RenderOptions.ProcessRenderMode}");
-
-        ConfigUtil.UpdateStatus("Validating Installed Voices");
-        EQLogParser.Audio.AudioManager.Initialize(AppCache);
+        AudioManager.Initialize(AppCache);
         await LoadVoicesSafe();
 
+        // preload trigger DB
+        _ = TriggerStateDB.Instance;
         await ShowMain();
       }
       catch (Exception ex)
@@ -123,11 +123,14 @@ namespace EQLogParser
       AudioManager.Instance.Dispose();
       AppCache.Dispose();
       LifecycleManager.Shutdown();
+      ChatDB.Instance.Stop();
       base.OnExit(e);
     }
 
     private static async Task LoadVoicesSafe()
     {
+      ConfigUtil.UpdateStatus("Validating Installed Voices");
+
       try
       {
         await AudioManager.Instance.LoadValidVoicesAsync();

@@ -73,14 +73,11 @@ namespace EQLogParser
       try
       {
         int index;
-        if (action.Length >= 23 && (index = action.LastIndexOf(" healed ", action.Length, StringComparison.Ordinal)) > -1)
+        if (action.Length >= 23 && (index = action.LastIndexOf(" healed ", action.Length, StringComparison.Ordinal)) > -1 &&
+          ParseHealLine(action, index, lineData.BeginTime) is { } record)
         {
-          var record = ParseHealLine(action, index, lineData.BeginTime);
-          if (record != null)
-          {
-            RecordsStore.Instance.Add(record, lineData.BeginTime);
-            return true;
-          }
+          RecordsStore.Instance.Add(record, lineData.BeginTime);
+          return true;
         }
         else if (action.Length >= ExceptionalHealMarker.Length + 3 && action[^1] == ')'
           && (index = action.IndexOf(ExceptionalHealMarker, StringComparison.Ordinal)) > 0)
@@ -278,11 +275,6 @@ namespace EQLogParser
         if (string.IsNullOrEmpty(healed))
           return null;
 
-        // fix healed
-        if ("You".Equals(healed, StringComparison.OrdinalIgnoreCase))
-        {
-          healed = ConfigUtil.PlayerName;
-        }
         // fix healer
         if (string.IsNullOrEmpty(healer) && spell?.StartsWith("Theft of Essence", StringComparison.OrdinalIgnoreCase) == true)
         {
@@ -292,6 +284,9 @@ namespace EQLogParser
         // verify healer parsed properly
         if (string.IsNullOrEmpty(healer) || healer.Length > 64)
           return null;
+
+        healer = _playerRegistry.ReplacePlayer(healer, healed);
+        healed = _playerRegistry.ReplacePlayer(healed, healer);
 
         // check for pets
         var possessive = healed.IndexOf("`s ", StringComparison.Ordinal);
@@ -354,9 +349,6 @@ namespace EQLogParser
       {
         return null;
       }
-
-      record.Healer = _playerRegistry.ReplacePlayer(record.Healer, record.Healed);
-      record.Healed = _playerRegistry.ReplacePlayer(record.Healed, record.Healer);
 
       // Backward pairing: did an "X performs an exceptional heal! (N)" line arrive in the
       // last second whose healer/amount match this record? If so, mark this heal as a crit.
