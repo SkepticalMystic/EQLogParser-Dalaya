@@ -154,17 +154,17 @@ namespace EQLogParser
       MainActions.UpdateDeleteChatMenu(deleteChat);
 
       // create font families menu items
-      MainActions.CreateFontFamiliesMenuItems(appFontFamilies, MenuItemFontFamilyClicked);
+      ThemeConfig.CreateFontFamiliesMenuItems(appFontFamilies, MenuItemFontFamilyClicked);
 
       // create font sizes menu items
-      MainActions.CreateFontSizesMenuItems(appFontSizes, MenuItemFontSizeClicked);
+      ThemeConfig.CreateFontSizesMenuItems(appFontSizes, MenuItemFontSizeClicked);
 
       // add tabs to the right
       ((DocumentContainer)dockSite.DocContainer).AddTabDocumentAtLast = true;
 
       // init theme before loading docs
-      ConfigUtil.UpdateStatus("Loading Themes");
-      MainActions.InitThemes();
+      MainActions.UpdateStatus("Loading Themes");
+      ThemeConfig.InitThemes();
 
       // save active window before adding
       _activeWindow = ConfigUtil.GetSetting("ActiveWindow");
@@ -193,8 +193,8 @@ namespace EQLogParser
       }
 
       // workaround to set initial theme properly
-      ConfigUtil.UpdateStatus("Setting " + MainActions.CurrentTheme);
-      MainActions.SetTheme();
+      MainActions.UpdateStatus("Setting " + ThemeConfig.CurrentTheme);
+      ThemeConfig.SetTheme();
     }
 
     private async void MainWindowOnLoaded(object sender, RoutedEventArgs args)
@@ -222,7 +222,7 @@ namespace EQLogParser
         MainActions.EventsHealingSelectionChanged += HealingSummarySelectionChanged;
         MainActions.EventsTankingSelectionChanged += TankingSummarySelectionChanged;
         MainActions.EventsFightSelectionChanged += (_) => ComputeStats();
-        MainActions.EventsThemeChanged += _ => DataGridUtil.RefreshTableColumns(petMappingGrid);
+        ThemeConfig.EventsThemeChanged += _ => DataGridUtil.RefreshTableColumns(petMappingGrid);
         _computeStatsTimer = UiUtil.CreateTimer(ComputeStatsTick, 500, false);
 
         // give some time for dock state to load
@@ -374,8 +374,8 @@ namespace EQLogParser
     private void DockSiteCloseButtonClick(object sender, CloseButtonEventArgs e) => SyncFusionUtil.CloseTab(dockSite, e.TargetItem as ContentControl, _logWindows);
     private void DockSiteWindowClosing(object sender, WindowClosingEventArgs e) => SyncFusionUtil.CloseTab(dockSite, e.TargetItem as ContentControl, _logWindows);
     private void WindowClose(object sender, EventArgs e) => Close();
-    private void ToggleMaterialDarkClick(object sender, RoutedEventArgs e) => MainActions.SetTheme("MaterialDark");
-    private void ToggleMaterialLightClick(object sender, RoutedEventArgs e) => MainActions.SetTheme("MaterialLight");
+    private void ToggleMaterialDarkClick(object sender, RoutedEventArgs e) => ThemeConfig.SetTheme("MaterialDark");
+    private void ToggleMaterialLightClick(object sender, RoutedEventArgs e) => ThemeConfig.SetTheme("MaterialLight");
     private void ToggleStartMinimizedClick(object sender, RoutedEventArgs e) => MainActions.ToggleSetting("StartWithWindowMinimized", enableStartMinimizedIcon);
     private void ToggleHideSplashScreenClick(object sender, RoutedEventArgs e) => MainActions.ToggleSetting("HideSplashScreen", enableHideSplashScreenIcon);
     private void ToggleAutoMonitorClick(object sender, RoutedEventArgs e) => MainActions.ToggleSetting("AutoMonitor", enableAutoMonitorIcon);
@@ -413,7 +413,7 @@ namespace EQLogParser
           Log.Warn("Suspending");
           _saveTimer?.Stop();
           ConfigUtil.Save();
-          await TriggerManager.Instance.StopAsync();
+          await TriggerManager.Instance.DisposeAsync();
           FightManager.Instance.EventsNewOverlayFight -= EventsNewOverlayFight;
           CloseDamageOverlay(false);
           break;
@@ -782,8 +782,8 @@ namespace EQLogParser
     {
       if (sender is MenuItem { Header: string header } menuItem)
       {
-        MainActions.UpdateCheckedMenuItem(menuItem, (menuItem.Parent as MenuItem)?.Items);
-        MainActions.ChangeThemeFontFamily(header);
+        ThemeConfig.UpdateCheckedMenuItem(menuItem, (menuItem.Parent as MenuItem)?.Items);
+        ThemeConfig.ChangeThemeFontFamily(header);
       }
     }
 
@@ -791,8 +791,8 @@ namespace EQLogParser
     {
       if (sender is MenuItem menuItem)
       {
-        MainActions.UpdateCheckedMenuItem(menuItem, (menuItem.Parent as MenuItem)?.Items);
-        MainActions.ChangeThemeFontSizes((double)menuItem.Tag);
+        ThemeConfig.UpdateCheckedMenuItem(menuItem, (menuItem.Parent as MenuItem)?.Items);
+        ThemeConfig.ChangeThemeFontSizes((double)menuItem.Tag);
       }
     }
 
@@ -861,7 +861,7 @@ namespace EQLogParser
 
             ConfigUtil.SetSetting("LastOpenedFile", AppSettings.CurrentLogFile);
             Log.Info($"Finished Loading Log File in {seconds} seconds.");
-            ConfigUtil.UpdateStatus("Monitoring Last Log");
+            MainActions.UpdateStatus("Monitoring Last Log");
 
             await Task.Delay(500);
             MainActions.FireLogLoadingEvent(AppSettings.CurrentLogFile, true);
@@ -1115,11 +1115,11 @@ namespace EQLogParser
         }
         else if (icon == themeDarkIcon)
         {
-          icon.Visibility = MainActions.CurrentTheme == "MaterialDark" ? Visibility.Visible : Visibility.Hidden;
+          icon.Visibility = ThemeConfig.CurrentTheme == "MaterialDark" ? Visibility.Visible : Visibility.Hidden;
         }
         else if (icon == themeLightIcon)
         {
-          icon.Visibility = MainActions.CurrentTheme == "MaterialLight" ? Visibility.Visible : Visibility.Hidden;
+          icon.Visibility = ThemeConfig.CurrentTheme == "MaterialLight" ? Visibility.Visible : Visibility.Hidden;
         }
       }
     }
@@ -1210,8 +1210,6 @@ namespace EQLogParser
         ConfigUtil.Save();
       }
 
-      ChatDB.Instance.Stop();
-      LifecycleManager.Shutdown();
       _saveTimer?.Stop();
       _eqLogReader?.Dispose();
       _notifyIcon?.Dispose();

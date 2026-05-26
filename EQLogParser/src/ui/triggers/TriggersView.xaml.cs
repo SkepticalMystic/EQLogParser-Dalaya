@@ -12,8 +12,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Application = System.Windows.Application;
-using CheckBox = System.Windows.Controls.CheckBox;
 
 namespace EQLogParser
 {
@@ -115,7 +113,7 @@ namespace EQLogParser
       TriggerStateDB.Instance.OverlayImportEvent += OverlayImportEvent;
       TriggerStateDB.Instance.TriggerImportEvent += TriggerImportEvent;
       AudioManager.Instance.DeviceListChanged += AudioDeviceListChanged;
-      MainActions.EventsThemeChanged += EventsThemeChanged;
+      ThemeConfig.EventsThemeChanged += EventsThemeChanged;
       return;
 
       ITypeEditor AddEditorInstance(ITypeEditor typeEditor, string propName)
@@ -171,8 +169,8 @@ namespace EQLogParser
 
     private void EventsThemeChanged(string _)
     {
-      generalPropertyGrid.PropertyNameColumnDefinition = new GridLength(200 + ((MainActions.CurrentFontSize - 12) * 10));
-      secondaryPropertyGrid.PropertyNameColumnDefinition = new GridLength(200 + ((MainActions.CurrentFontSize - 12) * 10));
+      generalPropertyGrid.PropertyNameColumnDefinition = new GridLength(200 + ((ThemeConfig.CurrentFontSize - 12) * 10));
+      secondaryPropertyGrid.PropertyNameColumnDefinition = new GridLength(200 + ((ThemeConfig.CurrentFontSize - 12) * 10));
     }
 
     private async void TriggersViewOnInitialized(object sender, EventArgs e)
@@ -712,7 +710,7 @@ namespace EQLogParser
         else if (args.Property.Name == textDropShadowItem.PropertyName)
         {
           textChange = textOverlay.UseTextDropShadow != original.UseTextDropShadow;
-          Application.Current.Resources["OverlayTextEffect-" + textOverlay.Node.Id] = textOverlay.UseTextDropShadow ? MainActions.OverlayTextEffect : null;
+          Application.Current.Resources["OverlayTextEffect-" + textOverlay.Node.Id] = textOverlay.UseTextDropShadow ? ThemeConfig.OverlayTextEffect : null;
         }
 
         if (textChange)
@@ -801,7 +799,7 @@ namespace EQLogParser
         else if (args.Property.Name == textDropShadowItem.PropertyName)
         {
           timerChange = timerOverlay.UseTextDropShadow != original.UseTextDropShadow;
-          Application.Current.Resources["OverlayTextEffect-" + timerOverlay.Node.Id] = timerOverlay.UseTextDropShadow ? MainActions.OverlayTextEffect : null;
+          Application.Current.Resources["OverlayTextEffect-" + timerOverlay.Node.Id] = timerOverlay.UseTextDropShadow ? ThemeConfig.OverlayTextEffect : null;
         }
 
         if (timerChange)

@@ -100,12 +100,12 @@ namespace EQLogParser
         Version = ResourceAssembly.GetName().Version!.ToString()[..^2];
         Log.Info($"EQLogParser: {Version}, OS: {osVersion.VersionString}, DotNet: {Environment.Version}, RenderMode: {RenderOptions.ProcessRenderMode}");
 
-        ConfigUtil.UpdateStatus($"RenderMode: {RenderOptions.ProcessRenderMode}");
-
-        ConfigUtil.UpdateStatus("Validating Installed Voices");
-        EQLogParser.Audio.AudioManager.Initialize(AppCache);
+        MainActions.UpdateStatus($"RenderMode: {RenderOptions.ProcessRenderMode}");
+        AudioManager.Initialize(AppCache);
         await LoadVoicesSafe();
 
+        // preload trigger DB
+        _ = TriggerStateDB.Instance;
         await ShowMain();
       }
       catch (Exception ex)
@@ -117,17 +117,20 @@ namespace EQLogParser
 
     protected override async void OnExit(ExitEventArgs e)
     {
-      await TriggerManager.Instance.StopAsync();
+      await TriggerManager.Instance.DisposeAsync();
       await TriggerStateDB.Instance.Dispose();
 
       AudioManager.Instance.Dispose();
       AppCache.Dispose();
       LifecycleManager.Shutdown();
+      ChatDB.Instance.Stop();
       base.OnExit(e);
     }
 
     private static async Task LoadVoicesSafe()
     {
+      MainActions.UpdateStatus("Validating Installed Voices");
+
       try
       {
         await AudioManager.Instance.LoadValidVoicesAsync();
@@ -207,7 +210,7 @@ namespace EQLogParser
       if (!double.IsNaN(top)) main.Top = top;
       if (!double.IsNaN(left)) main.Left = left;
 
-      ConfigUtil.UpdateStatus("Checking Window Position");
+      MainActions.UpdateStatus("Checking Window Position");
       CheckWindowPosition(main);
 
       Log.Info($"Window Pos ({main.Top}, {main.Left}) | Window Size ({main.Width}, {main.Height})");
@@ -216,7 +219,7 @@ namespace EQLogParser
 
       try
       {
-        ConfigUtil.UpdateStatus("Starting Trigger Manager");
+        MainActions.UpdateStatus("Starting Trigger Manager");
         await TriggerManager.Instance.StartAsync();
 
         var savedState = ConfigUtil.GetSetting("WindowState", "Normal") switch
@@ -253,22 +256,22 @@ namespace EQLogParser
 
         // Start archive schedule if configured
         LogArchiveManager.SetArchiveSchedule();
-        ConfigUtil.UpdateStatus("Done");
+        MainActions.UpdateStatus("Done");
 
         await Task.Run(async () =>
         {
           // Cleanup downloads
-          MainActions.Cleanup();
+          UpdateChecker.Cleanup();
 
           if (ConfigUtil.IfSet("CheckUpdatesAtStartup"))
           {
-            await MainActions.CheckVersionAsync();
+            await UpdateChecker.CheckVersionAsync();
           }
         });
       }
       catch (Exception ex)
       {
-        ConfigUtil.UpdateStatus("Done");
+        MainActions.UpdateStatus("Done");
         Log.Error($"ShowAppError: {ex.Message}");
         LogDetails(ex);
         _splash?.SetErrorState();

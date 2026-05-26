@@ -12,7 +12,7 @@ namespace EQLogParser
 
     public RaidOffsetDialog(string sourcePlayer, double initialOffsetSeconds)
     {
-      MainActions.SetCurrentTheme(this);
+      ThemeConfig.SetCurrentTheme(this);
       InitializeComponent();
       Owner = MainActions.GetOwner();
       promptText.Text = $"Set time offset for {sourcePlayer}.";

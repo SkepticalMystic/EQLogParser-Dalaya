@@ -247,6 +247,11 @@ namespace EQLogParser
       var needPlayerEvent = false;
       var needPetEvent = false;
 
+      if (name.Equals("You", StringComparison.OrdinalIgnoreCase))
+      {
+        name = ConfigUtil.PlayerName;
+      }
+
       lock (_lock)
       {
         if (_verifiedPlayers.TryGetValue(name, out var lastTime))
@@ -280,6 +285,12 @@ namespace EQLogParser
             _playersUpdated = true;
             needPetEvent = true;
           }
+        }
+
+        // also remove from merc list if it was there
+        if (_mercs.TryRemove(name, out _))
+        {
+          if (!init) _playersUpdated = true;
         }
       }
 
@@ -463,6 +474,11 @@ namespace EQLogParser
               name = player;
             }
 
+            if ("You".Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+              player = ConfigUtil.PlayerName;
+            }
+
             AddVerifiedPlayer(name, parsed, true);
             SetDefaultPlayerClass(name, className, true);
           }
@@ -471,13 +487,21 @@ namespace EQLogParser
         var mapping = ConfigUtil.ReadPetMapping();
         foreach (var key in mapping.Keys)
         {
-          if (!_verifiedPlayers.ContainsKey(mapping[key]))
+          if (!mapping.TryGetValue(key, out var value) || "You".Equals(key, StringComparison.OrdinalIgnoreCase))
+            continue;
+
+          if ("You".Equals(value, StringComparison.OrdinalIgnoreCase))
           {
-            AddVerifiedPlayer(mapping[key], 0d, true);
+            value = ConfigUtil.PlayerName;
+          }
+
+          if (!_verifiedPlayers.ContainsKey(value))
+          {
+            AddVerifiedPlayer(value, 0d, true);
           }
 
           AddVerifiedPet(key, true);
-          AddPetToPlayer(key, mapping[key], true);
+          AddPetToPlayer(key, value, true);
         }
 
         _petMappingUpdated = false;
@@ -498,7 +522,7 @@ namespace EQLogParser
           var now = DateTime.Now;
           foreach (var kv in _verifiedPlayers)
           {
-            if (!string.IsNullOrEmpty(kv.Key) && IsPossiblePlayerName(kv.Key))
+            if (!string.IsNullOrEmpty(kv.Key) && IsPossiblePlayerName(kv.Key) && !"You".Equals(kv.Key, StringComparison.OrdinalIgnoreCase))
             {
               if (kv.Value != 0 && (now - DateUtil.FromDotNetSeconds(kv.Value)).TotalDays < 200)
               {
@@ -663,7 +687,17 @@ namespace EQLogParser
       }
     }
 
-    internal static bool IsPossiblePlayerName(string part, int stop = -1) => FindPossiblePlayerName(part, out var _, 0, stop) > -1;
+    internal static bool IsPossiblePlayerName(string part, int stop = -1)
+    {
+      int len = FindPossiblePlayerName(part, out var _, 0, stop);
+      if (len > 0 && string.Equals(part[..len], Labels.Unk, StringComparison.OrdinalIgnoreCase))
+      {
+        return false;
+      }
+      return len > -1;
+    }
+    internal static bool IsPossiblePetName(string name) =>
+      (IsPossiblePlayerName(name) || name?.EndsWith("`s warder", StringComparison.OrdinalIgnoreCase) == true);
 
     internal static string GetPlayerIconPath(string className)
     {

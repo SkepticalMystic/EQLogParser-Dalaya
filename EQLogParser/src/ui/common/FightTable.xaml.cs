@@ -117,7 +117,19 @@ namespace EQLogParser
       FightManager.Instance.EventsNewFight += EventsNewFight;
       FightManager.Instance.EventsUpdateFight += EventsUpdateFight;
       FightManager.Instance.EventsNewNonTankingFight += EventsNewNonTankingFight;
-      MainActions.EventsThemeChanged += EventsThemeChanged;
+      ThemeConfig.EventsThemeChanged += EventsThemeChanged;
+      MainActions.EventsLogLoadingComplete += EventsLogLoadingComplete;
+    }
+
+    private void EventsLogLoadingComplete(string file, bool open)
+    {
+      if (open)
+      {
+        // Log loading complete — flush all queued fights at once
+        _updateTimer.Stop();
+        DoProcessFights(); // process everything in one batch
+        _updateTimer.Start();
+      }
     }
 
     internal List<Fight> GetSelectedFights()
@@ -620,7 +632,7 @@ namespace EQLogParser
         e.Column.ShowToolTip = true;
         e.Column.ToolTipTemplate = (DataTemplate)Application.Current.Resources["TemplateToolTip"];
         e.Column.HeaderText = "Initial Hit Time";
-        e.Column.Width = MainActions.CurrentDateTimeWidth;
+        e.Column.Width = ThemeConfig.CurrentDateTimeWidth;
       }
       else if (e.Column.MappingName == "DamageTotal")
       {
