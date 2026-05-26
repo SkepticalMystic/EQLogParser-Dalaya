@@ -93,6 +93,9 @@ namespace EQLogParser
 
     internal async Task StartAsync()
     {
+      // Register this processor's log collection before processing any triggers
+      TriggerLogManager.Instance.EnsureCollection(CurrentProcessorName);
+      
       await GetActiveTriggersAsync();
       _lexicon = TriggerUtil.ToLexiconDictionary(await TriggerStateDB.Instance.GetLexicon());
       _trustedPlayers = [.. await TriggerStateDB.Instance.GetTrustedPlayers()];
@@ -1662,7 +1665,7 @@ namespace EQLogParser
         });
       }
 
-      TriggerLogManager.Instance.AddRange(CurrentCharacterId, entries);
+      TriggerLogManager.Instance.AddRange(CurrentProcessorName, entries);
     }
 
     private async Task SetActiveTriggersAsync(Dictionary<string, TriggerWrapper> activeTriggersById, HashSet<string> requiredOverlayIds)

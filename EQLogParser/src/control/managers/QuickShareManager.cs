@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Data;
@@ -8,7 +9,7 @@ namespace EQLogParser
   {
     internal static QuickShareManager Instance { get; set; } = new();
 
-    public ObservableCollection<QuickShareRecord> Records { get; } = [];
+    internal ObservableCollection<QuickShareRecord> Records { get; } = [];
     private readonly object _lock = new();
 
     internal QuickShareManager()
@@ -16,20 +17,25 @@ namespace EQLogParser
       BindingOperations.EnableCollectionSynchronization(Records, _lock);
     }
 
-    internal void Add(QuickShareRecord record)
+    internal async void Add(QuickShareRecord record)
     {
-      lock (_lock)
+      // Marshal to UI thread to avoid thread-safety issues with ObservableCollection
+      await UiUtil.InvokeAsync(() => AddInternal(record));
+    }
+
+    private void AddInternal(QuickShareRecord record)
+    {
+      // This method should only be called from UI thread
+      if (Records.Count == 0 || Records[0].Key != record.Key ||
+        Records[0].BeginTime != record.BeginTime)
       {
-        if (Records.Count == 0 || Records[0].Key != record.Key ||
-          !Records[0].BeginTime.Equals(record.BeginTime))
-        {
-          Records.Insert(0, record);
-        }
+        Records.Insert(0, record);
       }
     }
 
     internal bool IsMine(string key)
     {
+      // Read operations can be from any thread since binding synchronization handles it
       lock (_lock)
       {
         return Records.FirstOrDefault(r => r.IsMine && r.Key == key) != null;

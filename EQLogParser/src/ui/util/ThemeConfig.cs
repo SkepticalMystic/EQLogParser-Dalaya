@@ -136,11 +136,6 @@ namespace EQLogParser
           ConfigUtil.SetSetting("ApplicationFontFamily", CurrentFontFamily);
           EventsThemeChanged?.Invoke(CurrentTheme);
         }, DispatcherPriority.Send);
-
-        _ = UiUtil.InvokeAsync(() =>
-        {
-          EventsThemeChanged?.Invoke(CurrentTheme);
-        }, DispatcherPriority.DataBind);
       }
     }
 
@@ -161,11 +156,6 @@ namespace EQLogParser
           ConfigUtil.SetSetting("ApplicationFontSize", CurrentFontSize);
           EventsThemeChanged?.Invoke(CurrentTheme);
         }, DispatcherPriority.Send);
-
-        _ = UiUtil.InvokeAsync(() =>
-        {
-          EventsThemeChanged?.Invoke(CurrentTheme);
-        }, DispatcherPriority.DataBind);
       }
     }
 

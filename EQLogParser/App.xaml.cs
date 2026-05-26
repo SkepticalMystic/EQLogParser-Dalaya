@@ -117,7 +117,7 @@ namespace EQLogParser
 
     protected override async void OnExit(ExitEventArgs e)
     {
-      await TriggerManager.Instance.StopAsync();
+      await TriggerManager.Instance.DisposeAsync();
       await TriggerStateDB.Instance.Dispose();
 
       AudioManager.Instance.Dispose();

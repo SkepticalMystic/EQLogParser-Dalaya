@@ -2,6 +2,7 @@
 using Syncfusion.UI.Xaml.Grid;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
@@ -16,6 +17,7 @@ namespace EQLogParser
   {
     private readonly DelayedAction _batchRefresh;
     private bool _ready;
+    private ObservableCollection<TriggerLogEntry> _currentCollection;
 
     public TriggersLogView()
     {
@@ -26,6 +28,8 @@ namespace EQLogParser
       var desc = new[] { "Eval", "BeginTime", "LogTime" };
       dataGrid.SortColumnsChanging += (s, e) => DataGridUtil.SortColumnsChanging(s, e, desc);
       dataGrid.SortColumnsChanged += (s, e) => DataGridUtil.SortColumnsChanged(s, e, desc);
+
+      Loaded += ContentLoaded;
     }
 
     private void ContentLoaded(object sender, RoutedEventArgs e)
@@ -35,8 +39,6 @@ namespace EQLogParser
         TriggerManager.Instance.EventsProcessorsUpdated += EventsProcessorsUpdated;
         ThemeConfig.EventsThemeChanged += EventsThemeChanged;
         _ready = true;
-
-        // Trigger EventsProcessorsUpdated to set up selection and subscriptions
         EventsProcessorsUpdated();
       }
     }
@@ -49,30 +51,27 @@ namespace EQLogParser
       {
         if (logList != null)
         {
-          var logs = TriggerLogManager.Instance.GetLogs();
-          var list = new List<string>(logs.Keys);
+          // Capture current selection before resetting ItemsSource
+          var currentSelection = logList.SelectedItem as string;
+
+          var logs = TriggerLogManager.Instance.GetLogs(out var activeProcessors);
+          // Sort alphabetically for consistent ordering
+          var list = activeProcessors.OrderBy(x => x).ToList();
 
           logList.ItemsSource = list;
-          // not sure why
           logList.SelectedIndex = -1;
 
           if (list.Count > 0)
           {
-            if (logList.SelectedItem is string selected && list.IndexOf(selected) is var found and > -1)
+            // Try to preserve user's previous selection if it still exists
+            if (!string.IsNullOrEmpty(currentSelection) && list.Contains(currentSelection))
             {
-              logList.SelectedIndex = found;
+              logList.SelectedIndex = list.IndexOf(currentSelection);
             }
             else
             {
               logList.SelectedIndex = 0;
             }
-          }
-
-          // Subscribe to CollectionChanged for currently selected character
-          if (logList.SelectedItem is string selectedCharacter && logs.TryGetValue(selectedCharacter, out var collection))
-          {
-            collection.CollectionChanged -= TheCollectionChanged;
-            collection.CollectionChanged += TheCollectionChanged;
           }
         }
       });
@@ -82,16 +81,30 @@ namespace EQLogParser
     {
       if (sender is ComboBox combo && dataGrid != null)
       {
+        // Unsubscribe from previous collection
+        if (_currentCollection != null)
+        {
+          _currentCollection.CollectionChanged -= TheCollectionChanged;
+          _currentCollection = null;
+        }
+
         var sorting = dataGrid.SortColumnDescriptions.ToList();
         dataGrid.SortColumnDescriptions.Clear();
-        var logs = TriggerLogManager.Instance.GetLogs();
-        var collection = combo.SelectedIndex >= 0 && logs.TryGetValue(combo.SelectedItem?.ToString() ?? "", out var log) ? log : null;
+
+        BulkObservableCollection<TriggerLogEntry> collection = null;
+        if (combo.SelectedIndex >= 0 && combo.SelectedItem is string selectedName)
+        {
+          var logs = TriggerLogManager.Instance.GetLogs(out _);
+          collection = logs.TryGetValue(selectedName, out var log) ? log : new BulkObservableCollection<TriggerLogEntry>();
+        }
+
         dataGrid.ItemsSource = collection;
         sorting.ForEach(item => dataGrid.SortColumnDescriptions.Add(item));
 
+        // Subscribe to new collection
         if (collection != null)
         {
-          collection.CollectionChanged -= TheCollectionChanged;
+          _currentCollection = collection;
           collection.CollectionChanged += TheCollectionChanged;
         }
       }
@@ -146,7 +159,14 @@ namespace EQLogParser
     {
       TriggerManager.Instance.EventsProcessorsUpdated -= EventsProcessorsUpdated;
       ThemeConfig.EventsThemeChanged -= EventsThemeChanged;
-      _batchRefresh?.Dispose();
+
+      // Unsubscribe from current collection to prevent memory leaks
+      if (_currentCollection != null)
+      {
+        _currentCollection.CollectionChanged -= TheCollectionChanged;
+        _currentCollection = null;
+      }
+
       _ready = false;
     }
 
