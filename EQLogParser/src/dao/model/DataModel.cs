@@ -513,6 +513,13 @@ namespace EQLogParser
     public bool Mgb { get; set; }
     public bool SeenRecently { get; set; }
     public bool IsUnknown { get; set; }
+    // CastingTimeMs / RecastTimeMs are sourced from spells_us.txt cols 13 and 15
+    // via the parser-format extension at cols 20 and 21. CastingTimeMs == 0 means
+    // instant-cast (no cast bar). See tools/spells/convert_spells.py and
+    // memory project_dd_attribution for the planned consumer (cast-window
+    // correlation to attribute "non-melee" damage to its caster's spell).
+    public uint CastingTimeMs { get; set; }
+    public uint RecastTimeMs { get; set; }
   }
 
   internal class SpellCountData

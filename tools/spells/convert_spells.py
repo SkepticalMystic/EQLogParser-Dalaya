@@ -15,7 +15,15 @@ Mapping (see CLAUDE.md and EQDataStore.ParseCustomSpellData):
     0           0            spell id
     1           1            spell name
     2           104..119     level    = min(non-255) across the 16 class-level cols
-    3           17           duration (6-second ticks; EQDataStore multiplies by 6 for seconds)
+    3           17           duration in 6-second ticks (DurationBase). EQDataStore
+                             multiplies by 6 for seconds. We deliberately ignore
+                             DurationCalc (col 16) — the SoD-winspellparser's
+                             CalcDuration() formula produces wrong durations for
+                             ~270 Dalaya spells (108 calc=0 spells where formula
+                             zeroes a real duration; 163 spells where formula
+                             undershoots base on low-level classic buffs like
+                             Thistlecoat / Treeform). DurationBase is the
+                             Dalaya-tuned value; use it directly.
     4           83           beneficial flag (0=detrimental, 1=beneficial, 2/3=beneficial-variants)
     6           98           target type     (Pet=14 enables auto pet detection)
     7           104..119     class mask = bitmask, bit(classid-1) set when col(103+classid) != 255
@@ -30,6 +38,8 @@ Mapping (see CLAUDE.md and EQDataStore.ParseCustomSpellData):
     17          6            lands-on-you message
     18          7            lands-on-other message
     19          8            wear-off message
+    20          13           casting time in ms (source field is float ms; emitted as int)
+    21          15           recast time in ms (shared-timer cooldown; 0 = no recast lockout)
     all others  -            hard-coded "0"
 
 Source cols 104..119 hold per-class level requirements in EQ classid order:
@@ -142,6 +152,25 @@ CATEGORY_TO_ADPS: dict[str, int] = {
 CLASS_LEVEL_FIRST_COL = 104  # source col for classid=1 (Warrior); +15 reaches Berserker.
 
 
+def _safe_int(src_fields: list[str], col: int) -> str:
+    """Return src_fields[col] coerced to a non-negative int string, or '0'.
+
+    Source format has fractional ms values for some timing fields (e.g.
+    '500.0'); we want plain integer ms in the parser format. Returns '0' on
+    missing/blank/negative/non-numeric input.
+    """
+    if col >= len(src_fields):
+        return "0"
+    raw = src_fields[col].strip()
+    if not raw:
+        return "0"
+    try:
+        v = int(float(raw))
+    except ValueError:
+        return "0"
+    return str(max(0, v))
+
+
 def _level_and_class_mask(src_fields: list[str]) -> tuple[str, str]:
     """Return (level, class_mask) derived from the 16 class-level columns.
 
@@ -204,6 +233,8 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
     resist = src_fields[85] if len(src_fields) > 85 else "0"
     target = src_fields[98] if len(src_fields) > 98 else "5"
     song_window = src_fields[154] if len(src_fields) > 154 else "0"
+    casting_time_ms = _safe_int(src_fields, 13)
+    recast_time_ms = _safe_int(src_fields, 15)
     level, class_mask = _level_and_class_mask(src_fields)
     damaging = "1" if (lands_on_you or lands_on_other or wear_off) else "0"
     # ADPS = union of category-derived bitmask and the upstream-overlay bitmask.
@@ -233,6 +264,8 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
         lands_on_you,     # 17 LandsOnYou
         lands_on_other,   # 18 LandsOnOther
         wear_off,         # 19 WearOff
+        casting_time_ms,  # 20 CastingTimeMs (source col 13, integer ms)
+        recast_time_ms,   # 21 RecastTimeMs (source col 15, integer ms)
     ])
 
 

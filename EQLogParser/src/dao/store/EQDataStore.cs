@@ -589,7 +589,12 @@ namespace EQLogParser
             HasAmbiguity = data[15] == "1" || data[16] == "1",
             LandsOnYou = string.Intern(data[17]),
             LandsOnOther = string.Intern(data[18]),
-            WearOff = string.Intern(data[19])
+            WearOff = string.Intern(data[19]),
+            // Cols 20 and 21 were added to the parser format in 1.1.3. Older
+            // spells.txt files without these fields fall back to 0 (instant-cast,
+            // no recast lockout), matching pre-extension behavior.
+            CastingTimeMs = data.Length > 20 ? uint.Parse(data[20], CultureInfo.InvariantCulture) : 0,
+            RecastTimeMs = data.Length > 21 ? uint.Parse(data[21], CultureInfo.InvariantCulture) : 0
           };
         }
       }

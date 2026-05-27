@@ -33,10 +33,12 @@ EXPECTED_CHANGE_COLS = {
     8,   # Damaging flag (derived from message presence)
     10,  # Resist (source col 85)
     11,  # SongWindow (source col 154)
-    12,  # Adps (name overlay from upstream-adps.json)
+    12,  # Adps (categories + upstream overlay)
     17,  # LandsOnYou
     18,  # LandsOnOther
     19,  # WearOff
+    20,  # CastingTimeMs (source col 13)
+    21,  # RecastTimeMs (source col 15)
 }
 
 COL_NAMES = {
@@ -44,7 +46,7 @@ COL_NAMES = {
     5: "MaxHits", 6: "Target", 7: "ClassMask", 8: "Damaging", 9: "CombatSkill",
     10: "Resist", 11: "SongWindow", 12: "Adps", 13: "Mgb", 14: "Rank",
     15: "HasAmbiguityA", 16: "HasAmbiguityB", 17: "LandsOnYou",
-    18: "LandsOnOther", 19: "WearOff",
+    18: "LandsOnOther", 19: "WearOff", 20: "CastingTimeMs", 21: "RecastTimeMs",
 }
 
 
@@ -76,7 +78,13 @@ def main() -> int:
     for sid in common:
         if old[sid] != new[sid]:
             changed.append(sid)
-            for i, (a, b) in enumerate(zip(old[sid], new[sid])):
+            # Compare full length, not zip-truncated. When the format adds new
+            # trailing columns, the missing values on the old side count as a
+            # change in those columns (vs. the empty string).
+            max_len = max(len(old[sid]), len(new[sid]))
+            for i in range(max_len):
+                a = old[sid][i] if i < len(old[sid]) else ""
+                b = new[sid][i] if i < len(new[sid]) else ""
                 if a != b:
                     column_changes[i] += 1
 
