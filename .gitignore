@@ -4,6 +4,7 @@ tmp/
 .vscode/
 sign.cmd
 .aider*
+__pycache__/
 # Syncfusion license key - never commit this
 EQLogParser/SyncfusionKey.cs
 EQLogParser/data/spells_old.txt

@@ -7,9 +7,13 @@ Usage:
     python analyze_diff.py OLD NEW
 
 Output: counts of added/removed/changed IDs, plus a per-column breakdown of
-where the changes landed. Changes outside cols {1, 8, 17, 18, 19} are flagged
-as suspicious — the converter only writes those columns from source data, so
-drift elsewhere indicates a mapping bug or a hand-edited file.
+where the changes landed. Changes outside the EXPECTED_CHANGE_COLS set are
+flagged as suspicious — the converter only writes those columns from source
+data, so drift elsewhere indicates a mapping bug or a hand-edited file.
+
+Note: the first rebuild after a new source column is mapped will legitimately
+show a one-time burst of changes for that column. Add the column here when that
+happens. Expected steady-state diff between rebuilds is small.
 """
 
 from __future__ import annotations
@@ -21,7 +25,15 @@ from pathlib import Path
 
 EXPECTED_CHANGE_COLS = {
     1,   # Name (occasional patch renames)
+    2,   # Level (derived from class-level cols 104..119)
+    3,   # Duration (source col 17)
+    4,   # Beneficial (source col 83)
+    6,   # Target (source col 98)
+    7,   # ClassMask (derived from class-level cols 104..119)
     8,   # Damaging flag (derived from message presence)
+    10,  # Resist (source col 85)
+    11,  # SongWindow (source col 154)
+    12,  # Adps (name overlay from upstream-adps.json)
     17,  # LandsOnYou
     18,  # LandsOnOther
     19,  # WearOff
