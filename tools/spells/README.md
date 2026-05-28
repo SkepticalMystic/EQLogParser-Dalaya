@@ -110,9 +110,29 @@ The SoD `winspellparser` source (https://github.com/ngdeao/SoD-winspellparser) c
 - **Mgb (col 13)**: source col 185, always `0` in Dalaya. Confirmed via Dalaya forum that Soulbond replaced MGB on Dalaya.
 - **Rank (col 14)**: source col 208, always `0`. Parsed into `SpellData.Rank` in the parser but never read anywhere — dead field on both sides.
 
+## Spell-effects sidecar
+
+`convert_spells.py` also emits `EQLogParser/data/spell-effects.json` — a per-spell record of the 12 effect slots from `spells_us.txt`. Loaded by `EQDataStore` at startup to power `ComputeHotTickInfo` (and future per-tick / tooltip features). Schema:
+
+```json
+{
+  "4989": {
+    "name": "Circle of Soothing",
+    "durationCalc": 11,
+    "durationBase": 6,
+    "classMask": 32,
+    "slots": [
+      {"slot": 2, "spa": 100, "base1": 155, "base2": 0, "max": 0, "calc": 100}
+    ]
+  }
+}
+```
+
+Empty slots (SPA 0 or 254 = unused marker) are filtered. Spells with no non-empty slots (placeholder rows like the Healing Increment series) are omitted entirely. Typical size: ~900KB / ~4,500 spells.
+
 ## Files
 
-- `convert_spells.py` — the converter (source → parser format, with category + upstream Adps overlays)
+- `convert_spells.py` — the converter (source → parser format + spell-effects.json sidecar)
 - `extract_dalaya_categories.py` — regenerates `dalaya-categories.json` from Dalaya's `dbstr_us.txt`
 - `dalaya-categories.json` — in-repo `{category_id: label}` snapshot for type-5 (spell category) entries
 - `extract_upstream_adps.py` — regenerates `upstream-adps.json` from upstream EQLogParser

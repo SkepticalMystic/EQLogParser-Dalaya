@@ -69,8 +69,22 @@ from pathlib import Path
 
 DEFAULT_SOURCE = Path(r"F:/Dalaya/spells_us.txt")
 DEFAULT_DEST = Path(__file__).resolve().parent.parent.parent / "EQLogParser" / "data" / "spells.txt"
+DEFAULT_EFFECTS = Path(__file__).resolve().parent.parent.parent / "EQLogParser" / "data" / "spell-effects.json"
 DEFAULT_ADPS_OVERLAY = Path(__file__).resolve().parent / "upstream-adps.json"
 DEFAULT_CATEGORIES = Path(__file__).resolve().parent / "dalaya-categories.json"
+
+# Per-slot column layout in spells_us.txt (12 slots, slot index 0-11). Confirmed
+# via ngdeao/SoD-winspellparser/SpellParser.cs LoadSpell (lines 2814-2826).
+SLOT_SPA_COL = 86       # SPA effect id   (cols 86-97)
+SLOT_BASE1_COL = 20     # base value 1    (cols 20-31)
+SLOT_BASE2_COL = 32     # base value 2    (cols 32-43)
+SLOT_MAX_COL = 44       # max / cap       (cols 44-55)
+SLOT_CALC_COL = 70      # formula code    (cols 70-81)
+
+# SPA ids that signal an empty/unused slot. SPA 254 is the SoD-winspellparser
+# "Unused" marker; SPA 0 is also treated as null/no-op in slot context (some
+# rows pad with 0 instead of 254). Skip both when extracting effects.
+EMPTY_SLOT_SPAS = frozenset({0, 254})
 
 
 CASTER_ADPS = 1
@@ -283,11 +297,72 @@ def load_categories(path: Path) -> dict[str, str]:
         return json.load(f)
 
 
-def convert(source: Path, dest: Path, adps_overlay: dict[str, int], categories: dict[str, str]) -> tuple[int, int, int]:
+def _safe_field_int(src_fields: list[str], col: int) -> int:
+    """Return src_fields[col] coerced to int, defaulting to 0 on missing/blank/bad input."""
+    if col >= len(src_fields):
+        return 0
+    raw = src_fields[col].strip()
+    if not raw:
+        return 0
+    try:
+        return int(raw)
+    except ValueError:
+        try:
+            return int(float(raw))
+        except ValueError:
+            return 0
+
+
+def extract_effects(src_fields: list[str]) -> dict | None:
+    """Extract a spell's 12-slot effect data into a dict suitable for spell-effects.json.
+
+    Returns None when the spell has no non-empty slots (most pure-data rows like
+    Healing Increment placeholders). Otherwise returns:
+        {
+            "name": str,
+            "durationCalc": int, "durationBase": int, "classMask": int,
+            "slots": [
+                {"slot": int, "spa": int, "base1": int, "base2": int, "max": int, "calc": int},
+                ...
+            ]
+        }
+    Top-level dict is keyed by spell_id (string) in the consumer; we don't include
+    the id here since it's the dict key.
+    """
+    slots: list[dict] = []
+    for slot_idx in range(12):
+        spa = _safe_field_int(src_fields, SLOT_SPA_COL + slot_idx)
+        if spa in EMPTY_SLOT_SPAS:
+            continue
+        slots.append({
+            "slot": slot_idx,
+            "spa": spa,
+            "base1": _safe_field_int(src_fields, SLOT_BASE1_COL + slot_idx),
+            "base2": _safe_field_int(src_fields, SLOT_BASE2_COL + slot_idx),
+            "max": _safe_field_int(src_fields, SLOT_MAX_COL + slot_idx),
+            "calc": _safe_field_int(src_fields, SLOT_CALC_COL + slot_idx),
+        })
+
+    if not slots:
+        return None
+
+    _, class_mask = _level_and_class_mask(src_fields)
+    return {
+        "name": src_fields[1],
+        "durationCalc": _safe_field_int(src_fields, 16),
+        "durationBase": _safe_field_int(src_fields, 17),
+        "classMask": int(class_mask),
+        "slots": slots,
+    }
+
+
+def convert(source: Path, dest: Path, effects_dest: Path, adps_overlay: dict[str, int], categories: dict[str, str]) -> tuple[int, int, int, int]:
     written = 0
     skipped = 0
     stamped = 0
+    effects_emitted = 0
     out_lines: list[str] = []
+    effects: dict[str, dict] = {}
     with source.open("r", encoding="utf-8", newline="") as f:
         for raw in f:
             line = raw.rstrip("\r\n")
@@ -306,25 +381,39 @@ def convert(source: Path, dest: Path, adps_overlay: dict[str, int], categories: 
             out_lines.append(converted)
             written += 1
 
+            # Effect-slot sidecar emit. Keyed by spell id (col 0) as string for
+            # JSON-object compatibility. See project_dot_hot_validation Phase 2.
+            effect_entry = extract_effects(fields)
+            if effect_entry is not None:
+                effects[fields[0]] = effect_entry
+                effects_emitted += 1
+
     dest.parent.mkdir(parents=True, exist_ok=True)
     # Match the existing file's encoding/line endings: ASCII, LF, trailing newline.
     with dest.open("w", encoding="utf-8", newline="\n") as f:
         for line in out_lines:
             f.write(line + "\n")
 
-    return written, skipped, stamped
+    effects_dest.parent.mkdir(parents=True, exist_ok=True)
+    with effects_dest.open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(effects, f, separators=(",", ":"), sort_keys=False)
+        f.write("\n")
+
+    return written, skipped, stamped, effects_emitted
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("source", nargs="?", default=str(DEFAULT_SOURCE), help=f"path to spells_us.txt (default: {DEFAULT_SOURCE})")
     parser.add_argument("dest", nargs="?", default=str(DEFAULT_DEST), help=f"path to spells.txt output (default: {DEFAULT_DEST})")
+    parser.add_argument("--effects-dest", default=str(DEFAULT_EFFECTS), help=f"path to spell-effects.json output (default: {DEFAULT_EFFECTS})")
     parser.add_argument("--adps-overlay", default=str(DEFAULT_ADPS_OVERLAY), help=f"path to upstream-adps.json (default: {DEFAULT_ADPS_OVERLAY})")
     parser.add_argument("--categories", default=str(DEFAULT_CATEGORIES), help=f"path to dalaya-categories.json (default: {DEFAULT_CATEGORIES})")
     args = parser.parse_args()
 
     source = Path(args.source)
     dest = Path(args.dest)
+    effects_dest = Path(args.effects_dest)
     overlay_path = Path(args.adps_overlay)
     categories_path = Path(args.categories)
 
@@ -344,8 +433,9 @@ def main() -> int:
     else:
         print(f"warning: no category map at {categories_path} — Adps will rely on upstream overlay only", file=sys.stderr)
 
-    written, skipped, stamped = convert(source, dest, adps_overlay, categories)
+    written, skipped, stamped, effects_emitted = convert(source, dest, effects_dest, adps_overlay, categories)
     print(f"wrote {written} spells to {dest} ({stamped} with non-zero Adps)")
+    print(f"wrote {effects_emitted} effect entries to {effects_dest}")
     if skipped:
         print(f"skipped {skipped} blank/short lines")
     return 0
