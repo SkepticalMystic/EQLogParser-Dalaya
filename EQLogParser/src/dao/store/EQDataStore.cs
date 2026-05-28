@@ -69,6 +69,8 @@ namespace EQLogParser
   internal interface IEQDataStore
   {
     SpellData GetDamagingSpellByName(string name);
+    SpellData GetSpellByName(string name);
+    SpellData GetHotSpellByName(string name);
     bool IsOldSpell(string name);
     string AbbreviateSpellName(string spell);
     SpellData GetSpellByAbbrv(string abbrv);
@@ -445,7 +447,31 @@ namespace EQLogParser
       return spellData;
     }
 
-    internal SpellData GetSpellByName(string name)
+    // HoT-specific lookup. Several Dalaya spells exist twice in spells.txt under the
+    // same name: a player-cast entry (Level <= 250, Duration=0, just the cast frame)
+    // and a server-side recourse/autocast entry (Level=255, Duration > 0, the HoT
+    // tick effect). Example: "Relic: Sihala's Empathy" (id 1076 + id 7591), where
+    // 1076 autocasts 7591 — the log line shows the spell name but the ticking
+    // effect is the level-255 variant. GetSpellByName's level-prefer logic
+    // returns the player-cast entry, hiding the HoT signal. This lookup walks
+    // the full spell list and returns the first entry with both Duration > 0 and
+    // IsBeneficial set, regardless of level.
+    public SpellData GetHotSpellByName(string name)
+    {
+      if (string.IsNullOrEmpty(name) || name == Labels.UnkSpell)
+      {
+        return null;
+      }
+
+      if (!_spellsNameDb.TryGetValue(name, out var spellList))
+      {
+        return null;
+      }
+
+      return spellList.Find(item => item.Duration > 0 && item.IsBeneficial);
+    }
+
+    public SpellData GetSpellByName(string name)
     {
       SpellData spellData = null;
 

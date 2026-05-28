@@ -1,4 +1,5 @@
 using EQLogParser;
+using Moq;
 
 namespace EQLogParserTest
 {
@@ -13,6 +14,7 @@ namespace EQLogParserTest
     //   3. "<Healer> has healed you for N points of damage." (observed third-party)
     // Pattern (1) accounts for ~75% of healing events in real Dalaya logs.
 
+    private Mock<IEQDataStore> _mockDataStore;
     private HealingLineParser _parser;
 
     [TestInitialize]
@@ -21,7 +23,20 @@ namespace EQLogParserTest
       ConfigUtil.PlayerName = "Drucilla";
       // Fresh PlayerRegistry instance per test so we control who's verified.
       var registry = new PlayerRegistry(autoSave: false) { PlayerName = "Drucilla" };
-      _parser = new HealingLineParser(registry);
+
+      // Default mock: every spell lookup returns null. Tests that exercise HoT
+      // reclassification override this for the specific spell name they care about.
+      _mockDataStore = new Mock<IEQDataStore>();
+#pragma warning disable CS8603 // Possible null reference return.
+      _mockDataStore.Setup(m => m.GetSpellByName(It.IsAny<string>())).Returns((string _) => null);
+      _mockDataStore.Setup(m => m.GetHotSpellByName(It.IsAny<string>())).Returns((string _) => null);
+      _mockDataStore.Setup(m => m.GetDamagingSpellByName(It.IsAny<string>())).Returns((string _) => null);
+      _mockDataStore.Setup(m => m.GetSpellByAbbrv(It.IsAny<string>())).Returns((string _) => null);
+#pragma warning restore CS8603 // Possible null reference return.
+      _mockDataStore.Setup(m => m.IsOldSpell(It.IsAny<string>())).Returns(false);
+      _mockDataStore.Setup(m => m.AbbreviateSpellName(It.IsAny<string>())).Returns((string name) => name);
+
+      _parser = new HealingLineParser(_mockDataStore.Object, registry);
     }
 
     // =============== Pattern 1: "Your <Spell> healed <Target> for N damage." ===============
@@ -274,6 +289,80 @@ namespace EQLogParserTest
       Assert.AreEqual(8211u, r.Total);
       Assert.AreEqual(Labels.Hot, r.Type);
       Assert.AreEqual("Roar of the Lion 6", r.SubType);
+    }
+
+    // =============== Pattern 5: Dalaya HoT reclassification via spell-data lookup ===============
+    // Dalaya's "Your <Spell> healed <Target> for N damage." format carries no "over time"
+    // marker. The parser looks the spell up in EQDataStore and reclassifies as Labels.Hot
+    // when the data shows a beneficial duration heal. Unknown spells stay Labels.Heal.
+
+    private static SpellData HotSpell(string name) => new()
+    {
+      Name = name,
+      Duration = 60,
+      IsBeneficial = true
+    };
+
+    private static SpellData DirectHealSpell(string name) => new()
+    {
+      Name = name,
+      Duration = 0,
+      IsBeneficial = true
+    };
+
+    [TestMethod]
+    public void YourSpell_HotSpellName_ReclassifiedAsHot()
+    {
+      _mockDataStore.Setup(m => m.GetHotSpellByName("Spirit of the Wood")).Returns(HotSpell("Spirit of the Wood"));
+      var r = _parser.ParseLine("Your Spirit of the Wood healed Geralt for 1100 damage.");
+      Assert.IsNotNull(r);
+      Assert.AreEqual(Labels.Hot, r.Type);
+      Assert.AreEqual("Spirit of the Wood", r.SubType);
+    }
+
+    [TestMethod]
+    public void YourSpell_DirectHealSpellName_StaysLabelsHeal()
+    {
+      // GetHotSpellByName returns null when no entry under that name has Duration > 0
+      // + IsBeneficial — exercised here via the default mock setup.
+      var r = _parser.ParseLine("Your Healing healed Geralt for 500 damage.");
+      Assert.IsNotNull(r);
+      Assert.AreEqual(Labels.Heal, r.Type);
+    }
+
+    [TestMethod]
+    public void YourSpell_UnknownSpell_StaysLabelsHeal()
+    {
+      // Default mock: GetHotSpellByName returns null for every name. Confirms the
+      // null-safe path keeps records as Labels.Heal rather than crashing or upgrading.
+      var r = _parser.ParseLine("Your Made Up Spell healed Geralt for 500 damage.");
+      Assert.IsNotNull(r);
+      Assert.AreEqual(Labels.Heal, r.Type);
+    }
+
+    [TestMethod]
+    public void YourSpell_DualEntryAutocastSpell_ReclassifiedViaHotEntry()
+    {
+      // Real Dalaya pattern: a spell name has both a player-cast entry (Duration=0,
+      // direct heal) and an autocast/recourse entry (Duration>0, the HoT tick effect).
+      // GetHotSpellByName must surface the HoT-shape entry even when other entries
+      // exist. Example real spells: Relic: Sihala's Empathy (1076 + 7591), Runic:
+      // Cascading Vim (3945 autocasts 7591).
+      _mockDataStore.Setup(m => m.GetHotSpellByName("Relic: Sihala's Empathy")).Returns(HotSpell("Relic: Sihala's Empathy"));
+      var r = _parser.ParseLine("Your Relic: Sihala's Empathy healed Berenstein for 323 damage.");
+      Assert.IsNotNull(r);
+      Assert.AreEqual(Labels.Hot, r.Type);
+    }
+
+    [TestMethod]
+    public void YouHealed_NoSpellNameInLine_NotReclassified()
+    {
+      // Pattern 2 "You healed X for N damage." has no spell name in the prefix.
+      // Even if every name maps to a HoT, the empty-spell guard skips the lookup.
+      _mockDataStore.Setup(m => m.GetHotSpellByName(It.IsAny<string>())).Returns(HotSpell("anything"));
+      var r = _parser.ParseLine("You healed Illi for 1788 damage.");
+      Assert.IsNotNull(r);
+      Assert.AreEqual(Labels.Heal, r.Type);
     }
   }
 }

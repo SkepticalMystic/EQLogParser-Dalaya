@@ -20,6 +20,7 @@ namespace EQLogParser
     private const string ExceptionalHealMarker = " performs an exceptional heal! (";
     private const double ExceptionalPairWindowSeconds = 1.0;
 
+    private readonly IEQDataStore _dataStore;
     private readonly PlayerRegistry _playerRegistry;
 
     // Buffers for bidirectional crit pairing. Announcements can arrive before OR after
@@ -27,10 +28,11 @@ namespace EQLogParser
     private readonly List<PendingExceptional> _pendingExceptionals = [];
     private readonly List<RecentHeal> _recentHeals = [];
 
-    public HealingLineParser() : this(PlayerRegistry.Instance) { }
+    public HealingLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance) { }
 
-    public HealingLineParser(PlayerRegistry playerRegistry)
+    public HealingLineParser(IEQDataStore dataStore, PlayerRegistry playerRegistry)
     {
+      _dataStore = dataStore;
       _playerRegistry = playerRegistry;
     }
 
@@ -311,6 +313,19 @@ namespace EQLogParser
         if (subType == null)
         {
           subType = string.IsNullOrEmpty(spell) ? Labels.SelfHeal : string.Intern(spell);
+        }
+
+        // Dalaya HoT reclassification. Live-EQ heal lines carry "over time" in the
+        // line text and are classified to Labels.Hot above. Dalaya's "Your <Spell>
+        // healed <Target> for N damage." format carries no such marker, so we look
+        // up the spell and reclassify if any spells.txt entry under that name is a
+        // duration heal. GetHotSpellByName specifically handles dual-entry autocast
+        // spells (e.g., Relic: Sihala's Empathy 1076 + 7591) where the level-255
+        // recourse holds the HoT signal — see EQDataStore.GetHotSpellByName.
+        if (type == Labels.Heal && !string.IsNullOrEmpty(spell)
+            && _dataStore?.GetHotSpellByName(spell) != null)
+        {
+          type = Labels.Hot;
         }
 
         record = new HealRecord

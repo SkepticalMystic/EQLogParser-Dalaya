@@ -72,7 +72,7 @@ namespace EQLogParser
       var pr = new PlayerRegistry(autoSave: false);
       pr.SeedFrom(PlayerRegistry.Instance);
       var dlp = new DamageLineParser(ds, pr);
-      var hlp = new HealingLineParser(pr);
+      var hlp = new HealingLineParser(ds, pr);
       var clp = new CastLineParser(ds, pr);
       var mlp = new MiscLineParser(ds, pr);
       var plp = new PreLineParser(pr);
