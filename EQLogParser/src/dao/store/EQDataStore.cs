@@ -3,9 +3,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace EQLogParser
@@ -98,6 +100,10 @@ namespace EQLogParser
     private readonly ConcurrentDictionary<string, string> _spellAbbrvCache = new();
     private readonly ConcurrentDictionary<string, List<SpellData>> _spellsNameDb = new();
     private readonly ConcurrentDictionary<string, SpellData> _unknownSpellDb = new();
+    // Per-spell effect slot data from data/spell-effects.json, keyed by SpellData.Id
+    // (string). Populated at startup; consumed by ComputeHotTickInfo. See
+    // memory project_dot_hot_validation Phase 2 + tools/spells/convert_spells.py.
+    private readonly Dictionary<string, SpellEffects> _spellEffects = [];
     private readonly ConcurrentDictionary<string, string> _classColors = new();
     private readonly ConcurrentDictionary<SpellClass, string> _classNames = new();
     private readonly ConcurrentDictionary<string, SpellClass> _classesByName = new(StringComparer.OrdinalIgnoreCase);
@@ -165,6 +171,8 @@ namespace EQLogParser
         procCache[line] = true;
         procCache[$"New {line}"] = true;
       }
+
+      LoadSpellEffects();
 
       foreach (ref var line in CollectionsMarshal.AsSpan(ConfigUtil.ReadList(@"data\spells.txt")))
       {
@@ -566,6 +574,110 @@ namespace EQLogParser
       }
 
       return false;
+    }
+
+    // Loads data/spell-effects.json into _spellEffects. Called once from the
+    // constructor before spells.txt is parsed. Errors are logged but non-fatal —
+    // ComputeHotTickInfo will simply return null for spells with no effect data,
+    // and existing ADPS/breakdown features continue to work from spells.txt alone.
+    private void LoadSpellEffects()
+    {
+      const string path = @"data\spell-effects.json";
+      try
+      {
+        if (!File.Exists(path))
+        {
+          Log.Warn($"spell-effects sidecar not found at {path}; ComputeHotTickInfo will return null for all spells");
+          return;
+        }
+
+        var json = File.ReadAllText(path);
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var dict = JsonSerializer.Deserialize<Dictionary<string, SpellEffects>>(json, options);
+        if (dict == null) return;
+
+        foreach (var (id, effects) in dict)
+        {
+          _spellEffects[string.Intern(id)] = effects;
+        }
+      }
+      catch (IOException ex)
+      {
+        Log.Error("Error reading spell-effects.json", ex);
+      }
+      catch (JsonException ex)
+      {
+        Log.Error("Error parsing spell-effects.json", ex);
+      }
+    }
+
+    // Returns the effect-slot data for a spell, or null when the spell isn't in
+    // the sidecar (Healing Increment placeholders, etc.).
+    internal SpellEffects GetSpellEffects(string spellId)
+    {
+      return !string.IsNullOrEmpty(spellId) && _spellEffects.TryGetValue(spellId, out var effects) ? effects : null;
+    }
+
+    // SPA effect id constants relevant to periodic-tick computation.
+    private const int SpaCurrentHpRepeating = 100;
+
+    // Computes the expected per-tick healing for a HoT spell cast by a player of
+    // the given level and class. Returns null when the spell has no HoT slot in
+    // the sidecar (direct heals, non-periodic spells, items without effect data).
+    //
+    // Output components:
+    //   PerTickAmount       — spell-data base value scaled by Calc formula at
+    //                         tick=1 (gear/AA modifiers NOT applied; this is the
+    //                         spell-data baseline only).
+    //   TickIntervalSeconds — 2 for Druid casters (Dalaya-specific HoT cadence),
+    //                         else 6 (standard EverQuest server tick).
+    //   TickCount           — durationSeconds / tickIntervalSeconds.
+    //   TotalExpected       — PerTickAmount * TickCount.
+    //
+    // See memory project_dot_hot_validation Phase 2. Note: the Druid 2s override
+    // is keyed on the caster's class only — a non-Druid clicking a Druid-line HoT
+    // item gets the 6s interval, which may be wrong if the server resolves tick
+    // rate by spell line rather than caster class. Phase 3 verification will
+    // surface that signal if it shows up.
+    // Name-based overload. Resolves dual-entry autocast spells correctly by
+    // routing through GetHotSpellByName (which prefers the Duration > 0 entry).
+    // Example: log line for "Relic: Sihala's Empathy" — the player-cast entry
+    // (id 1076) has no SPA 100, but the autocast'd HoT effect (id 7591) does.
+    internal HotTickInfo? ComputeHotTickInfo(string spellName, byte casterLevel, SpellClass casterClass)
+    {
+      var spell = GetHotSpellByName(spellName);
+      return spell == null ? null : ComputeHotTickInfo(spell, casterLevel, casterClass);
+    }
+
+    internal HotTickInfo? ComputeHotTickInfo(SpellData spell, byte casterLevel, SpellClass casterClass)
+    {
+      if (spell == null) return null;
+
+      var effects = GetSpellEffects(spell.Id);
+      if (effects == null || effects.Slots == null) return null;
+
+      // Find the first SPA 100 (Current_HP_Repeating) slot with a positive base
+      // value (positive = heal, negative = damage). DoT classification belongs to
+      // a sibling method; this one is HoT-only by contract.
+      SpellSlotEffect hotSlot = null;
+      foreach (var slot in effects.Slots)
+      {
+        if (slot.Spa == SpaCurrentHpRepeating && slot.Base1 > 0)
+        {
+          hotSlot = slot;
+          break;
+        }
+      }
+      if (hotSlot == null) return null;
+
+      var perTickAmount = SpellFormula.CalcValue(hotSlot.Calc, hotSlot.Base1, hotSlot.Max, tick: 1, casterLevel);
+      var durationGameTicks = SpellFormula.CalcDuration(effects.DurationCalc, effects.DurationBase, casterLevel);
+      var durationSeconds = durationGameTicks * 6;
+      var tickIntervalSeconds = casterClass == SpellClass.Dru ? 2 : 6;
+      var tickCount = tickIntervalSeconds > 0 ? durationSeconds / tickIntervalSeconds : 0;
+      var totalExpected = perTickAmount * tickCount;
+
+      return new HotTickInfo(perTickAmount, tickIntervalSeconds, tickCount, totalExpected);
     }
 
     internal SpellData ParseCustomSpellData(string line)

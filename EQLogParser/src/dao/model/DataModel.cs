@@ -522,6 +522,37 @@ namespace EQLogParser
     public uint RecastTimeMs { get; set; }
   }
 
+  // Per-spell 12-slot effect data, sourced from data/spell-effects.json (emitted
+  // by tools/spells/convert_spells.py). See memory project_dot_hot_validation
+  // Phase 2 for the data carry rationale (sidecar JSON vs spells.txt extension).
+  // Only slots with a meaningful SPA effect are present in Slots (SPA 0 and 254
+  // are filtered as empty markers).
+  internal class SpellSlotEffect
+  {
+    public int Slot { get; set; }
+    public int Spa { get; set; }
+    public int Base1 { get; set; }
+    public int Base2 { get; set; }
+    public int Max { get; set; }
+    public int Calc { get; set; }
+  }
+
+  internal class SpellEffects
+  {
+    public string Name { get; set; }
+    public int DurationCalc { get; set; }
+    public int DurationBase { get; set; }
+    public int ClassMask { get; set; }
+    public List<SpellSlotEffect> Slots { get; set; }
+  }
+
+  // Computed expected output of a periodic healing/damage spell, returned by
+  // EQDataStore.ComputeHotTickInfo. PerTickAmount is the spell-data base * level
+  // scaling (no gear/AA modifiers); TickIntervalSeconds is 6 by default and 2 for
+  // Druid HoTs (Dalaya-specific). TickCount = durationSeconds / interval, and
+  // TotalExpected = PerTickAmount * TickCount.
+  internal readonly record struct HotTickInfo(int PerTickAmount, int TickIntervalSeconds, int TickCount, int TotalExpected);
+
   internal class SpellCountData
   {
     public Dictionary<string, Dictionary<string, uint>> PlayerCastCounts { get; set; } = [];
