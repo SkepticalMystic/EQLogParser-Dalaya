@@ -143,6 +143,11 @@
               <fa:ImageAwesome x:Name="showHealingTimelineIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_Film" />
             </MenuItem.Icon>
           </MenuItem>
+          <MenuItem x:Name="menuItemShowHotEffectiveness" IsEnabled="False" Header="HoT Effectiveness" Click="DataGridHotEffectivenessClick" ToolTip="Per-spell observed vs expected per-tick healing for the selected player's HoTs. Phase 3 of project_dot_hot_validation.">
+            <MenuItem.Icon>
+              <fa:ImageAwesome x:Name="showHotEffectivenessIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_ChartBar" />
+            </MenuItem.Icon>
+          </MenuItem>
           <MenuItem x:Name="menuItemShowSpellCasts" IsEnabled="False" Header="Spell Cast Order">
             <MenuItem.Icon>
               <fa:ImageAwesome x:Name="showSpellCastsIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_ListOl" />

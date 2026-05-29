@@ -98,6 +98,7 @@ namespace EQLogParser
           copyHealParseToEQClick.IsEnabled = copyOptions.IsEnabled = true;
           copyTopHealsParseToEQClick.IsEnabled = (dataGrid.SelectedItems.Count == 1) && (dataGrid.SelectedItem as PlayerStats)?.SubStats?.Count > 0;
           menuItemShowHealingTimeline.IsEnabled = dataGrid.SelectedItems.Count == 1 || dataGrid.SelectedItems.Count == 2;
+          menuItemShowHotEffectiveness.IsEnabled = dataGrid.SelectedItems.Count == 1;
 
           // default before making check
           menuItemShowDeathLog.IsEnabled = false;
@@ -121,7 +122,8 @@ namespace EQLogParser
         {
           menuItemShowBreakdown.IsEnabled = copyOptions.IsEnabled =
           menuItemShowHealingLog.IsEnabled = menuItemShowSpellCounts.IsEnabled = copyHealParseToEQClick.IsEnabled =
-            menuItemSetPlayerClass.IsEnabled = menuItemSetAsPlayer.IsEnabled = menuItemShowSpellCasts.IsEnabled = menuItemShowHealingTimeline.IsEnabled = false;
+            menuItemSetPlayerClass.IsEnabled = menuItemSetAsPlayer.IsEnabled = menuItemShowSpellCasts.IsEnabled =
+            menuItemShowHealingTimeline.IsEnabled = menuItemShowHotEffectiveness.IsEnabled = false;
         }
 
         menuItemSetAsPlayer.Header = $"Set {selectedName} as Verified Player";
@@ -180,6 +182,18 @@ namespace EQLogParser
         if (SyncFusionUtil.OpenWindow(out var timeline, typeof(Timeline), "healingTimeline", "Healing Timeline"))
         {
           ((Timeline)timeline.Content).Init(CurrentStats, [.. dataGrid.SelectedItems.Cast<PlayerStats>()], CurrentGroups, 2);
+        }
+      }
+    }
+
+    private void DataGridHotEffectivenessClick(object sender, RoutedEventArgs e)
+    {
+      if (dataGrid.SelectedItems?.Count > 0)
+      {
+        if (SyncFusionUtil.OpenWindow(out var win, typeof(HotEffectivenessTable), "hotEffectivenessWindow", "HoT Effectiveness")
+            && win.Content is HotEffectivenessTable viewer)
+        {
+          viewer.Init(dataGrid.SelectedItems.Cast<PlayerStats>().First(), CurrentGroups);
         }
       }
     }
