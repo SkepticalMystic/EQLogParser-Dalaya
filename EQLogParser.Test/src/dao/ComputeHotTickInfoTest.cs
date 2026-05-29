@@ -132,6 +132,36 @@ namespace EQLogParserTest
       Assert.IsFalse(info.HasValue);
     }
 
+    // GetHealingSpellByName regression coverage. Old `Damaging < 0` filter never
+    // matched Dalaya spells (convert_spells.py only emits 0 or 1); the corrected
+    // filter `IsBeneficial && Damaging > 0` should now return entries for known
+    // healing spells. HealingValidator uses this to read Target for AoE filtering.
+
+    [TestMethod]
+    public void GetHealingSpellByName_KnownHotReturnsEntry()
+    {
+      var result = _store.GetHealingSpellByName("Circle of Soothing");
+      Assert.IsNotNull(result, "Circle of Soothing should be returned (beneficial, with log messages)");
+      Assert.IsTrue(result.IsBeneficial);
+    }
+
+    [TestMethod]
+    public void GetHealingSpellByName_KnownDirectHealReturnsEntry()
+    {
+      // Duration=0 doesn't disqualify — the filter is just IsBeneficial + Damaging,
+      // not "is a HoT specifically." HealingValidator needs Target for any heal.
+      var result = _store.GetHealingSpellByName("Relic: Sihala's Empathy");
+      Assert.IsNotNull(result);
+      Assert.IsTrue(result.IsBeneficial);
+    }
+
+    [TestMethod]
+    public void GetHealingSpellByName_UnknownSpellReturnsNull()
+    {
+      var result = _store.GetHealingSpellByName("Definitely Not A Spell");
+      Assert.IsNull(result);
+    }
+
     [TestMethod]
     public void NullSpellName_ReturnsNull()
     {

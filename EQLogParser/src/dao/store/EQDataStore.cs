@@ -444,12 +444,21 @@ namespace EQLogParser
       return spellData;
     }
 
+    // Returns a beneficial spell entry under this name (used by HealingValidator
+    // to look up Target type for the AoE-heal filter). The historical filter was
+    // `Damaging < 0` (live-EQ convention where healing spells carry a negative
+    // Damaging value) but `convert_spells.py:239` only ever emits `Damaging` as
+    // `0` or `1` for Dalaya, so the old filter never matched -- HealingValidator
+    // was a silent no-op on every Dalaya log. The new filter `IsBeneficial &&
+    // Damaging > 0` finds any beneficial spell with observable log output, which
+    // is enough for the AoE check (the caller cares about Target, not whether
+    // the spell heals specifically).
     internal SpellData GetHealingSpellByName(string name)
     {
       SpellData spellData = null;
       if (!string.IsNullOrEmpty(name) && name != Labels.UnkSpell && _spellsNameDb.TryGetValue(name, out var spellList))
       {
-        spellData = spellList.Find(item => item.Damaging < 0);
+        spellData = spellList.Find(item => item.IsBeneficial && item.Damaging > 0);
       }
 
       return spellData;
