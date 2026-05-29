@@ -364,5 +364,88 @@ namespace EQLogParserTest
       Assert.IsNotNull(r);
       Assert.AreEqual(Labels.Heal, r.Type);
     }
+
+    // =============== Pattern 6: "You perform an exceptional heal!" — first-person crit announcement ===============
+    // Dalaya's HoT-tick crits are announced one line BEFORE the heal line in
+    // first-person form, with NO amount. The parser must FIFO-pair these to the
+    // next self-cast heal record within the standard 1s window. Distinct from
+    // Pattern 4 (third-person "X performs an exceptional heal! (N)") which pairs
+    // by healer-name + amount and is used for direct-cast crits.
+
+    [TestMethod]
+    public void FirstPersonExceptional_ReturnsNullByItself()
+    {
+      // The announcement alone produces no record.
+      Assert.IsNull(_parser.ParseLine("You perform an exceptional heal!", beginTime: 100.0));
+    }
+
+    [TestMethod]
+    public void FirstPersonExceptional_PairsToNextSelfCastHoTTick()
+    {
+      // The real-log shape: announcement → "Your <Spell> healed X" on the next line.
+      Assert.IsNull(_parser.ParseLine("You perform an exceptional heal!", beginTime: 100.0));
+      var r = _parser.ParseLine("Your Circle of Soothing healed Berenstein for 604 damage.", beginTime: 100.0);
+      Assert.IsNotNull(r);
+      Assert.AreEqual("Drucilla", r.Healer);
+      Assert.AreEqual(604u, r.Total);
+      Assert.IsTrue(LineModifiersParser.IsCrit(r.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void FirstPersonExceptional_PairsToNextPattern2Heal()
+    {
+      // Pattern 2 "You healed X" also gets paired — the form doesn't restrict to HoT
+      // ticks. Real evidence in Drucilla logs is HoT-only, but we don't filter by
+      // type so future patches that emit Form A for other shapes still work.
+      Assert.IsNull(_parser.ParseLine("You perform an exceptional heal!", beginTime: 100.0));
+      var r = _parser.ParseLine("You healed Illi for 1788 damage.", beginTime: 100.0);
+      Assert.IsNotNull(r);
+      Assert.IsTrue(LineModifiersParser.IsCrit(r.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void FirstPersonExceptional_FifoConsumeAcrossMultipleAnnouncements()
+    {
+      // Two announcements + two heals → both get crit, one-per-pair.
+      Assert.IsNull(_parser.ParseLine("You perform an exceptional heal!", beginTime: 100.0));
+      Assert.IsNull(_parser.ParseLine("You perform an exceptional heal!", beginTime: 100.0));
+      var r1 = _parser.ParseLine("Your Circle of Soothing healed Berenstein for 604 damage.", beginTime: 100.0);
+      var r2 = _parser.ParseLine("Your Circle of Soothing healed Drucilla for 604 damage.", beginTime: 100.0);
+      Assert.IsTrue(LineModifiersParser.IsCrit(r1.ModifiersMask));
+      Assert.IsTrue(LineModifiersParser.IsCrit(r2.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void FirstPersonExceptional_OneAnnouncementOneCrit_RemainingHealsNotCrit()
+    {
+      // One announcement → one crit. Subsequent heals don't carry over.
+      Assert.IsNull(_parser.ParseLine("You perform an exceptional heal!", beginTime: 100.0));
+      var critRec = _parser.ParseLine("Your Circle of Soothing healed Berenstein for 604 damage.", beginTime: 100.0);
+      var noCritRec = _parser.ParseLine("Your Circle of Soothing healed Drucilla for 302 damage.", beginTime: 100.0);
+      Assert.IsTrue(LineModifiersParser.IsCrit(critRec.ModifiersMask));
+      Assert.IsFalse(LineModifiersParser.IsCrit(noCritRec.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void FirstPersonExceptional_OutsideWindow_NoCrit()
+    {
+      // Announcement > 1s before the heal → pairing expires, no crit.
+      Assert.IsNull(_parser.ParseLine("You perform an exceptional heal!", beginTime: 100.0));
+      var r = _parser.ParseLine("Your Circle of Soothing healed Berenstein for 604 damage.", beginTime: 102.0);
+      Assert.IsNotNull(r);
+      Assert.IsFalse(LineModifiersParser.IsCrit(r.ModifiersMask));
+    }
+
+    [TestMethod]
+    public void FirstPersonExceptional_DoesNotApplyToOtherPlayersHeal()
+    {
+      // Form A is implicitly about the local player ("You perform"). A third-party
+      // healer's record in the same window must NOT be marked crit by it.
+      Assert.IsNull(_parser.ParseLine("You perform an exceptional heal!", beginTime: 100.0));
+      var r = _parser.ParseLine("Snowzz healed Malkatar over time for 8211 hit points by Roar of the Lion 6.", beginTime: 100.0);
+      Assert.IsNotNull(r);
+      Assert.AreEqual("Snowzz", r.Healer);
+      Assert.IsFalse(LineModifiersParser.IsCrit(r.ModifiersMask));
+    }
   }
 }

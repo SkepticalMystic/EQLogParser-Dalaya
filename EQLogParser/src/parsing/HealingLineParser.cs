@@ -11,22 +11,40 @@ namespace EQLogParser
 
     internal static HealingLineParser Instance { get; } = new();
 
-    // Dalaya-only: "<Healer> performs an exceptional heal! (N)" is a third-person crit
-    // announcement. We treat these as crit markers paired to existing heal records (same
-    // model as live-EQ "(Critical)" inline modifiers and Dalaya melee-crit pairing in
-    // DamageLineParser). Lines that don't pair within a 1s window are discarded —
-    // fabricating phantom heal records for unobservable third-party heals would inflate
-    // raid healing totals the same way fabricating phantom damage records would.
+    // Dalaya emits two distinct critical-heal announcement forms:
+    //
+    //   Form B (third-person, with amount):
+    //     "<Healer> performs an exceptional heal! (N)"
+    //     Precedes direct-cast heals like "You healed X for N damage." Pairs by
+    //     healer-name + exact amount within a 1s window, bidirectionally (the
+    //     announcement may arrive before OR after the heal record line within
+    //     the same log second).
+    //
+    //   Form A (first-person, no amount):
+    //     "You perform an exceptional heal!"
+    //     Precedes HoT-tick heals like "Your <Spell> healed X for N damage."
+    //     There's no amount to match on; the implied healer is always the local
+    //     player. We FIFO-pair to the NEXT self-cast heal record within the 1s
+    //     window. Forward pairing only — the announcement always comes BEFORE
+    //     the heal line in this form.
+    //
+    // Both forms set the Crit modifier bit on the paired heal record. Unpaired
+    // announcements are discarded — fabricating phantom heal records for
+    // unobservable crits would inflate totals (same rule as DamageLineParser's
+    // crit announcement handling). See feedback_crit_announcements_as_modifiers.
     private const string ExceptionalHealMarker = " performs an exceptional heal! (";
+    private const string FirstPersonExceptionalMarker = "You perform an exceptional heal!";
     private const double ExceptionalPairWindowSeconds = 1.0;
 
     private readonly IEQDataStore _dataStore;
     private readonly PlayerRegistry _playerRegistry;
 
-    // Buffers for bidirectional crit pairing. Announcements can arrive before OR after
-    // the heal line they belong to within the same log second.
+    // Buffers for crit pairing. Form B (_pendingExceptionals / _recentHeals)
+    // supports bidirectional pairing; Form A (_pendingFirstPersonCrits) is
+    // forward-only.
     private readonly List<PendingExceptional> _pendingExceptionals = [];
     private readonly List<RecentHeal> _recentHeals = [];
+    private readonly List<double> _pendingFirstPersonCrits = [];
 
     public HealingLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance) { }
 
@@ -41,6 +59,7 @@ namespace EQLogParser
     {
       _pendingExceptionals.Clear();
       _recentHeals.Clear();
+      _pendingFirstPersonCrits.Clear();
     }
 
     // Test entry point: parse a single action line and return the resulting record
@@ -65,6 +84,15 @@ namespace EQLogParser
       if (markerIndex > 0 && action[^1] == ')')
       {
         TryPairExceptional(action, markerIndex, beginTime);
+        return null;
+      }
+
+      // Form A: first-person crit announcement, no amount. Buffer for forward
+      // pairing to the next self-cast heal line.
+      if (action == FirstPersonExceptionalMarker)
+      {
+        TrimPendingFirstPersonCrits(beginTime);
+        _pendingFirstPersonCrits.Add(beginTime);
       }
       return null;
     }
@@ -84,9 +112,18 @@ namespace EQLogParser
         else if (action.Length >= ExceptionalHealMarker.Length + 3 && action[^1] == ')'
           && (index = action.IndexOf(ExceptionalHealMarker, StringComparison.Ordinal)) > 0)
         {
-          // No record produced — pairs to an already-stored heal record (or a future one).
-          // Either way the line is "consumed" by this parser, so return true to stop the chain.
+          // Form B (third-person + amount). No record produced — pairs to an
+          // already-stored heal record (or a future one). Either way the line
+          // is "consumed" by this parser, so return true to stop the chain.
           TryPairExceptional(action, index, lineData.BeginTime);
+          return true;
+        }
+        else if (action == FirstPersonExceptionalMarker)
+        {
+          // Form A (first-person, no amount). Buffer for forward pairing to the
+          // next self-cast heal record.
+          TrimPendingFirstPersonCrits(lineData.BeginTime);
+          _pendingFirstPersonCrits.Add(lineData.BeginTime);
           return true;
         }
       }
@@ -365,8 +402,9 @@ namespace EQLogParser
         return null;
       }
 
-      // Backward pairing: did an "X performs an exceptional heal! (N)" line arrive in the
-      // last second whose healer/amount match this record? If so, mark this heal as a crit.
+      // Form B backward pairing: did an "X performs an exceptional heal! (N)" line
+      // arrive in the last second whose healer/amount match this record? If so, mark
+      // this heal as a crit.
       TrimPendingExceptionals(beginTime);
       for (var i = 0; i < _pendingExceptionals.Count; i++)
       {
@@ -379,8 +417,23 @@ namespace EQLogParser
         }
       }
 
-      // Forward pairing: announcement may still arrive after this line. Remember the
-      // record so a subsequent announcement within the window can update it.
+      // Form A pairing: did a "You perform an exceptional heal!" line arrive in the
+      // last second? Forward-only (Form A is always emitted BEFORE the heal line).
+      // Pair FIFO to the next self-cast record. PlayerName check guards against
+      // applying to other players' heals when the announcement was for the local
+      // player's HoT tick.
+      TrimPendingFirstPersonCrits(beginTime);
+      if (_pendingFirstPersonCrits.Count > 0 &&
+          !string.IsNullOrEmpty(_playerRegistry.PlayerName) &&
+          string.Equals(record.Healer, _playerRegistry.PlayerName, StringComparison.Ordinal))
+      {
+        record.ModifiersMask = ApplyCrit(record.ModifiersMask);
+        _pendingFirstPersonCrits.RemoveAt(0);
+      }
+
+      // Forward pairing (Form B): announcement may still arrive after this line.
+      // Remember the record so a subsequent announcement within the window can
+      // update it.
       TrimRecentHeals(beginTime);
       _recentHeals.Add(new RecentHeal(beginTime, record));
       return record;
@@ -445,6 +498,14 @@ namespace EQLogParser
       while (_recentHeals.Count > 0 && now - _recentHeals[0].Time > ExceptionalPairWindowSeconds)
       {
         _recentHeals.RemoveAt(0);
+      }
+    }
+
+    private void TrimPendingFirstPersonCrits(double now)
+    {
+      while (_pendingFirstPersonCrits.Count > 0 && now - _pendingFirstPersonCrits[0] > ExceptionalPairWindowSeconds)
+      {
+        _pendingFirstPersonCrits.RemoveAt(0);
       }
     }
 
