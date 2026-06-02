@@ -298,6 +298,18 @@ namespace EQLogParser
     internal int GetClassListCount() => _classListCount;
     internal bool IsValidClassName(string className) => !string.IsNullOrEmpty(className) && _classesByName.ContainsKey(className);
 
+    // Player-castable spells for the trigger SpellPickerDialog. One entry per
+    // spell abbreviation (mirrors GetAllCategories' use of _spellsAbbrvDb so
+    // ranks collapse to a single row). Phase-agnostic — the SpellPickerFilter
+    // applies search/class/category narrowing. See memory project-trigger-spell-picker.
+    internal IEnumerable<SpellData> GetSpellsForPicker() => _spellsAbbrvDb.Values.Where(s => s.ClassMask > 0);
+
+    // Map a class display name (as returned by GetClassList /
+    // PlayerRegistry.GetDefaultPlayerClass) to its SpellClass flag, for the
+    // spell picker's class filter. Null when the name isn't a known class.
+    internal SpellClass? GetSpellClassByName(string className) =>
+      !string.IsNullOrEmpty(className) && _classesByName.TryGetValue(className, out var cls) ? cls : null;
+
     public string AbbreviateSpellName(string spell)
     {
       if (_spellAbbrvCache.TryGetValue(spell, out var cached))

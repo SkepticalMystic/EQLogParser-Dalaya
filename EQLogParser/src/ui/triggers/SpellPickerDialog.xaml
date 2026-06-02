@@ -1,0 +1,104 @@
+<syncfusion:ChromelessWindow x:Class="EQLogParser.SpellPickerDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+        mc:Ignorable="d"
+        ShowInTaskbar="False"
+        TitleBarHeight="{DynamicResource EQTableHeaderRowHeight}"
+        TitleFontSize="{DynamicResource EQContentSize}"
+        TitleBarForeground="{DynamicResource PrimaryDarken}"
+        Icon="pack://application:,,,/src/ui/main/EQLogParser.ico"
+        TitleTextAlignment="Left"
+        WindowStyle="ToolWindow"
+        Loaded="WindowLoaded"
+        UseLayoutRounding="True"
+        WindowStartupLocation="CenterOwner"
+        Width="780"
+        Height="520"
+        MinWidth="620"
+        MinHeight="360"
+        Title="Insert Spell">
+  <Grid Margin="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <!-- Filter bar: search (P1), class (P2), category (P3) -->
+    <Grid Grid.Row="0" Margin="0,0,0,8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Grid.Column="0" Text="Search:" VerticalAlignment="Center" Margin="0,0,6,0"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <TextBox x:Name="searchBox" Grid.Column="1" Padding="4" Margin="0,0,12,0"
+               FontSize="{DynamicResource EQContentSize}"
+               BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
+               Background="{DynamicResource ContentBackground}"
+               Foreground="{DynamicResource ContentForeground}"
+               TextChanged="FilterChanged" />
+
+      <TextBlock Grid.Column="2" Text="Class:" VerticalAlignment="Center" Margin="0,0,6,0"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <ComboBox x:Name="classFilter" Grid.Column="3" MinWidth="120" Margin="0,0,12,0"
+                SelectionChanged="FilterChanged" />
+
+      <TextBlock Grid.Column="4" Text="Category:" VerticalAlignment="Center" Margin="0,0,6,0"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <ComboBox x:Name="categoryFilter" Grid.Column="5" MinWidth="150"
+                SelectionChanged="FilterChanged" />
+    </Grid>
+
+    <syncfusion:SfDataGrid x:Name="dataGrid" Grid.Row="1"
+                           AllowDraggingColumns="False"
+                           AllowResizingColumns="True"
+                           AllowSorting="True"
+                           AutoGenerateColumns="False"
+                           CurrentCellBorderThickness="0"
+                           GridLinesVisibility="Both"
+                           HeaderRowHeight="{DynamicResource EQTableHeaderRowHeight}"
+                           IsReadOnly="True"
+                           RowHeight="{DynamicResource EQTableRowHeight}"
+                           ScrollViewer.CanContentScroll="False"
+                           SelectionMode="Single"
+                           SelectionChanged="SpellSelectionChanged"
+                           CellDoubleTapped="SpellCellDoubleTapped">
+      <syncfusion:SfDataGrid.Columns>
+        <syncfusion:GridTextColumn HeaderText="Spell" MappingName="Name" ColumnSizer="Star" />
+        <syncfusion:GridTextColumn HeaderText="Lands on You" MappingName="LandsOnYou" ColumnSizer="Star" />
+        <syncfusion:GridTextColumn HeaderText="Lands on Other" MappingName="LandsOnOther" ColumnSizer="Star" />
+        <syncfusion:GridTextColumn HeaderText="Wear Off" MappingName="WearOff" ColumnSizer="Star" />
+      </syncfusion:SfDataGrid.Columns>
+    </syncfusion:SfDataGrid>
+
+    <!-- Insert bar -->
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+      <TextBlock x:Name="hintText" VerticalAlignment="Center" Margin="0,0,12,0"
+                 Opacity="0.7"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <TextBlock Text="Insert message:" VerticalAlignment="Center" Margin="0,0,6,0"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <ComboBox x:Name="messageField" MinWidth="140" Margin="0,0,12,0" />
+      <Button Content="Insert" x:Name="insertButton" IsDefault="True"
+              Height="{DynamicResource EQButtonHeight}" MinWidth="80" Padding="15,0,15,0"
+              Margin="0,0,10,0" Foreground="{DynamicResource PrimaryDarken}" Click="InsertClick" />
+      <Button Content="Cancel" x:Name="cancelButton"
+              Height="{DynamicResource EQButtonHeight}" MinWidth="80" Padding="15,0,15,0"
+              Foreground="{DynamicResource PrimaryDarken}" Click="CancelClick" />
+    </StackPanel>
+  </Grid>
+</syncfusion:ChromelessWindow>

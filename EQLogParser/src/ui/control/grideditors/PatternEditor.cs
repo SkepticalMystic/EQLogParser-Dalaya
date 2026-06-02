@@ -1,4 +1,6 @@
-﻿using Syncfusion.Windows.PropertyGrid;
+﻿using log4net;
+using Syncfusion.Windows.PropertyGrid;
+using System;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
@@ -11,8 +13,11 @@ namespace EQLogParser
 {
   internal class PatternEditor : BaseTypeEditor
   {
+    private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
+
     private TextBox _theTextBox;
     private CheckBox _theCheckBox;
+    private Button _spellButton;
     private Grid _grid;
     private bool _userTurnedOff;
 
@@ -72,6 +77,8 @@ namespace EQLogParser
       _userTurnedOff = false;
       _grid = new Grid();
       _grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200, GridUnitType.Star) });
+      // Dalaya: column for the "Insert Spell..." button (see SpellPickerDialog).
+      _grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
       _grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
 
       _theTextBox = new TextBox
@@ -87,18 +94,58 @@ namespace EQLogParser
       _theTextBox.SetValue(Grid.ColumnProperty, 0);
       _theTextBox.TextChanged += TheTextChanged;
 
+      // Dalaya: opens the spell picker and inserts a spell's log message into the
+      // pattern at the caret. See memory project-trigger-spell-picker.
+      _spellButton = new Button
+      {
+        Content = "Spell…",
+        Padding = new Thickness(8, 0, 8, 0),
+        Margin = new Thickness(4, 0, 4, 0),
+        VerticalAlignment = VerticalAlignment.Center,
+        ToolTip = "Insert a spell's log message into this pattern"
+      };
+      _spellButton.SetValue(Grid.ColumnProperty, 1);
+      _spellButton.Click += SpellButtonClick;
+
       _theCheckBox = new CheckBox
       {
         Content = "Use Regex",
         Template = (ControlTemplate)Application.Current.Resources["CustomCheckBoxTemplate"]
       };
 
-      _theCheckBox.SetValue(Grid.ColumnProperty, 1);
+      _theCheckBox.SetValue(Grid.ColumnProperty, 2);
       _theCheckBox.Checked += TheCheckBoxChecked;
       _theCheckBox.Unchecked += TheCheckBoxChecked;
       _grid.Children.Add(_theTextBox);
+      _grid.Children.Add(_spellButton);
       _grid.Children.Add(_theCheckBox);
       return _grid;
+    }
+
+    private void SpellButtonClick(object sender, RoutedEventArgs e)
+    {
+      if (_theTextBox == null)
+      {
+        return;
+      }
+
+      try
+      {
+        var dialog = new SpellPickerDialog();
+        dialog.ShowDialog();
+        if (dialog.IsOkClicked && !string.IsNullOrEmpty(dialog.SelectedText))
+        {
+          var caret = _theTextBox.CaretIndex;
+          _theTextBox.Text = _theTextBox.Text.Insert(caret, dialog.SelectedText);
+          _theTextBox.CaretIndex = caret + dialog.SelectedText.Length;
+          _theTextBox.Focus();
+        }
+      }
+      catch (Exception ex)
+      {
+        // A failure opening the picker shouldn't take down the property grid.
+        Log.Error("Failed to open spell picker", ex);
+      }
     }
 
     private void TheTextChanged(object sender, TextChangedEventArgs e)
@@ -168,6 +215,12 @@ namespace EQLogParser
         _theCheckBox.Unchecked -= TheCheckBoxChecked;
         BindingOperations.ClearAllBindings(_theCheckBox);
         _theCheckBox = null;
+      }
+
+      if (_spellButton != null)
+      {
+        _spellButton.Click -= SpellButtonClick;
+        _spellButton = null;
       }
 
       if (_grid != null)
