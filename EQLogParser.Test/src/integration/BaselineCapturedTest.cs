@@ -145,6 +145,21 @@ namespace EQLogParserTest.Integration
         $"Expected ≥ 3 meaningful merged fights from the 4-boss raid (Iskkath + KK + OG + Skoal); got {meaningful.Count}. " +
         $"Total merged: {merged.Count}, total per-source fights: {string.Join(", ", perSource.Select(s => $"{s.Player}={s.Fights.Count}"))}");
 
+      // Whitespace-named fights (nameless adds, e.g. Saitha's wand adds) are legitimate, but
+      // only when they carry a real multi-player roster. A degenerate single-attacker
+      // whitespace fight would signal a parser regression turning a trailing-space pet name
+      // into a blank defender field. This pins the legit-vs-phantom distinction on real data;
+      // the synthetic counterpart is BaselineInvariantsTest
+      // .Pipeline_BlankTargetLines_FromRealPlayers_ProduceLegitWhitespaceFight. (See the
+      // phantom-fight finding in memory `project_baseline_regression_test`.)
+      foreach (var f in meaningful.Where(f => string.IsNullOrWhiteSpace(f.Name)))
+      {
+        Assert.IsTrue(f.PlayerDamageTotals.Count >= 2,
+          $"Whitespace-named fight (begin {f.BeginTimeString}) must carry a real multi-player roster; " +
+          $"got {f.PlayerDamageTotals.Count} attacker(s). A single-attacker whitespace fight indicates a " +
+          "parser-manufactured phantom, not a legitimate nameless-add engagement.");
+      }
+
       // Same boss can appear multiple times if the raid wiped and re-pulled — each is its own
       // Fight object with a unique BeginTime. Distinguish by per-name ordinal so pulls don't
       // collide on the baseline key. If the pull count later changes (merger now combines two

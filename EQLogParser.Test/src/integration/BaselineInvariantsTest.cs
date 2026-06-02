@@ -201,6 +201,49 @@ namespace EQLogParserTest.Integration
       }
     }
 
+    [TestMethod]
+    public void Pipeline_BlankTargetLines_FromRealPlayers_ProduceLegitWhitespaceFight()
+    {
+      // The positive counterpart to Pipeline_AllFights_HaveNonWhitespaceName. Dalaya logs
+      // certain nameless mobs (e.g. Mistress Saitha's "wand" adds) with the target field
+      // blanked, so melee lines read "Attacker hits     for N points of damage." with nothing
+      // between the verb and "for". The parser correctly joins the empty inter-token slices
+      // into a whitespace defender, and FightManager names the fight by that defender —
+      // producing a *legitimate* whitespace-named Fight.
+      //
+      // The distinction from a parser-manufactured phantom is the roster: a real nameless-add
+      // engagement carries multiple distinct real player attackers, whereas a phantom (e.g. a
+      // blanket TrimEnd turning a trailing-space pet name into a blank field) would carry a
+      // degenerate single-attacker roster. This invariant pins that distinction fixture-free;
+      // BaselineCapturedTest asserts the same property on the real 5-source raid data, where
+      // the two whitespace fights carry 13- and 12-player rosters.
+      var ctx = ParseContext.CreateIsolated();
+      ctx.PlayerRegistry.PlayerName = "Tester";
+      foreach (var p in new[] { "Warone", "Wartwo", "Warthree" })
+      {
+        ctx.PlayerRegistry.AddVerifiedPlayer(p, 1000.0);
+      }
+
+      var fights = new List<Fight>();
+      ctx.FightManager.EventsNewFight += fights.Add;
+
+      // Blank-target melee lines — identical spacing so every record resolves to the same
+      // whitespace defender and lands in one fight.
+      Feed(ctx, 1000, "Warone hits     for 100 points of damage.");
+      Feed(ctx, 1000, "Wartwo crushes     for 80 points of damage.");
+      Feed(ctx, 1001, "Warthree slashes     for 120 points of damage.");
+
+      var blankFight = fights.SingleOrDefault(f => string.IsNullOrWhiteSpace(f.Name));
+      Assert.IsNotNull(blankFight,
+        "Blank-target lines from real players must produce a legitimate whitespace-named Fight");
+
+      CollectionAssert.AreEquivalent(
+        new[] { "Warone", "Wartwo", "Warthree" },
+        blankFight.PlayerDamageTotals.Keys.ToList(),
+        "A legitimate nameless-add fight carries a real multi-player roster — not a degenerate " +
+        "single-attacker phantom. This is what separates it from a parser-manufactured whitespace fight.");
+    }
+
     // ---- helpers ----
 
     private static void Feed(ParseContext ctx, double beginTime, string action)
