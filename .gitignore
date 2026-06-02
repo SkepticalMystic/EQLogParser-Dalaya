@@ -11,6 +11,10 @@ EQLogParser/data/spells_old.txt
 EQLogParserInstall/Output/
 CLAUDE.md
 BACKLOG.md
+# Claude-purposed process runbooks (see memory `feedback_claude_files_gitignored`).
+# Read as general maintainer docs; revisit tracking if the project becomes collaborative.
+docs/ReleaseProcedure.md
+docs/UpstreamMerge.md
 .opencode
 .claude/
 # Captured fixtures and snapshot baselines for the integration regression tests
