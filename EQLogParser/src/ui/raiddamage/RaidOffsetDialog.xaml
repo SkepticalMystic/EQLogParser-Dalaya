@@ -10,7 +10,7 @@
         TitleBarHeight="{DynamicResource EQTableHeaderRowHeight}"
         TitleFontSize="{DynamicResource EQContentSize}"
         TitleBarForeground="{DynamicResource PrimaryDarken}"
-        Icon="EQLogParser.ico"
+        Icon="pack://application:,,,/src/ui/main/EQLogParser.ico"
         TitleTextAlignment="Left"
         WindowStyle="ToolWindow"
         Loaded="WindowLoaded"
