@@ -391,6 +391,17 @@ namespace EQLogParser
       // top-level rows instead of rolling into "OwnerName +Pets" aggregates.
       _statsContext.PlayerRegistry.SeedFrom(PlayerRegistry.Instance);
 
+      // Then fold in each contributing source's classification state. Each per-source parse
+      // context inferred player classes (and verified players/pets) from its own log during
+      // ParseFile, whereas the live Instance only knows what the user observed in their own
+      // session — often empty when external raid logs are loaded without a live parse. Seeding
+      // the sources after Instance lets each source's own observations win, so the embedded
+      // summary's Class column populates the same way the main DPS/Tanking tabs do.
+      foreach (var source in _sources.Where(s => s.IsSelected && s.Fights.Count > 0))
+      {
+        _statsContext.PlayerRegistry.SeedFrom(source.Context.PlayerRegistry);
+      }
+
       // Run on background thread — BuildTotalStats does meaningful work and fires events
       // that route through each embedded summary's subscription. Tanking uses the same fight
       // list but reads fight.TankingBlocks / TankSegments internally, so the options are shared.

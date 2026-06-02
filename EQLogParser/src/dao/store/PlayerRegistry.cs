@@ -63,8 +63,12 @@ namespace EQLogParser
 
     // Seeds this PlayerRegistry's classification state from another (typically the live
     // singleton). Needed when spinning up an isolated parse context so that fresh parses
-    // don't misclassify known players/pets as NPCs. Copies are shallow (string → byte/string
-    // dictionaries); subsequent mutations on either side stay independent.
+    // don't misclassify known players/pets as NPCs, and so the Raid Damage summary can show
+    // the same Class column as the main DPS/Tanking tabs (it reads GetPlayerClass off this
+    // isolated registry). Copies are shallow; the string→string dictionaries are naturally
+    // independent. The _activePlayerClass values are shared ActivePlayerClass references —
+    // safe because the isolated context only ever *reads* class data (GetPlayerClass locks
+    // and snapshots), while writes (SetActivePlayerClass) happen on per-source contexts.
     internal void SeedFrom(PlayerRegistry other)
     {
       if (other == null || ReferenceEquals(other, this))
@@ -75,6 +79,8 @@ namespace EQLogParser
       foreach (var kv in other._verifiedPets) _verifiedPets[kv.Key] = kv.Value;
       foreach (var kv in other._petToPlayer) _petToPlayer[kv.Key] = kv.Value;
       foreach (var kv in other._mercs) _mercs[kv.Key] = kv.Value;
+      foreach (var kv in other._defaultPlayerClass) _defaultPlayerClass[kv.Key] = kv.Value;
+      foreach (var kv in other._activePlayerClass) _activePlayerClass[kv.Key] = kv.Value;
     }
 
     // The player whose log is being parsed in this context. Defaults to the live

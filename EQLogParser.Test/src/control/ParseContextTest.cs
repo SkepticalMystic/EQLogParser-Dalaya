@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using EQLogParser;
 
 namespace EQLogParserTest
@@ -203,6 +204,32 @@ namespace EQLogParserTest
         DamageLineParser.Instance.EventsDamageProcessed -= LiveHandler;
         ctx.DamageLineParser.EventsDamageProcessed -= IsolatedHandler;
       }
+    }
+
+    [TestMethod]
+    public void SeedFrom_CopiesPlayerClass_SoIsolatedSummaryCanShowClassColumn()
+    {
+      // Regression for the Raid Damage Class column. The embedded summary reads GetPlayerClass
+      // off its isolated _statsContext PlayerRegistry, which is populated only via SeedFrom.
+      // Before the fix, SeedFrom copied verified players/pets/mercs but NOT the class maps, so
+      // every merged player showed a blank Class. The main DPS/Tanking tabs read the live
+      // registry directly and were unaffected, which is why only Raid Damage was blank.
+      var className = EQDataStore.Instance.GetClassList().FirstOrDefault();
+      Assert.IsFalse(string.IsNullOrEmpty(className), "Expected at least one class name from EQDataStore");
+
+      var source = ParseContext.CreateIsolated();
+      var dest = ParseContext.CreateIsolated();
+
+      source.PlayerRegistry.AddVerifiedPlayer("Rome", 1000.0);
+      source.PlayerRegistry.SetActivePlayerClass("Rome", className, 2, 1000.0);
+
+      Assert.AreEqual(string.Empty, dest.PlayerRegistry.GetPlayerClass("Rome", 1000.0),
+        "Sanity: dest must not know the class before seeding");
+
+      dest.PlayerRegistry.SeedFrom(source.PlayerRegistry);
+
+      Assert.AreEqual(className, dest.PlayerRegistry.GetPlayerClass("Rome", 1000.0),
+        "SeedFrom must copy class data so the Raid Damage isolated stats context can show the Class column");
     }
   }
 }
