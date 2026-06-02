@@ -216,6 +216,20 @@ def _level_and_class_mask(src_fields: list[str]) -> tuple[str, str]:
     return str(min(min_level, 255)), str(mask)
 
 
+def _category_labels(src_fields: list[str], categories: dict[str, str]) -> str:
+    """Return semicolon-joined category labels from cols 156/157/158, empty string if none."""
+    labels = []
+    for col in (156, 157, 158):
+        if col >= len(src_fields):
+            break
+        cat_id = src_fields[col].strip()
+        if cat_id and cat_id != "0":
+            label = categories.get(cat_id)
+            if label and label not in labels:
+                labels.append(label)
+    return ";".join(labels)
+
+
 def _adps_from_categories(src_fields: list[str], categories: dict[str, str]) -> int:
     """Union ADPS bitmasks from source cols 156/157/158 (CategoryDescID[0..2]).
 
@@ -256,6 +270,7 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
     # itself; combining them maximizes coverage without losing precision.
     adps_value = _adps_from_categories(src_fields, categories) | adps_overlay.get(name, 0)
     adps = str(adps_value)
+    category = _category_labels(src_fields, categories) if categories else ""
 
     return "^".join([
         spell_id,         # 0  Id
@@ -280,6 +295,7 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
         wear_off,         # 19 WearOff
         casting_time_ms,  # 20 CastingTimeMs (source col 13, integer ms)
         recast_time_ms,   # 21 RecastTimeMs (source col 15, integer ms)
+        category,         # 22 Category (semicolon-joined Dalaya CategoryDescID labels)
     ])
 
 

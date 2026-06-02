@@ -39,6 +39,7 @@ EXPECTED_CHANGE_COLS = {
     19,  # WearOff
     20,  # CastingTimeMs (source col 13)
     21,  # RecastTimeMs (source col 15)
+    22,  # Category (semicolon-joined labels from cols 156/157/158)
 }
 
 COL_NAMES = {
@@ -47,6 +48,7 @@ COL_NAMES = {
     10: "Resist", 11: "SongWindow", 12: "Adps", 13: "Mgb", 14: "Rank",
     15: "HasAmbiguityA", 16: "HasAmbiguityB", 17: "LandsOnYou",
     18: "LandsOnOther", 19: "WearOff", 20: "CastingTimeMs", 21: "RecastTimeMs",
+    22: "Category",
 }
 
 

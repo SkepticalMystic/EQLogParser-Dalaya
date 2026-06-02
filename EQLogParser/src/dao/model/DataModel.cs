@@ -520,6 +520,7 @@ namespace EQLogParser
     // correlation to attribute "non-melee" damage to its caster's spell).
     public uint CastingTimeMs { get; set; }
     public uint RecastTimeMs { get; set; }
+    public string Category { get; set; }
   }
 
   // Per-spell 12-slot effect data, sourced from data/spell-effects.json (emitted

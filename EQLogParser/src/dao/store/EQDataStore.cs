@@ -488,6 +488,13 @@ namespace EQLogParser
       return spellList.Find(item => item.Duration > 0 && item.IsBeneficial);
     }
 
+    public IEnumerable<string> GetAllCategories() =>
+      _spellsAbbrvDb.Values
+        .Where(s => !string.IsNullOrEmpty(s.Category))
+        .SelectMany(s => s.Category.Split(';'))
+        .Distinct()
+        .OrderBy(c => c);
+
     public SpellData GetSpellByName(string name)
     {
       SpellData spellData = null;
@@ -741,7 +748,8 @@ namespace EQLogParser
             // spells.txt files without these fields fall back to 0 (instant-cast,
             // no recast lockout), matching pre-extension behavior.
             CastingTimeMs = data.Length > 20 ? uint.Parse(data[20], CultureInfo.InvariantCulture) : 0,
-            RecastTimeMs = data.Length > 21 ? uint.Parse(data[21], CultureInfo.InvariantCulture) : 0
+            RecastTimeMs = data.Length > 21 ? uint.Parse(data[21], CultureInfo.InvariantCulture) : 0,
+            Category = data.Length > 22 ? string.Intern(data[22]) : string.Empty
           };
         }
       }

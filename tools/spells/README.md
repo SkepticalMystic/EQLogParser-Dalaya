@@ -43,7 +43,7 @@ Whenever the Dalaya patcher overwrites `F:\Dalaya\spells_us.txt`. Spell IDs, nam
 
 ## What the converter does
 
-`spells_us.txt` is the live-EQ-style 239-column format. The parser format is 20 columns. The converter pulls the fields the parser reads and hard-codes the rest.
+`spells_us.txt` is the live-EQ-style 239-column format. The parser format is 23 columns (0–22). The converter pulls the fields the parser reads and hard-codes the rest.
 
 Mapping (see [`EQDataStore.ParseCustomSpellData`](../../EQLogParser/src/dao/store/EQDataStore.cs)):
 
@@ -69,6 +69,9 @@ Mapping (see [`EQDataStore.ParseCustomSpellData`](../../EQLogParser/src/dao/stor
 | 17 | LandsOnYou | 6 | |
 | 18 | LandsOnOther | 7 | |
 | 19 | WearOff | 8 | |
+| 20 | CastingTimeMs | 13 | integer ms |
+| 21 | RecastTimeMs | 15 | integer ms |
+| 22 | Category | 156/157/158 | semicolon-joined Dalaya CategoryDescID labels |
 
 Class-level cols 104..119 hold per-class level requirements in EQ classid order: 104=War, 105=Clr, 106=Pal, 107=Rng, 108=Shd, 109=Dru, 110=Mnk, 111=Brd, 112=Rog, 113=Shm, 114=Nec, 115=Wiz, 116=Mag, 117=Enc, 118=Bst, 119=Ber. Verified against wiki: https://wiki.shardsofdalaya.com/wiki/<Class>_spells.
 
