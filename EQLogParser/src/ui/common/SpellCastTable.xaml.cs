@@ -14,6 +14,7 @@ namespace EQLogParser
     private readonly Dictionary<string, bool> _uniqueNames = [];
     private PlayerStats _raidStats;
     private string _title;
+    private string _currentCategory;
 
     public SpellCastTable()
     {
@@ -21,6 +22,11 @@ namespace EQLogParser
       dataGrid.IsEnabled = false;
       UiElementUtil.SetEnabled(controlPanel.Children, false);
       InitCastTable(dataGrid, titleLabel, selectedCastTypes, selectedSpellRestrictions);
+
+      var categories = new List<string> { "All Categories" };
+      categories.AddRange(EQDataStore.Instance.GetAllCategories());
+      categoryFilter.ItemsSource = categories;
+      categoryFilter.SelectedIndex = 0;
     }
 
     internal async Task InitAsync(List<PlayerStats> selectedStats, CombinedStats currentStats)
@@ -185,6 +191,24 @@ namespace EQLogParser
         }
 
         list.Add(row);
+      }
+    }
+
+    private async void CategoryFilterChanged(object sender, EventArgs e)
+    {
+      if (dataGrid?.View != null)
+      {
+        var newCategory = categoryFilter.SelectedItem as string == "All Categories" ? null : categoryFilter.SelectedItem as string;
+        if (newCategory != _currentCategory)
+        {
+          _currentCategory = newCategory;
+          CurrentCategory = _currentCategory;
+          titleLabel.Content = "Loading...";
+          dataGrid.IsEnabled = false;
+          dataGrid.ItemsSource = null;
+          dataGrid.Columns.Clear();
+          await Display();
+        }
       }
     }
 

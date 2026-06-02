@@ -22,6 +22,7 @@
     <StackPanel x:Name="controlPanel" Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right">
       <ComboBox Margin="0,0,8,2" x:Name="countTypes" SelectionChanged="OptionsChanged" />
       <ComboBox Margin="0,0,8,2" x:Name="minFreqList" SelectionChanged="OptionsChanged" />
+      <ComboBox Margin="0,0,8,2" x:Name="categoryFilter" SelectionChanged="OptionsChanged" />
       <ComboBox x:Name="selectedSpellRestrictions" Margin="0,0,8,2" 
                 DropDownClosed="CastTypesChanged" ItemTemplateSelector="{StaticResource ComboBoxSelector}" />
       <ComboBox x:Name="selectedCastTypes" Margin="0,0,8,2" 

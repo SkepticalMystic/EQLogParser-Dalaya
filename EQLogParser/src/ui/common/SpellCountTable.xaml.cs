@@ -38,6 +38,7 @@ namespace EQLogParser
     private readonly TotalColumnComparer _totalColumnComparer = new();
     private int _currentCountType;
     private int _currentMinFreqCount;
+    private string _currentCategory;
     private string _title;
 
     public SpellCountTable()
@@ -49,6 +50,8 @@ namespace EQLogParser
       countTypes.SelectedIndex = 0;
       minFreqList.ItemsSource = _minFreqs;
       minFreqList.SelectedIndex = 0;
+      categoryFilter.ItemsSource = new List<string> { "All Categories" };
+      categoryFilter.SelectedIndex = 0;
 
       InitCastTable(dataGrid, titleLabel, selectedCastTypes, selectedSpellRestrictions);
       // default these columns to descending
@@ -68,9 +71,31 @@ namespace EQLogParser
           var selected = selectedStats?.Select(stats => stats.OrigName).Distinct().ToList();
           _theSpellCounts = SpellCountBuilder.GetSpellCounts(selected, raidStats);
           _playerList = [.. _theSpellCounts.UniquePlayers.Keys];
+          PopulateCategoryFilter();
           Display();
         }
       }
+    }
+
+    private void PopulateCategoryFilter()
+    {
+      var categories = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+      foreach (var spell in _theSpellCounts.UniqueSpells.Values)
+      {
+        if (!string.IsNullOrEmpty(spell.Category))
+        {
+          foreach (var cat in spell.Category.Split(';'))
+          {
+            categories.Add(cat.Trim());
+          }
+        }
+      }
+
+      var items = new List<string> { "All Categories" };
+      items.AddRange(categories);
+      var saved = categoryFilter.SelectedItem as string;
+      categoryFilter.ItemsSource = items;
+      categoryFilter.SelectedItem = items.Contains(saved) ? saved : "All Categories";
     }
 
     private void Display()
@@ -108,11 +133,20 @@ namespace EQLogParser
 
       dataGrid.Columns.Add(headerCol);
 
+      var categoryCol = new GridTextColumn
+      {
+        HeaderText = "Category",
+        MappingName = "Category",
+        Width = ThemeConfig.CurrentSpellWidth
+      };
+      dataGrid.Columns.Add(categoryCol);
+
       Task.Delay(100).ContinueWith(_ =>
       {
         var filteredPlayerMap = new Dictionary<string, Dictionary<string, uint>>();
         var totalCountMap = new Dictionary<string, uint>();
         var uniqueSpellsMap = new Dictionary<string, uint>();
+        var spellCategoryMap = new Dictionary<string, string>();
 
         uint totalCasts = 0;
         _playerList.ForEach(player =>
@@ -122,10 +156,12 @@ namespace EQLogParser
           {
             foreach (var id in _theSpellCounts.PlayerCastCounts[player].Keys)
             {
-              if (PassFilters(_theSpellCounts.UniqueSpells[id], false))
+              var spell = _theSpellCounts.UniqueSpells[id];
+              if (PassFilters(spell, false))
               {
                 totalCasts = UpdateMaps(id, player, _theSpellCounts.PlayerCastCounts[player][id], _theSpellCounts.MaxCastCounts,
                   totalCountMap, uniqueSpellsMap, filteredPlayerMap, false, totalCasts);
+                spellCategoryMap.TryAdd(spell.NameAbbrv, spell.Category ?? string.Empty);
               }
             }
           }
@@ -134,10 +170,12 @@ namespace EQLogParser
           {
             foreach (var id in value.Keys)
             {
-              if (PassFilters(_theSpellCounts.UniqueSpells[id], true))
+              var spell = _theSpellCounts.UniqueSpells[id];
+              if (PassFilters(spell, true))
               {
                 totalCasts = UpdateMaps(id, player, value[id], _theSpellCounts.MaxReceivedCounts,
                   totalCountMap, uniqueSpellsMap, filteredPlayerMap, true, totalCasts);
+                spellCategoryMap.TryAdd("Received " + spell.NameAbbrv, spell.Category ?? string.Empty);
               }
             }
           }
@@ -189,6 +227,7 @@ namespace EQLogParser
         {
           var row = (list.Count > existingIndex) ? list[existingIndex] : new ExpandoObject();
           row["Spell"] = spell;
+          row["Category"] = spellCategoryMap.TryGetValue(spell, out var cat) ? cat : string.Empty;
 
           foreach (var name in CollectionsMarshal.AsSpan(playerNames))
           {
@@ -273,10 +312,13 @@ namespace EQLogParser
 
     private void UpdateOptions(bool force = false)
     {
-      if (dataGrid?.View != null && (force || _currentCountType != countTypes.SelectedIndex || _currentMinFreqCount != minFreqList.SelectedIndex))
+      var newCategory = categoryFilter.SelectedItem as string == "All Categories" ? null : categoryFilter.SelectedItem as string;
+      if (dataGrid?.View != null && (force || _currentCountType != countTypes.SelectedIndex || _currentMinFreqCount != minFreqList.SelectedIndex || newCategory != _currentCategory))
       {
         _currentCountType = countTypes.SelectedIndex;
         _currentMinFreqCount = minFreqList.SelectedIndex;
+        _currentCategory = newCategory;
+        CurrentCategory = _currentCategory;
         titleLabel.Content = "Loading...";
         dataGrid.ItemsSource = null;
         dataGrid.IsEnabled = false;

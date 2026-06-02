@@ -11,6 +11,7 @@ namespace EQLogParser
 {
   public class CastTable : UserControl, IDisposable
   {
+    protected string CurrentCategory;
     protected bool CurrentShowAnySpellType = true;
     protected bool CurrentShowBeneficialSpells = true;
     protected bool CurrentShowCastSpells = true;
@@ -196,6 +197,12 @@ namespace EQLogParser
 
       // if i want received spells but not cast spells then make sure it's not a cast spell
       if (CurrentShowReceivedSpells && !CurrentShowCastSpells && !received)
+      {
+        return false;
+      }
+
+      if (CurrentCategory != null && !string.IsNullOrEmpty(CurrentCategory) &&
+          (string.IsNullOrEmpty(spellData.Category) || !spellData.Category.Contains(CurrentCategory)))
       {
         return false;
       }
