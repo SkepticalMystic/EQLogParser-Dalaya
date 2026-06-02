@@ -43,9 +43,24 @@ namespace EQLogParser
       ZoneRecords
     ];
 
-    private RecordsStore()
+    // The live singleton path. Delegates to the parameterized ctor with
+    // registerLifecycle:true. Kept as a delegation (not a duplicated body) on
+    // purpose: if an upstream merge changes the initialization below, the
+    // conflict surfaces here visibly rather than letting an isolated-context
+    // copy drift silently. See memory project_healing_raid_tab.
+    private RecordsStore() : this(registerLifecycle: true) { }
+
+    // Headless construction for isolated parse contexts (Raid Damage multi-log
+    // merge). registerLifecycle:false skips the app-wide LifecycleManager
+    // registration and the 1500ms UI event Timer so a background parse doesn't
+    // emit RecordsUpdatedEvent into the live UI or get torn down with the live
+    // session. Shutdown()'s _eventTimer?.Dispose() is already null-safe.
+    internal RecordsStore(bool registerLifecycle)
     {
-      LifecycleManager.Register(this);
+      if (registerLifecycle)
+      {
+        LifecycleManager.Register(this);
+      }
 
       // initialize dictionaries
       foreach (var type in TimedRecordTypes)
@@ -53,7 +68,10 @@ namespace EQLogParser
         _recordDictionaries[type] = [];
       }
 
-      _eventTimer = new Timer(SendEvents, null, TimeSpan.FromMilliseconds(1500), TimeSpan.FromMilliseconds(1500));
+      if (registerLifecycle)
+      {
+        _eventTimer = new Timer(SendEvents, null, TimeSpan.FromMilliseconds(1500), TimeSpan.FromMilliseconds(1500));
+      }
     }
 
     internal void Add(DeathRecord record, double beginTime) => Add(DeathRecords, record, beginTime);

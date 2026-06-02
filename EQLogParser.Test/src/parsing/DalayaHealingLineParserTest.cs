@@ -36,7 +36,8 @@ namespace EQLogParserTest
       _mockDataStore.Setup(m => m.IsOldSpell(It.IsAny<string>())).Returns(false);
       _mockDataStore.Setup(m => m.AbbreviateSpellName(It.IsAny<string>())).Returns((string name) => name);
 
-      _parser = new HealingLineParser(_mockDataStore.Object, registry);
+      // Headless store keeps these parse-only tests off the live singleton.
+      _parser = new HealingLineParser(_mockDataStore.Object, registry, new RecordsStore(registerLifecycle: false));
     }
 
     // =============== Pattern 1: "Your <Spell> healed <Target> for N damage." ===============

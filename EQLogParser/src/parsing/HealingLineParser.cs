@@ -38,6 +38,7 @@ namespace EQLogParser
 
     private readonly IEQDataStore _dataStore;
     private readonly PlayerRegistry _playerRegistry;
+    private readonly RecordsStore _recordsStore;
 
     // Buffers for crit pairing. Form B (_pendingExceptionals / _recentHeals)
     // supports bidirectional pairing; Form A (_pendingFirstPersonCrits) is
@@ -46,12 +47,13 @@ namespace EQLogParser
     private readonly List<RecentHeal> _recentHeals = [];
     private readonly List<double> _pendingFirstPersonCrits = [];
 
-    public HealingLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance) { }
+    public HealingLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance, RecordsStore.Instance) { }
 
-    public HealingLineParser(IEQDataStore dataStore, PlayerRegistry playerRegistry)
+    public HealingLineParser(IEQDataStore dataStore, PlayerRegistry playerRegistry, RecordsStore recordsStore)
     {
       _dataStore = dataStore;
       _playerRegistry = playerRegistry;
+      _recordsStore = recordsStore;
     }
 
     // Test hook: clear pairing buffers between tests.
@@ -106,7 +108,7 @@ namespace EQLogParser
         if (action.Length >= 23 && (index = action.LastIndexOf(" healed ", action.Length, StringComparison.Ordinal)) > -1 &&
           ParseHealLine(action, index, lineData.BeginTime) is { } record)
         {
-          RecordsStore.Instance.Add(record, lineData.BeginTime);
+          _recordsStore.Add(record, lineData.BeginTime);
           return true;
         }
         else if (action.Length >= ExceptionalHealMarker.Length + 3 && action[^1] == ')'

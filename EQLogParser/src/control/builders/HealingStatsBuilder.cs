@@ -40,14 +40,16 @@ namespace EQLogParser
     private readonly EQDataStore _dataStore;
     private readonly PlayerRegistry _playerRegistry;
     private readonly FightManager _fightManager;
+    private readonly RecordsStore _recordsStore;
 
-    internal HealingStatsBuilder() : this(EQDataStore.Instance, PlayerRegistry.Instance, FightManager.Instance) { }
+    internal HealingStatsBuilder() : this(EQDataStore.Instance, PlayerRegistry.Instance, FightManager.Instance, RecordsStore.Instance) { }
 
-    internal HealingStatsBuilder(EQDataStore dataStore, PlayerRegistry playerRegistry, FightManager fightManager)
+    internal HealingStatsBuilder(EQDataStore dataStore, PlayerRegistry playerRegistry, FightManager fightManager, RecordsStore recordsStore)
     {
       _dataStore = dataStore;
       _playerRegistry = playerRegistry;
       _fightManager = fightManager;
+      _recordsStore = recordsStore;
       _fightManager.EventsClearedActiveData += (_) =>
       {
         lock (_lock)
@@ -106,7 +108,7 @@ namespace EQLogParser
 
           if (_raidTotals.Ranges.TimeSegments.Count > 0)
           {
-            var allHeals = RecordsStore.Instance.GetAllHeals().ToList();
+            var allHeals = _recordsStore.GetAllHeals().ToList();
             // calculate totals first since it can modify the ranges
             _raidTotals.TotalSeconds = _raidTotals.MaxTime = _raidTotals.Ranges.GetTotal();
 

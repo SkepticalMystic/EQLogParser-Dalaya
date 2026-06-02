@@ -15,6 +15,7 @@ namespace EQLogParserTest
 
       Assert.AreNotSame(a.DataStore, b.DataStore);
       Assert.AreNotSame(a.PlayerRegistry, b.PlayerRegistry);
+      Assert.AreNotSame(a.RecordsStore, b.RecordsStore);
       Assert.AreNotSame(a.DamageLineParser, b.DamageLineParser);
       Assert.AreNotSame(a.FightManager, b.FightManager);
       Assert.AreNotSame(a.DamageStatsBuilder, b.DamageStatsBuilder);
@@ -24,10 +25,34 @@ namespace EQLogParserTest
       // Isolated contexts should also be distinct from the app-wide singletons.
       Assert.AreNotSame(EQDataStore.Instance, a.DataStore);
       Assert.AreNotSame(PlayerRegistry.Instance, a.PlayerRegistry);
+      Assert.AreNotSame(RecordsStore.Instance, a.RecordsStore);
       Assert.AreNotSame(DamageLineParser.Instance, a.DamageLineParser);
       Assert.AreNotSame(DamageStatsBuilder.Instance, a.DamageStatsBuilder);
       Assert.AreNotSame(TankingStatsBuilder.Instance, a.TankingStatsBuilder);
       Assert.AreNotSame(HealingStatsBuilder.Instance, a.HealingStatsBuilder);
+    }
+
+    [TestMethod]
+    public void CreateIsolated_HealRecordsStayInContext()
+    {
+      // The core guarantee behind a Healing tab in Raid Damage: a heal parsed
+      // through an isolated context's HealingLineParser must land in that
+      // context's own RecordsStore and NOT leak into the live singleton (which
+      // would cross-contaminate the live Healing Summary and other merged
+      // sources). See memory project_healing_raid_tab.
+      var ctx = ParseContext.CreateIsolated();
+      ctx.PlayerRegistry.PlayerName = "Drucilla";
+
+      // Unique target so the assertions don't collide with heals other tests may
+      // have written into the live singleton earlier in the run.
+      const string probeTarget = "HealIsolationProbe_777";
+      var line = $"You healed {probeTarget} for 777 damage.";
+      ctx.HealingLineParser.Process(new LineData { Action = line, BeginTime = 5000.0, Split = line.Split(' ') });
+
+      Assert.IsTrue(ctx.RecordsStore.GetAllHeals().Any(h => h.Item2.Healed == probeTarget),
+        "Heal parsed through the isolated context must land in its own RecordsStore");
+      Assert.IsFalse(RecordsStore.Instance.GetAllHeals().Any(h => h.Item2.Healed == probeTarget),
+        "Heal parsed through an isolated context must NOT leak into the live RecordsStore singleton");
     }
 
     [TestMethod]

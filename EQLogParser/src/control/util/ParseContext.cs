@@ -8,6 +8,7 @@ namespace EQLogParser
   {
     internal EQDataStore DataStore { get; }
     internal PlayerRegistry PlayerRegistry { get; }
+    internal RecordsStore RecordsStore { get; }
     internal DamageLineParser DamageLineParser { get; }
     internal HealingLineParser HealingLineParser { get; }
     internal CastLineParser CastLineParser { get; }
@@ -21,6 +22,7 @@ namespace EQLogParser
     internal ParseContext(
       EQDataStore dataStore,
       PlayerRegistry playerRegistry,
+      RecordsStore recordsStore,
       DamageLineParser damageLineParser,
       HealingLineParser healingLineParser,
       CastLineParser castLineParser,
@@ -33,6 +35,7 @@ namespace EQLogParser
     {
       DataStore = dataStore;
       PlayerRegistry = playerRegistry;
+      RecordsStore = recordsStore;
       DamageLineParser = damageLineParser;
       HealingLineParser = healingLineParser;
       CastLineParser = castLineParser;
@@ -49,6 +52,7 @@ namespace EQLogParser
     internal static ParseContext Live(FightManager liveFightManager) => new(
       EQDataStore.Instance,
       PlayerRegistry.Instance,
+      RecordsStore.Instance,
       DamageLineParser.Instance,
       HealingLineParser.Instance,
       CastLineParser.Instance,
@@ -71,8 +75,15 @@ namespace EQLogParser
       var ds = new EQDataStore();
       var pr = new PlayerRegistry(autoSave: false);
       pr.SeedFrom(PlayerRegistry.Instance);
+      // Headless store: heal records written by this context's HealingLineParser
+      // stay isolated from the live session (and from other merged sources), so a
+      // Healing tab in Raid Damage reads only this source's heals. The other
+      // record types (casts/deaths/etc.) still write to the live singleton via the
+      // unrefactored parsers — they aren't consumed by the healing stats path.
+      // See memory project_healing_raid_tab.
+      var rs = new RecordsStore(registerLifecycle: false);
       var dlp = new DamageLineParser(ds, pr);
-      var hlp = new HealingLineParser(ds, pr);
+      var hlp = new HealingLineParser(ds, pr, rs);
       var clp = new CastLineParser(ds, pr);
       var mlp = new MiscLineParser(ds, pr);
       var plp = new PreLineParser(pr);
@@ -81,8 +92,8 @@ namespace EQLogParser
       dlp.FightManager = fm;
       var dsb = new DamageStatsBuilder(ds, pr, fm);
       var tsb = new TankingStatsBuilder(ds, pr, fm);
-      var hsb = new HealingStatsBuilder(ds, pr, fm);
-      return new ParseContext(ds, pr, dlp, hlp, clp, mlp, plp, fm, dsb, tsb, hsb);
+      var hsb = new HealingStatsBuilder(ds, pr, fm, rs);
+      return new ParseContext(ds, pr, rs, dlp, hlp, clp, mlp, plp, fm, dsb, tsb, hsb);
     }
   }
 }
