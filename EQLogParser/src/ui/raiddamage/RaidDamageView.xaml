@@ -110,7 +110,7 @@
 
     <GridSplitter Grid.Column="3" ResizeDirection="Columns" HorizontalAlignment="Stretch" />
 
-    <!-- Right pane: tabbed DPS / Tanking views, each bound to its own isolated stats manager -->
+    <!-- Right pane: tabbed DPS / Tanking / Healing views, each bound to its own isolated stats manager -->
     <Grid Grid.Column="4">
       <Grid.RowDefinitions>
         <RowDefinition Height="100*" />
@@ -122,6 +122,9 @@
         </TabItem>
         <TabItem Header="Tanking">
           <ContentControl x:Name="tankingHost" />
+        </TabItem>
+        <TabItem Header="Healing">
+          <ContentControl x:Name="healingHost" />
         </TabItem>
       </TabControl>
       <TextBlock Grid.Row="1" x:Name="mergeStatus" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="{DynamicResource EQContentSize}" Opacity="0.7" />

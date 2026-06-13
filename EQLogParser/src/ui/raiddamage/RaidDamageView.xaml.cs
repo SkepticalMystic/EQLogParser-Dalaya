@@ -26,6 +26,7 @@ namespace EQLogParser
     // rollups, column chooser, etc. — identical to the main DPS / Tanking tabs.
     private readonly DamageSummary _damageSummary;
     private readonly TankingSummary _tankingSummary;
+    private readonly HealingSummary _healingSummary;
 
     public RaidDamageView()
     {
@@ -46,6 +47,16 @@ namespace EQLogParser
         "RaidDamageTankingSummaryColumns");
       tankingHost.Content = _tankingSummary;
 
+      // Cross-healer comparison view — the reason multi-log healing matters. Heal records
+      // are isolated per source via the injected HealingStatsBuilder (see ParseContext +
+      // memory project_healing_raid_tab), so the merged view attributes each healer's output
+      // to themselves the way no single healer's log can.
+      _healingSummary = new HealingSummary(
+        _statsContext.HealingStatsBuilder,
+        new RaidDamageHealingHost(_statsContext.FightManager),
+        "RaidDamageHealingSummaryColumns");
+      healingHost.Content = _healingSummary;
+
       UpdateFooterStatus();
       RebuildMergedFights();
     }
@@ -57,6 +68,7 @@ namespace EQLogParser
     {
       _damageSummary?.HideContent();
       _tankingSummary?.HideContent();
+      _healingSummary?.HideContent();
     }
 
     // Tab selection itself doesn't trigger a rebuild — both managers are populated in
@@ -364,6 +376,13 @@ namespace EQLogParser
         // via the NONPC event path. No need to touch the controls directly.
         Task.Run(() => _statsContext.DamageStatsBuilder.BuildTotalStats(new GenerateStatsOptions()));
         Task.Run(() => _statsContext.TankingStatsBuilder.BuildTotalStats(new GenerateStatsOptions()));
+        Task.Run(() =>
+        {
+          // Drop any heals aggregated for a prior selection so they can't leak into a later
+          // read; the empty options drive the summary to its "No NPCs" state regardless.
+          _statsContext.RecordsStore.Clear();
+          _statsContext.HealingStatsBuilder.BuildTotalStats(new GenerateStatsOptions());
+        });
         mergeStatus.Text = "";
         return;
       }
@@ -397,18 +416,49 @@ namespace EQLogParser
       // session — often empty when external raid logs are loaded without a live parse. Seeding
       // the sources after Instance lets each source's own observations win, so the embedded
       // summary's Class column populates the same way the main DPS/Tanking tabs do.
-      foreach (var source in _sources.Where(s => s.IsSelected && s.Fights.Count > 0))
+      var contributingSources = _sources.Where(s => s.IsSelected && s.Fights.Count > 0).ToList();
+      foreach (var source in contributingSources)
       {
         _statsContext.PlayerRegistry.SeedFrom(source.Context.PlayerRegistry);
       }
 
       // Run on background thread — BuildTotalStats does meaningful work and fires events
-      // that route through each embedded summary's subscription. Tanking uses the same fight
-      // list but reads fight.TankingBlocks / TankSegments internally, so the options are shared.
+      // that route through each embedded summary's subscription. DPS and Tanking read the
+      // merged Fight objects passed in options (fight.DamageBlocks / TankingBlocks).
       Task.Run(() => _statsContext.DamageStatsBuilder.BuildTotalStats(options));
       Task.Run(() => _statsContext.TankingStatsBuilder.BuildTotalStats(options));
 
+      // Healing is different: heal records don't live on the Fight (only combat damage does)
+      // — they're time-indexed in each source's isolated RecordsStore. So union every source's
+      // heal log into _statsContext's RecordsStore first (offset-aligned, cross-source deduped),
+      // then HealingStatsBuilder slices it by the same time ranges. See
+      // AggregateHealsIntoStatsContext and memory project_healing_raid_tab.
+      Task.Run(() =>
+      {
+        AggregateHealsIntoStatsContext(contributingSources);
+        _statsContext.HealingStatsBuilder.BuildTotalStats(options);
+      });
+
       mergeStatus.Text = $"{selectedFights.Count} fight{(selectedFights.Count == 1 ? "" : "s")} selected";
+    }
+
+    // Union every contributing source's heal log into _statsContext's RecordsStore so the
+    // embedded HealingSummary can read them via HealingStatsBuilder. Heal records don't ride
+    // on the merged Fight objects (only combat damage does), so the merge assembles them here
+    // — offset-aligned and cross-source deduped by RaidHealMerger — then re-adds them to the
+    // store, which re-sorts by time on insert.
+    private void AggregateHealsIntoStatsContext(List<RaidDamageSource> contributingSources)
+    {
+      _statsContext.RecordsStore.Clear();
+
+      var merged = RaidHealMerger.Merge(
+        contributingSources.Select(s =>
+          ((IEnumerable<(double, HealRecord)>)s.Context.RecordsStore.GetAllHeals(), s.TimeOffsetSeconds)));
+
+      foreach (var (time, record) in merged)
+      {
+        _statsContext.RecordsStore.Add(record, time);
+      }
     }
 
     private void UpdateFooterStatus()
