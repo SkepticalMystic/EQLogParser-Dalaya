@@ -17,6 +17,10 @@ docs/ReleaseProcedure.md
 docs/UpstreamMerge.md
 .opencode
 .claude/
+# Local reference clone of ngdeao/SoD-winspellparser (third-party tool). Our
+# spell converter / validator cite its SpellParser.cs column layout; kept local
+# for offline lookup, not vendored into the fork. See tools/spells/README.md.
+tools/SoD-winspellparser/
 # Captured fixtures and snapshot baselines for the integration regression tests
 # (see EQLogParser.Test/src/integration). Each developer's logs + JSON baselines
 # stay local — see memory `project_baseline_regression_test` for rationale.

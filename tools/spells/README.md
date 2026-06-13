@@ -152,3 +152,16 @@ Empty slots (SPA 0 or 254 = unused marker) are filtered. Spells with no non-empt
 - `validate_conversion.py` — cross-checks the shipped `spells.txt` against an independent reading of `spells_us.txt`; catches converter mapping bugs and source-format drift (Phase A sanity + Phase B field comparison)
 - `analyze_diff.py` — verification helper, run after conversion
 - `spells.previous.txt` — temporary backup, ignore this in git (delete after verifying)
+
+## SoD-winspellparser reference clone
+
+The converter and `validate_conversion.py` cite source-column meanings confirmed
+against [ngdeao/SoD-winspellparser](https://github.com/ngdeao/SoD-winspellparser)'s
+`SpellParser.cs` (e.g. `CastingTime` at line 2627, `Skill` ← col 100, `RecourseID`
+← col 150). A local clone is kept at **`tools/SoD-winspellparser/`** (gitignored —
+third-party, not vendored into the fork) for offline column lookups. If it's
+missing, re-clone:
+
+```powershell
+git clone --depth 1 https://github.com/ngdeao/SoD-winspellparser.git tools\SoD-winspellparser
+```
