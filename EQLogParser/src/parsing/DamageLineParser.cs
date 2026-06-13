@@ -26,11 +26,12 @@ namespace EQLogParser
     private static readonly Dictionary<string, bool> ReverseHitMap = [];
     private static readonly Dictionary<string, string> HitMap = new()
     {
-      { "bash", "bashes" }, { "backstab", "backstabs" }, { "bite", "bites" }, { "claw", "claws" }, { "crush", "crushes" },
-      { "frenzy", "frenzies" }, { "gore", "gores" }, { "hit", "hits" }, { "kick", "kicks" }, { "learn", "learns" },
-      { "maul", "mauls" }, { "punch", "punches" }, { "pierce", "pierces" }, { "rend", "rends" }, { "shoot", "shoots" },
-      { "slash", "slashes" }, { "slam", "slams" }, { "slice", "slices" }, { "smash", "smashes" }, { "stab", "stabs" },
-      { "sting", "stings" }, { "strike", "strikes" }, { "sweep", "sweeps" }
+      { "bash", "bashes" }, { "backstab", "backstabs" }, { "bite", "bites" }, { "claw", "claws" }, { "cleave", "cleaves" },
+      { "crush", "crushes" }, { "frenzy", "frenzies" }, { "gore", "gores" }, { "hit", "hits" }, { "kick", "kicks" },
+      { "learn", "learns" }, { "maul", "mauls" }, { "punch", "punches" }, { "pierce", "pierces" }, { "reave", "reaves" },
+      { "rend", "rends" }, { "shoot", "shoots" }, { "slash", "slashes" }, { "slam", "slams" }, { "slice", "slices" },
+      { "smash", "smashes" }, { "smite", "smites" }, { "stab", "stabs" }, { "sting", "stings" }, { "strike", "strikes" },
+      { "sweep", "sweeps" }
     };
 
     private static readonly Dictionary<string, string> HitAdditionalMap = new()
