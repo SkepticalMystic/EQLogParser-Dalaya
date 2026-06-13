@@ -32,14 +32,22 @@ Whenever the Dalaya patcher overwrites `F:\Dalaya\spells_us.txt`. Spell IDs, nam
 
    Expect changes only in columns the converter writes from source data — see `EXPECTED_CHANGE_COLS` in `analyze_diff.py`. Anything else is flagged as drift and indicates a mapping bug or a hand-edit, and the script exits non-zero. When a new source column is mapped, the first rebuild legitimately shows a one-time burst of changes for that column; update `EXPECTED_CHANGE_COLS` in that same change.
 
-4. **Run the test suite**:
+4. **Cross-check against the source** — independent of the previous version:
+
+   ```powershell
+   python tools\spells\validate_conversion.py
+   ```
+
+   Re-reads `spells_us.txt` a second, independent way (its own SoD-sourced column table, not imported from `convert_spells.py`) and validates the freshly-built `spells.txt` two ways: **Phase A** flags source-format drift (column-width change, or a field whose values stop looking like that field — a widespread domain violation means a Dalaya patch shifted columns); **Phase B** compares every comparable parser column field-by-field against an independent reading of the source, catching converter mapping bugs or a stale `spells.txt`. Exits non-zero on any disagreement. A small number of out-of-domain rows below the drift threshold prints as a `warn:` (pre-existing source-data quirks, e.g. spell 1881's typo'd Beastlord level) and does not fail. Unlike `analyze_diff.py`, this needs no `spells.previous.txt` — it checks against the source directly.
+
+5. **Run the test suite**:
 
    ```powershell
    cd EQLogParserTest
    dotnet test -p:Platform=x64
    ```
 
-5. **Commit** the updated `spells.txt`. Delete the `spells.previous.txt` backup once you're satisfied.
+6. **Commit** the updated `spells.txt`. Delete the `spells.previous.txt` backup once you're satisfied.
 
 ## What the converter does
 
@@ -141,5 +149,6 @@ Empty slots (SPA 0 or 254 = unused marker) are filtered. Spells with no non-empt
 - `extract_upstream_adps.py` — regenerates `upstream-adps.json` from upstream EQLogParser
 - `upstream-adps.json` — in-repo `{spell_name: adps_bitmask}` map (filtered to Dalaya names)
 - `validate_adps.py` — validates the curated category→Adps table against upstream's classifications
+- `validate_conversion.py` — cross-checks the shipped `spells.txt` against an independent reading of `spells_us.txt`; catches converter mapping bugs and source-format drift (Phase A sanity + Phase B field comparison)
 - `analyze_diff.py` — verification helper, run after conversion
 - `spells.previous.txt` — temporary backup, ignore this in git (delete after verifying)
