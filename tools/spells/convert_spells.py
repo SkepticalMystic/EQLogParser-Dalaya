@@ -84,10 +84,12 @@ SLOT_BASE2_COL = 32     # base value 2    (cols 32-43)
 SLOT_MAX_COL = 44       # max / cap       (cols 44-55)
 SLOT_CALC_COL = 70      # formula code    (cols 70-81)
 
-# SPA ids that signal an empty/unused slot. SPA 254 is the SoD-winspellparser
-# "Unused" marker; SPA 0 is also treated as null/no-op in slot context (some
-# rows pad with 0 instead of 254). Skip both when extracting effects.
-EMPTY_SLOT_SPAS = frozenset({0, 254})
+# SPA 254 is the SoD-winspellparser "Unused" slot marker — always skipped.
+# SPA 0 ("Hit Points") is trickier: it's the real effect for instant heals, nukes,
+# and classic per-tick DoTs/HoTs (e.g. Complete Healing base1=20000, Lightning Bolt
+# base1=-85), but is ALSO used as all-zero padding. So SPA 0 is kept when it carries
+# a value and skipped only when base1/base2/max are all zero (see extract_effects).
+EMPTY_SLOT_SPA = 254
 
 # Extra metadata columns ported from the SoD parser (SpellParser.cs LoadSpell).
 # Emitted as parser-format cols 23/24/25. Confirmed against SpellParser.cs:
@@ -383,14 +385,21 @@ def extract_effects(src_fields: list[str]) -> dict | None:
     slots: list[dict] = []
     for slot_idx in range(12):
         spa = _safe_field_int(src_fields, SLOT_SPA_COL + slot_idx)
-        if spa in EMPTY_SLOT_SPAS:
+        if spa == EMPTY_SLOT_SPA:
+            continue
+        base1 = _safe_field_int(src_fields, SLOT_BASE1_COL + slot_idx)
+        base2 = _safe_field_int(src_fields, SLOT_BASE2_COL + slot_idx)
+        slot_max = _safe_field_int(src_fields, SLOT_MAX_COL + slot_idx)
+        # SPA 0 is "Hit Points" — a genuine heal/nuke/DoT effect when it carries a
+        # value, but also used as all-zero padding. Keep valued slots; drop padding.
+        if spa == 0 and base1 == 0 and base2 == 0 and slot_max == 0:
             continue
         slots.append({
             "slot": slot_idx,
             "spa": spa,
-            "base1": _safe_field_int(src_fields, SLOT_BASE1_COL + slot_idx),
-            "base2": _safe_field_int(src_fields, SLOT_BASE2_COL + slot_idx),
-            "max": _safe_field_int(src_fields, SLOT_MAX_COL + slot_idx),
+            "base1": base1,
+            "base2": base2,
+            "max": slot_max,
             "calc": _safe_field_int(src_fields, SLOT_CALC_COL + slot_idx),
         })
 

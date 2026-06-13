@@ -99,5 +99,23 @@ namespace EQLogParserTest
         "Circle of Soothing should decode a per-tick Current HP slot; got: " + string.Join(" | ", lines));
       Assert.IsTrue(lines.All(l => l.StartsWith("Slot ")), "every line should carry its 1-based slot prefix");
     }
+
+    [TestMethod]
+    public void Describe_ShippedInstantHeal_DecodesSpaZero()
+    {
+      // Regression guard for the converter's SPA-0 filter. SPA 0 ("Hit Points") is the real
+      // effect for instant heals, nukes, and classic DoTs/HoTs — it must NOT be dropped as an
+      // empty marker (only all-zero SPA-0 padding is). id 13 Complete Healing is a large SPA-0
+      // heal (base1=20000); if extract_effects regresses to filtering all SPA 0, this spell
+      // (and every heal/nuke) would decode to nothing.
+      var store = EQDataStore.Instance;
+      var effects = store.GetSpellEffects("13");
+      Assert.IsNotNull(effects, "Complete Healing missing from spell-effects.json — was the converter rerun?");
+
+      var lines = SpellEffectDecoder.Describe(effects, level: 39, minLevel: 39);
+
+      Assert.IsTrue(lines.Any(l => l.Contains("Hit Points")),
+        "Complete Healing (SPA 0 heal) should decode a Hit Points line; got: " + string.Join(" | ", lines));
+    }
   }
 }

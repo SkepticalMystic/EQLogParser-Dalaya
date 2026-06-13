@@ -139,7 +139,7 @@ The SoD `winspellparser` source (https://github.com/ngdeao/SoD-winspellparser) c
 }
 ```
 
-Empty slots (SPA 0 or 254 = unused marker) are filtered. Spells with no non-empty slots (placeholder rows like the Healing Increment series) are omitted entirely. Typical size: ~900KB / ~4,500 spells.
+SPA 254 (unused marker) is always filtered. SPA 0 ("Hit Points") is kept when it carries a value — it's the real effect for instant heals, nukes, and classic per-tick DoTs/HoTs — and filtered only when base1/base2/max are all zero (padding). Spells with no non-empty slots are omitted entirely.
 
 ## Files
 

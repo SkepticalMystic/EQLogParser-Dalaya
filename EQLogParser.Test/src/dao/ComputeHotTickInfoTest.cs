@@ -124,8 +124,8 @@ namespace EQLogParserTest
     [TestMethod]
     public void DirectHealSpell_ReturnsNull()
     {
-      // id 12, "Healing" — no slots in spell-effects.json (instant heal, no SPA
-      // 100). ComputeHotTickInfo should refuse to fabricate HoT info.
+      // id 12, "Healing" — an instant heal (SPA 0 with a value, no SPA 100 slot).
+      // ComputeHotTickInfo keys on SPA 100, so it should refuse to fabricate HoT info.
       var spell = new SpellData { Id = "12", Name = "Healing", Level = 14 };
       var info = _store.ComputeHotTickInfo(spell, casterLevel: 14, casterClass: SpellClass.Clr);
       Assert.IsFalse(info.HasValue);
