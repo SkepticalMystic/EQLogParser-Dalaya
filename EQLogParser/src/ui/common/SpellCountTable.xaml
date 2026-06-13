@@ -45,7 +45,13 @@
                             SelectionMode="Extended">
        <syncfusion:SfDataGrid.ContextMenu>
         <ContextMenu>
-          <MenuItem InputGestureText="Ctrl+C" Header="Copy" Command="{Binding Source={x:Static Member=local:ContextMenuCommands.Copy}}" 
+          <MenuItem IsEnabled="True" Header="Spell Details" Click="SpellDetailsClick" ToolTip="Show this spell's decoded effect slots (SPA breakdown).">
+            <MenuItem.Icon>
+              <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Icon="Solid_InfoCircle" />
+            </MenuItem.Icon>
+          </MenuItem>
+          <Separator />
+          <MenuItem InputGestureText="Ctrl+C" Header="Copy" Command="{Binding Source={x:Static Member=local:ContextMenuCommands.Copy}}"
                     CommandParameter="{Binding Path=PlacementTarget, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ContextMenu}}}">
             <MenuItem.Icon>
               <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Icon="Solid_Copy" />

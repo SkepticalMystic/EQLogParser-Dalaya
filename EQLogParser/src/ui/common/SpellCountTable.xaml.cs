@@ -269,6 +269,38 @@ namespace EQLogParser
     private void GridSizeChanged(object sender, SizeChangedEventArgs e) => UiElementUtil.CheckHideTitlePanel(titlePanel, controlPanel);
     private void OptionsChanged(object sender, SelectionChangedEventArgs e) => UpdateOptions(true);
 
+    // Open the SPA effect-slot breakdown for the right-clicked spell row. Rows store the
+    // abbreviated spell name (with a "Received " prefix for received-spell rows); resolve it to
+    // a SpellData and hand it to the shared popout. See memory project_spell_tooltips.
+    private void SpellDetailsClick(object sender, RoutedEventArgs e)
+    {
+      if (dataGrid.SelectedItems?.Count != 1 || dataGrid.SelectedItems[0] is not IDictionary<string, object> row)
+      {
+        return;
+      }
+      if (!row.TryGetValue("Spell", out var value) || value is not string spellName || string.IsNullOrEmpty(spellName))
+      {
+        return;
+      }
+
+      const string receivedPrefix = "Received ";
+      var name = spellName.StartsWith(receivedPrefix, StringComparison.Ordinal)
+        ? spellName[receivedPrefix.Length..]
+        : spellName;
+
+      var spell = EQDataStore.Instance.GetSpellByAbbrv(name);
+      if (spell == null)
+      {
+        return;
+      }
+
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellDetailsPopup), "spellDetailsWindow", "Spell Details")
+          && win.Content is SpellDetailsPopup viewer)
+      {
+        viewer.Init(spell);
+      }
+    }
+
     private void AddPlayerRow(string player, string spell, double theValue, double playerTotal, IDictionary<string, object> row)
     {
       var countText = GetFormattedValue(theValue, playerTotal);
