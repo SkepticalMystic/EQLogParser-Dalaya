@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace EQLogParser
 {
@@ -14,6 +15,15 @@ namespace EQLogParser
       dataGrid.IsEnabled = false;
       UiElementUtil.SetEnabled(controlPanel.Children, false);
       InitBreakdownTable(titleLabel, dataGrid, selectedColumns);
+    }
+
+    private void SpellDetailsClick(object sender, RoutedEventArgs e)
+    {
+      if (dataGrid.SelectedItem is not PlayerSubStats sub || string.IsNullOrEmpty(sub.Name)) return;
+      var spell = EQDataStore.Instance.GetSpellByAbbrv(sub.Name);
+      if (spell == null) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellDetailsPopup), "spellDetailsWindow", "Spell Details")
+          && win.Content is SpellDetailsPopup viewer) viewer.Init(spell);
     }
 
     internal void Init(CombinedStats currentStats, List<PlayerStats> selectedStats)

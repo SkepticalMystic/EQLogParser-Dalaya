@@ -194,6 +194,20 @@ namespace EQLogParser
       }
     }
 
+    private void SpellDetailsClick(object sender, RoutedEventArgs e)
+    {
+      if (dataGrid.SelectedItem is not IDictionary<string, object> row) return;
+      var colName = dataGrid.SelectionController?.CurrentCellManager?.CurrentCell?.GridColumn?.MappingName;
+      if (string.IsNullOrEmpty(colName) || colName is "BeginTime" or "Seconds") return;
+      if (!row.TryGetValue(colName, out var value) || value is not string spellName || string.IsNullOrEmpty(spellName)) return;
+      const string receivedPrefix = "Received ";
+      var name = spellName.StartsWith(receivedPrefix, StringComparison.Ordinal) ? spellName[receivedPrefix.Length..] : spellName;
+      var spell = EQDataStore.Instance.GetSpellByAbbrv(name);
+      if (spell == null) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellDetailsPopup), "spellDetailsWindow", "Spell Details")
+          && win.Content is SpellDetailsPopup viewer) viewer.Init(spell);
+    }
+
     private async void CategoryFilterChanged(object sender, EventArgs e)
     {
       if (dataGrid?.View != null)

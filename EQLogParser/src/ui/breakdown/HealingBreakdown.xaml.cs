@@ -1,6 +1,7 @@
 ﻿using Syncfusion.UI.Xaml.TreeGrid;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 
 namespace EQLogParser
 {
@@ -42,6 +43,15 @@ namespace EQLogParser
       choicesList.SelectedIndex = _currentShowSpellsChoice ? 0 : 1;
       optionsList.ItemsSource = GetOptionsList();
       optionsList.SelectedIndex = _currentShowTop;
+    }
+
+    private void SpellDetailsClick(object sender, RoutedEventArgs e)
+    {
+      if (dataGrid.SelectedItem is not PlayerSubStats sub || string.IsNullOrEmpty(sub.Name)) return;
+      var spell = EQDataStore.Instance.GetSpellByAbbrv(sub.Name);
+      if (spell == null) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellDetailsPopup), "spellDetailsWindow", "Spell Details")
+          && win.Content is SpellDetailsPopup viewer) viewer.Init(spell);
     }
 
     private void ListSelectionChanged1(object sender, System.Windows.Controls.SelectionChangedEventArgs e) => ListSelectionChanged();

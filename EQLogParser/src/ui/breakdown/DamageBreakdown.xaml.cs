@@ -180,6 +180,15 @@ namespace EQLogParser
       }
     }
 
+    private void SpellDetailsClick(object sender, RoutedEventArgs e)
+    {
+      if (dataGrid.SelectedItem is not PlayerSubStats sub || string.IsNullOrEmpty(sub.Name)) return;
+      var spell = EQDataStore.Instance.GetSpellByAbbrv(sub.Name);
+      if (spell == null) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellDetailsPopup), "spellDetailsWindow", "Spell Details")
+          && win.Content is SpellDetailsPopup viewer) viewer.Init(spell);
+    }
+
     private void RequestTreeItems(object sender, TreeGridRequestTreeItemsEventArgs e)
     {
       if (dataGrid.ItemsSource is List<PlayerStats> list)
