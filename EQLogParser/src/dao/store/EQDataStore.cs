@@ -700,6 +700,15 @@ namespace EQLogParser
 
       var perTickAmount = SpellFormula.CalcValue(hotSlot.Calc, hotSlot.Base1, hotSlot.Max, tick: 1, casterLevel);
       var durationGameTicks = SpellFormula.CalcDuration(effects.DurationCalc, effects.DurationBase, casterLevel);
+      // CalcDuration returns 0 when DurationCalc == 0, but Dalaya carries a real
+      // DurationBase on those spells (e.g. Racing Flames, Prayer). The converter
+      // treats DurationBase as the authoritative duration (see tools/spells/
+      // convert_spells.py), so fall back to it rather than computing a zero tick
+      // count — otherwise the HoT Effectiveness view shows 0 expected healing.
+      if (durationGameTicks == 0 && effects.DurationBase > 0)
+      {
+        durationGameTicks = effects.DurationBase;
+      }
       var durationSeconds = durationGameTicks * 6;
       var tickIntervalSeconds = casterClass == SpellClass.Dru ? 2 : 6;
       var tickCount = tickIntervalSeconds > 0 ? durationSeconds / tickIntervalSeconds : 0;

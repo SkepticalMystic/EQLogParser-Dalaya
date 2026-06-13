@@ -105,6 +105,23 @@ namespace EQLogParserTest
     }
 
     [TestMethod]
+    public void RacingFlames_DurationCalcZero_FallsBackToDurationBase()
+    {
+      // id 4479, slot 4: SPA 100, Base1=40, Calc=100 (flat) → perTick 40.
+      // durationCalc=0 makes CalcDuration return 0, but durationBase=3 is the real
+      // Dalaya-tuned duration. The fallback uses it (3 ticks = 18s); without it the
+      // HoT Effectiveness view would report a zero tick count / zero expected heal.
+      var spell = FindById("4479");
+      var info = _store.ComputeHotTickInfo(spell, casterLevel: 65, casterClass: SpellClass.Clr);
+
+      Assert.IsTrue(info.HasValue, "calc=0 HoT should still compute via DurationBase fallback");
+      Assert.AreEqual(40, info.Value.PerTickAmount);
+      Assert.AreEqual(6, info.Value.TickIntervalSeconds);
+      Assert.AreEqual(3, info.Value.TickCount);
+      Assert.AreEqual(120, info.Value.TotalExpected);
+    }
+
+    [TestMethod]
     public void DirectHealSpell_ReturnsNull()
     {
       // id 12, "Healing" — no slots in spell-effects.json (instant heal, no SPA
