@@ -521,6 +521,16 @@ namespace EQLogParser
     public uint CastingTimeMs { get; set; }
     public uint RecastTimeMs { get; set; }
     public string Category { get; set; }
+    // Skill / RecourseID / TimerID are sourced from spells_us.txt cols 100/150/167
+    // via the parser-format extension at cols 23/24/25 (see convert_spells.py).
+    // Skill is the raw SoD SpellSkill enum value (-1 = none) — lets consumers
+    // distinguish disciplines/abilities from spells without name heuristics.
+    // RecourseID is the spell that procs when this one lands (0 = none) — the
+    // basis for future proc attribution. TimerID is the shared AA/discipline
+    // cooldown-group id (0 = none). All default to 0 on pre-extension spells.txt.
+    public int Skill { get; set; }
+    public int RecourseID { get; set; }
+    public int TimerID { get; set; }
   }
 
   // Per-spell 12-slot effect data, sourced from data/spell-effects.json (emitted

@@ -8,6 +8,8 @@ __pycache__/
 # Syncfusion license key - never commit this
 EQLogParser/SyncfusionKey.cs
 EQLogParser/data/spells_old.txt
+# Transient backup created during the spells.txt rebuild (see tools/spells/README.md).
+tools/spells/spells.previous.txt
 EQLogParserInstall/Output/
 CLAUDE.md
 BACKLOG.md

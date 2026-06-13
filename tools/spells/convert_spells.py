@@ -40,6 +40,9 @@ Mapping (see CLAUDE.md and EQDataStore.ParseCustomSpellData):
     19          8            wear-off message
     20          13           casting time in ms (source field is float ms; emitted as int)
     21          15           recast time in ms (shared-timer cooldown; 0 = no recast lockout)
+    23          100          Skill (SoD SpellSkill enum value; -1 = none, sign preserved)
+    24          150          RecourseID (spell that procs when this lands; 0 = none)
+    25          167          TimerID (shared AA/discipline cooldown group; 0 = none)
     all others  -            hard-coded "0"
 
 Source cols 104..119 hold per-class level requirements in EQ classid order:
@@ -85,6 +88,15 @@ SLOT_CALC_COL = 70      # formula code    (cols 70-81)
 # "Unused" marker; SPA 0 is also treated as null/no-op in slot context (some
 # rows pad with 0 instead of 254). Skip both when extracting effects.
 EMPTY_SLOT_SPAS = frozenset({0, 254})
+
+# Extra metadata columns ported from the SoD parser (SpellParser.cs LoadSpell).
+# Emitted as parser-format cols 23/24/25. Confirmed against SpellParser.cs:
+#   Skill      = (SpellSkill)ParseInt(fields[100])  (line 2652) — -1 = none
+#   RecourseID = ParseInt(fields[150])              (line 2687) — 0  = none
+#   TimerID    = ParseInt(fields[167])              (line 2728) — 0  = none
+SKILL_COL = 100
+RECOURSE_ID_COL = 150
+TIMER_ID_COL = 167
 
 
 CASTER_ADPS = 1
@@ -185,6 +197,23 @@ def _safe_int(src_fields: list[str], col: int) -> str:
     return str(max(0, v))
 
 
+def _safe_int_signed(src_fields: list[str], col: int) -> str:
+    """Like _safe_int but preserves sign. Returns '0' on missing/blank/non-numeric.
+
+    Used for the SoD metadata cols (Skill/RecourseID/TimerID). Skill col 100
+    uses -1 as the "no skill" marker, which must survive (don't clamp to 0).
+    """
+    if col >= len(src_fields):
+        return "0"
+    raw = src_fields[col].strip()
+    if not raw:
+        return "0"
+    try:
+        return str(int(float(raw)))
+    except ValueError:
+        return "0"
+
+
 def _level_and_class_mask(src_fields: list[str]) -> tuple[str, str]:
     """Return (level, class_mask) derived from the 16 class-level columns.
 
@@ -263,6 +292,9 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
     song_window = src_fields[154] if len(src_fields) > 154 else "0"
     casting_time_ms = _safe_int(src_fields, 13)
     recast_time_ms = _safe_int(src_fields, 15)
+    skill = _safe_int_signed(src_fields, SKILL_COL)
+    recourse_id = _safe_int_signed(src_fields, RECOURSE_ID_COL)
+    timer_id = _safe_int_signed(src_fields, TIMER_ID_COL)
     level, class_mask = _level_and_class_mask(src_fields)
     damaging = "1" if (lands_on_you or lands_on_other or wear_off) else "0"
     # ADPS = union of category-derived bitmask and the upstream-overlay bitmask.
@@ -296,6 +328,9 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
         casting_time_ms,  # 20 CastingTimeMs (source col 13, integer ms)
         recast_time_ms,   # 21 RecastTimeMs (source col 15, integer ms)
         category,         # 22 Category (semicolon-joined Dalaya CategoryDescID labels)
+        skill,            # 23 Skill (SoD SpellSkill enum value, source col 100; -1 = none)
+        recourse_id,      # 24 RecourseID (proc-on-land spell id, source col 150; 0 = none)
+        timer_id,         # 25 TimerID (shared AA/disc cooldown group, source col 167; 0 = none)
     ])
 
 

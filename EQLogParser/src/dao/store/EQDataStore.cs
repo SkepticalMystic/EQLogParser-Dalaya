@@ -761,7 +761,13 @@ namespace EQLogParser
             // no recast lockout), matching pre-extension behavior.
             CastingTimeMs = data.Length > 20 ? uint.Parse(data[20], CultureInfo.InvariantCulture) : 0,
             RecastTimeMs = data.Length > 21 ? uint.Parse(data[21], CultureInfo.InvariantCulture) : 0,
-            Category = data.Length > 22 ? string.Intern(data[22]) : string.Empty
+            Category = data.Length > 22 ? string.Intern(data[22]) : string.Empty,
+            // Cols 23-25 (Skill/RecourseID/TimerID) are a later parser-format
+            // extension. Skill is signed (-1 = no skill), so parse as int. Older
+            // spells.txt files without these fields fall back to 0.
+            Skill = data.Length > 23 ? int.Parse(data[23], CultureInfo.InvariantCulture) : 0,
+            RecourseID = data.Length > 24 ? int.Parse(data[24], CultureInfo.InvariantCulture) : 0,
+            TimerID = data.Length > 25 ? int.Parse(data[25], CultureInfo.InvariantCulture) : 0
           };
         }
       }

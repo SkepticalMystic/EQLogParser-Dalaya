@@ -68,6 +68,9 @@ SRC_RESIST_TYPE = 85
 SRC_TARGET_TYPE = 98
 SRC_SHORT_DURATION = 154    # parser SongWindow
 SRC_CLASS_LEVEL_FIRST = 104  # classid=1 (War); +15 reaches Berserker (Ber)
+SRC_SKILL = 100             # SoD SpellSkill enum value (-1 = none)
+SRC_RECOURSE_ID = 150       # proc-on-land spell id (0 = none)
+SRC_TIMER_ID = 167          # shared AA/disc cooldown group (0 = none)
 
 # Parser-format column names (matches analyze_diff.py / convert_spells.py).
 COL_NAMES = {
@@ -76,7 +79,7 @@ COL_NAMES = {
     10: "Resist", 11: "SongWindow", 12: "Adps", 13: "Mgb", 14: "Rank",
     15: "HasAmbiguityA", 16: "HasAmbiguityB", 17: "LandsOnYou",
     18: "LandsOnOther", 19: "WearOff", 20: "CastingTimeMs", 21: "RecastTimeMs",
-    22: "Category",
+    22: "Category", 23: "Skill", 24: "RecourseID", 25: "TimerID",
 }
 
 # Parser columns deliberately NOT comparable here: derived from data this script
@@ -102,6 +105,20 @@ def _safe_int_str(fields: list[str], col: int) -> str:
         return "0"
     try:
         return str(max(0, int(float(raw))))
+    except ValueError:
+        return "0"
+
+
+def _safe_int_signed_str(fields: list[str], col: int) -> str:
+    """Sign-preserving int string, mirroring the converter's SoD-metadata handling.
+
+    Skill col 100 uses -1 as the "no skill" marker, so we must NOT clamp.
+    """
+    raw = _get(fields, col).strip()
+    if not raw:
+        return "0"
+    try:
+        return str(int(float(raw)))
     except ValueError:
         return "0"
 
@@ -149,6 +166,9 @@ FIELD_DERIVATIONS = [
     (19, lambda f: _get(f, SRC_WEAR_OFF)),
     (20, lambda f: _safe_int_str(f, SRC_CAST_TIME_MS)),
     (21, lambda f: _safe_int_str(f, SRC_RECAST_TIME_MS)),
+    (23, lambda f: _safe_int_signed_str(f, SRC_SKILL)),
+    (24, lambda f: _safe_int_signed_str(f, SRC_RECOURSE_ID)),
+    (25, lambda f: _safe_int_signed_str(f, SRC_TIMER_ID)),
 ]
 
 
@@ -249,6 +269,11 @@ def check_source_sanity(by_id: dict[str, list[str]], width_hist: Counter[int]) -
          lambda f: all(_is_int_in(_get(f, SRC_CLASS_LEVEL_FIRST + i, ""), 0, 255) for i in range(16))),
         ("CastingTime", SRC_CAST_TIME_MS, lambda f: _is_nonneg_float(_get(f, SRC_CAST_TIME_MS, "0"))),
         ("RecastTime", SRC_RECAST_TIME_MS, lambda f: _is_nonneg_float(_get(f, SRC_RECAST_TIME_MS, "0"))),
+        # Skill allows -1 (the "no skill" marker) and large SoD enum values (e.g.
+        # Dalaya-specific 1274/1799); only a non-integer signals a column shift.
+        ("Skill", SRC_SKILL, lambda f: _is_int_in(_get(f, SRC_SKILL, "0"), -1, 1_000_000)),
+        ("RecourseID", SRC_RECOURSE_ID, lambda f: _is_int_in(_get(f, SRC_RECOURSE_ID, "0"), 0, 1_000_000)),
+        ("TimerID", SRC_TIMER_ID, lambda f: _is_int_in(_get(f, SRC_TIMER_ID, "0"), 0, 1_000_000)),
     ]
 
     findings: list[tuple[str, int, int, list[str]]] = []

@@ -40,6 +40,9 @@ EXPECTED_CHANGE_COLS = {
     20,  # CastingTimeMs (source col 13)
     21,  # RecastTimeMs (source col 15)
     22,  # Category (semicolon-joined labels from cols 156/157/158)
+    23,  # Skill (source col 100)
+    24,  # RecourseID (source col 150)
+    25,  # TimerID (source col 167)
 }
 
 COL_NAMES = {
@@ -48,7 +51,7 @@ COL_NAMES = {
     10: "Resist", 11: "SongWindow", 12: "Adps", 13: "Mgb", 14: "Rank",
     15: "HasAmbiguityA", 16: "HasAmbiguityB", 17: "LandsOnYou",
     18: "LandsOnOther", 19: "WearOff", 20: "CastingTimeMs", 21: "RecastTimeMs",
-    22: "Category",
+    22: "Category", 23: "Skill", 24: "RecourseID", 25: "TimerID",
 }
 
 
