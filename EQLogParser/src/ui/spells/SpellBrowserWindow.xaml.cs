@@ -10,9 +10,12 @@ namespace EQLogParser
   {
     private const string AllClasses    = "All Classes";
     private const string AllCategories = "All";
+    private const string AnyEffect     = "Any Effect";
+    private const string AnySlot       = "Any Slot";
 
     private readonly List<SpellData> _allSpells;
     private bool _loaded;
+    private bool _resetting;
 
     private record SpellBrowserRow(SpellData Spell)
     {
@@ -25,6 +28,12 @@ namespace EQLogParser
       public string Target   => SpellDecoder.DecodeTarget(Spell.Target);
       public string Resist   => SpellDecoder.DecodeResist(Spell.Resist);
       public string Category => Spell.Category?.Replace(";", ", ") ?? "";
+    }
+
+    // Displayed in the Has Effect combo as "N — Short Name".
+    private sealed record SpaOption(int Spa)
+    {
+      public override string ToString() => $"{Spa} — {SpellDecoder.GetSpaName(Spa)}";
     }
 
     public SpellBrowserWindow()
@@ -52,6 +61,20 @@ namespace EQLogParser
       typeFilter.Items.Add("Beneficial");
       typeFilter.Items.Add("Detrimental");
       typeFilter.SelectedIndex = 0;
+
+      hasSpaFilter.Items.Add(AnyEffect);
+      foreach (var spa in EQDataStore.Instance.GetUsedSpas())
+      {
+        hasSpaFilter.Items.Add(new SpaOption(spa));
+      }
+      hasSpaFilter.SelectedIndex = 0;
+
+      inSlotFilter.Items.Add(AnySlot);
+      for (var i = 1; i <= 12; i++)
+      {
+        inSlotFilter.Items.Add($"Slot {i}");
+      }
+      inSlotFilter.SelectedIndex = 0;
     }
 
     private void SelectDefaultClass()
@@ -71,7 +94,7 @@ namespace EQLogParser
 
     private void FilterChanged(object sender, RoutedEventArgs e)
     {
-      if (_loaded)
+      if (_loaded && !_resetting)
       {
         ApplyFilter();
       }
@@ -87,6 +110,17 @@ namespace EQLogParser
       var classFlag = (cls == AllClasses || string.IsNullOrEmpty(cls))
         ? (SpellClass?)null
         : EQDataStore.Instance.GetSpellClassByName(cls);
+
+      var hasMin = int.TryParse(levelMin.Text, out var minLevel);
+      var hasMax = int.TryParse(levelMax.Text, out var maxLevel);
+      var filterLevel = hasMin || hasMax;
+
+      var spaOption = hasSpaFilter.SelectedItem as SpaOption;
+      var slotStr   = inSlotFilter.SelectedItem as string;
+      // "Slot N" → 0-based index; AnySlot → -1 (no slot filter)
+      var slotIdx = slotStr != null && slotStr != AnySlot
+        ? int.Parse(slotStr.Split(' ')[1]) - 1
+        : -1;
 
       var query = _allSpells.AsEnumerable();
 
@@ -116,11 +150,61 @@ namespace EQLogParser
         query = query.Where(s => s.Name.Contains(term, StringComparison.OrdinalIgnoreCase));
       }
 
+      if (filterLevel)
+      {
+        query = query.Where(s =>
+        {
+          var displayLevel = s.Level == 255 ? 0 : (int)s.Level;
+          if (hasMin && displayLevel < minLevel) return false;
+          if (hasMax && displayLevel > maxLevel) return false;
+          return true;
+        });
+      }
+
+      if (spaOption != null || slotIdx >= 0)
+      {
+        var targetSpa  = spaOption?.Spa;
+        var targetSlot = slotIdx;
+        query = query.Where(s =>
+        {
+          var effects = EQDataStore.Instance.GetSpellEffects(s.Id);
+          if (effects?.Slots == null)
+          {
+            return false;
+          }
+          // Both set: the named SPA must appear in that specific slot.
+          if (targetSpa.HasValue && targetSlot >= 0)
+          {
+            return effects.Slots.Any(e => e.Spa == targetSpa.Value && e.Slot == targetSlot);
+          }
+          if (targetSpa.HasValue)
+          {
+            return effects.Slots.Any(e => e.Spa == targetSpa.Value);
+          }
+          return effects.Slots.Any(e => e.Slot == targetSlot);
+        });
+      }
+
       var rows = query.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
                       .Select(s => new SpellBrowserRow(s))
                       .ToList();
       dataGrid.ItemsSource = rows;
       countLabel.Text = $"{rows.Count:N0} spells";
+    }
+
+    private void ResetClick(object sender, RoutedEventArgs e)
+    {
+      _resetting = true;
+      searchBox.Clear();
+      levelMin.Clear();
+      levelMax.Clear();
+      SelectDefaultClass();
+      categoryFilter.SelectedIndex  = 0;
+      typeFilter.SelectedIndex      = 0;
+      hasSpaFilter.SelectedIndex    = 0;
+      inSlotFilter.SelectedIndex    = 0;
+      _resetting = false;
+      ApplyFilter();
     }
 
     private void OnCellDoubleTapped(object sender, GridCellDoubleTappedEventArgs e)

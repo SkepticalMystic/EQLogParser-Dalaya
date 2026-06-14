@@ -317,6 +317,18 @@ namespace EQLogParser
     internal IEnumerable<SpellData> GetSpellsForBrowser() =>
       _spellsAbbrvDb.Values.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase);
 
+    // Sorted distinct SPA numbers that appear in the loaded spell-effects data (SPA 254
+    // excluded — it marks unused slots). Used to populate the Spell Browser "Has Effect"
+    // filter dropdown so the list reflects only effects actually present in this patch.
+    internal IEnumerable<int> GetUsedSpas() =>
+      _spellEffects.Values
+        .Where(e => e.Slots != null)
+        .SelectMany(e => e.Slots)
+        .Select(s => s.Spa)
+        .Where(spa => spa != 254)
+        .Distinct()
+        .OrderBy(spa => spa);
+
     // Map a class display name (as returned by GetClassList /
     // PlayerRegistry.GetDefaultPlayerClass) to its SpellClass flag, for the
     // spell picker's class filter. Null when the name isn't a known class.
