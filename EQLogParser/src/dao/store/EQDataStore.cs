@@ -312,6 +312,11 @@ namespace EQLogParser
     // applies search/class/category narrowing. See memory project-trigger-spell-picker.
     internal IEnumerable<SpellData> GetSpellsForPicker() => _spellsAbbrvDb.Values.Where(s => s.ClassMask > 0);
 
+    // All spells, deduped by abbreviation (one row per unique name), sorted by name.
+    // Unlike GetSpellsForPicker(), includes NPC/ability entries (no ClassMask filter).
+    internal IEnumerable<SpellData> GetSpellsForBrowser() =>
+      _spellsAbbrvDb.Values.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase);
+
     // Map a class display name (as returned by GetClassList /
     // PlayerRegistry.GetDefaultPlayerClass) to its SpellClass flag, for the
     // spell picker's class filter. Null when the name isn't a known class.

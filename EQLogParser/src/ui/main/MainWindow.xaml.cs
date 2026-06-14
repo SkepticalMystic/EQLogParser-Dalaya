@@ -29,6 +29,7 @@ namespace EQLogParser
     private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
     private DateTime _startLoadTime;
     private DamageOverlayWindow _damageOverlay;
+    private SpellBrowserWindow _spellBrowser;
     private DispatcherTimer _computeStatsTimer;
     private readonly DispatcherTimer _saveTimer;
     private PetMapping _currentEditMapping;
@@ -366,6 +367,17 @@ namespace EQLogParser
     private void RestoreTableColumnsClick(object sender, RoutedEventArgs e) => DataGridUtil.RestoreAllTableColumns();
     private void AboutClick(object sender, RoutedEventArgs e) => new AboutWindow().ShowDialog();
     private void RestoreClick(object sender, RoutedEventArgs e) => MainActions.Restore();
+    private void OpenSpellBrowserClick(object sender, RoutedEventArgs e)
+    {
+      if (_spellBrowser?.IsLoaded == true)
+      {
+        _spellBrowser.Activate();
+        return;
+      }
+      _spellBrowser = new SpellBrowserWindow { Owner = this };
+      _spellBrowser.Show();
+    }
+
     private void OpenCreateWavClick(object sender, RoutedEventArgs e) => new WavCreatorWindow().ShowDialog();
     private void OpenSoundsFolderClick(object sender, RoutedEventArgs e) => MainActions.OpenFileWithDefault("\"" + @"data\sounds" + "\"");
     private void ReportProblemClick(object sender, RoutedEventArgs e) => MainActions.OpenFileWithDefault("https://github.com/SkepticalMystic/EQLogParser-Dalaya/issues");

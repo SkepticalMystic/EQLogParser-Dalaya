@@ -85,13 +85,13 @@ namespace EQLogParser
 
       // ClassMask stores which classes can cast; Level is the minimum across all eligible classes.
       // For single-class spells this is exact. Multi-class spells share the minimum level label.
-      var classes = DecodeClasses(spell.ClassMask, spell.Level);
+      var classes = SpellDecoder.DecodeClasses(spell.ClassMask, spell.Level);
       if (!string.IsNullOrEmpty(classes))
       {
         rows.Add(new("Classes", classes));
       }
 
-      var skill = DecodeSkill(spell.Skill);
+      var skill = SpellDecoder.DecodeSkill(spell.Skill);
       if (!string.IsNullOrEmpty(skill))
       {
         rows.Add(new("Skill", skill));
@@ -102,13 +102,13 @@ namespace EQLogParser
         rows.Add(new("Category", spell.Category.Replace(";", ", ")));
       }
 
-      var target = DecodeTarget(spell.Target);
+      var target = SpellDecoder.DecodeTarget(spell.Target);
       if (!string.IsNullOrEmpty(target))
       {
         rows.Add(new("Target", target));
       }
 
-      var resist = DecodeResist(spell.Resist);
+      var resist = SpellDecoder.DecodeResist(spell.Resist);
       if (!string.IsNullOrEmpty(resist))
       {
         var resistText = spell.ResistMod != 0
@@ -155,71 +155,6 @@ namespace EQLogParser
 
       return rows;
     }
-
-    private static string DecodeClasses(ushort mask, byte level)
-    {
-      if (mask == 0)
-      {
-        return "";
-      }
-      string[] names = ["WAR", "CLR", "PAL", "RNG", "SHD", "DRU", "MNK", "BRD",
-                         "ROG", "SHM", "NEC", "WIZ", "MAG", "ENC", "BST", "BER"];
-      var parts = new List<string>();
-      for (var i = 0; i < names.Length; i++)
-      {
-        if ((mask & (1 << i)) != 0)
-        {
-          parts.Add($"{names[i]}/{level}");
-        }
-      }
-      return string.Join("  ", parts);
-    }
-
-    private static string DecodeSkill(int skill) => skill switch
-    {
-      -1 => "",
-      0  => "1H Blunt",       1  => "1H Slashing",    2  => "2H Blunt",
-      3  => "2H Slashing",    4  => "Abjuration",      5  => "Alteration",
-      6  => "Apply Poison",   7  => "Archery",          8  => "Backstab",
-      9  => "Bind Wound",     10 => "Bash",             12 => "Brass Instruments",
-      13 => "Channeling",     14 => "Conjuration",      18 => "Divination",
-      20 => "Double Attack",  21 => "Dragon Punch",     22 => "Dual Wield",
-      23 => "Eagle Strike",   24 => "Evocation",        25 => "Feign Death",
-      27 => "Flying Kick",    29 => "Hand to Hand",     31 => "Kick",
-      32 => "Meditate",       33 => "Mend",             37 => "Pierce",
-      39 => "Round Kick",     42 => "Singing",          49 => "Stringed Instruments",
-      51 => "Throwing",       52 => "Tiger Claw",       54 => "Wind Instruments",
-      57 => "Percussion Instruments", 58 => "Intimidation", 59 => "Berserking",
-      60 => "Taunting",
-      _ => $"Skill {skill}"
-    };
-
-    private static string DecodeTarget(byte target) => target switch
-    {
-      1  => "AE (LoS)",         2  => "Caster AE",          3  => "Group",
-      4  => "PBAE",             5  => "Single",              6  => "Self",
-      8  => "Target AE",        14 => "Pet",                 36 => "PBAE (Players)",
-      38 => "Pet",              40 => "Nearby Players AE",   41 => "Target Group",
-      42 => "Directional AE",   45 => "Ring AE",
-      _ => target == 0 ? "" : $"Target {target}"
-    };
-
-    private static string DecodeResist(SpellResist resist) => resist switch
-    {
-      SpellResist.Undefined    => "",
-      SpellResist.Reflected    => "Reflected",
-      SpellResist.Unresistable => "Unresistable",
-      SpellResist.Magic        => "Magic",
-      SpellResist.Fire         => "Fire",
-      SpellResist.Cold         => "Cold",
-      SpellResist.Poison       => "Poison",
-      SpellResist.Disease      => "Disease",
-      SpellResist.Lowest       => "Chromatic",
-      SpellResist.Average      => "Prismatic",
-      SpellResist.Physical     => "Physical",
-      SpellResist.Corruption   => "Corruption",
-      _ => ""
-    };
 
     private static string ResolveSpellRefs(string text) =>
       SpellRefRegex.Replace(text, m =>
