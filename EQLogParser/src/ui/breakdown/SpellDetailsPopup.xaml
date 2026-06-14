@@ -5,45 +5,73 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:EQLogParser"
              mc:Ignorable="d"
-             d:DesignHeight="320" d:DesignWidth="520">
+             d:DesignHeight="480" d:DesignWidth="520">
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="{DynamicResource EQGridTitleHeight}" />
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="300*" />
+      <RowDefinition Height="*" />
     </Grid.RowDefinitions>
     <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left">
       <Label x:Name="titleLabel" Content="Loading..." Style="{StaticResource EQTitleStyle}" />
     </StackPanel>
-    <TextBlock x:Name="metaText" Grid.Row="1" Margin="10,0,10,6" Opacity="0.75"
-               FontSize="{DynamicResource EQContentSize}" TextWrapping="Wrap" />
-    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="10,0,10,10">
-      <ItemsControl x:Name="effectsList">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate>
-            <Grid Margin="0,2,0,2">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="55" />
-                <ColumnDefinition Width="*" />
-              </Grid.ColumnDefinitions>
-              <TextBlock Grid.Column="0" Text="{Binding Label}" Opacity="0.55"
-                         FontSize="{DynamicResource EQContentSize}" VerticalAlignment="Top" />
-              <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap"
-                         FontSize="{DynamicResource EQContentSize}">
-                <TextBlock.Style>
-                  <Style TargetType="TextBlock">
-                    <Style.Triggers>
-                      <DataTrigger Binding="{Binding IsStacking}" Value="True">
-                        <Setter Property="Opacity" Value="0.6" />
-                      </DataTrigger>
-                    </Style.Triggers>
-                  </Style>
-                </TextBlock.Style>
-              </TextBlock>
-            </Grid>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="10,4,10,10">
+      <StackPanel>
+        <!-- Spell metadata rows (ID, Classes, Skill, Category, Target, Resist, timing, Duration) -->
+        <ItemsControl x:Name="detailsList">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Grid Margin="0,1,0,1">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="80" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Label}" Opacity="0.55"
+                           FontSize="{DynamicResource EQContentSize}" VerticalAlignment="Top" />
+                <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap"
+                           FontSize="{DynamicResource EQContentSize}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Separator Margin="0,6,0,4" />
+        <!-- Decoded effect slots -->
+        <ItemsControl x:Name="effectsList">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Grid Margin="0,2,0,2">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="55" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Label}" Opacity="0.55"
+                           FontSize="{DynamicResource EQContentSize}" VerticalAlignment="Top" />
+                <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap"
+                           FontSize="{DynamicResource EQContentSize}">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsStacking}" Value="True">
+                          <Setter Property="Opacity" Value="0.6" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <!-- Flavor text: lands-on-you, lands-on-other, and wears-off strings, hidden when all empty -->
+        <StackPanel x:Name="flavorPanel" Margin="0,6,0,0" Visibility="Collapsed">
+          <Separator Margin="0,0,0,4" />
+          <TextBlock x:Name="landsOnText" TextWrapping="Wrap" Opacity="0.65"
+                     FontSize="{DynamicResource EQContentSize}" FontStyle="Italic" Margin="0,0,0,2" />
+          <TextBlock x:Name="landsOnOtherText" TextWrapping="Wrap" Opacity="0.65"
+                     FontSize="{DynamicResource EQContentSize}" FontStyle="Italic" Margin="0,0,0,2" />
+          <TextBlock x:Name="wearOffText" TextWrapping="Wrap" Opacity="0.65"
+                     FontSize="{DynamicResource EQContentSize}" FontStyle="Italic" />
+        </StackPanel>
+      </StackPanel>
     </ScrollViewer>
   </Grid>
 </UserControl>
