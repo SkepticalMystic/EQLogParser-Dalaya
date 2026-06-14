@@ -330,7 +330,7 @@ namespace EQLogParser
         case 121:
           return FormatCount("Reverse Damage Shield", -value);
         case 123:
-          return "Forced Spell Stacking: Unknown";
+          return $"Stacking: Group {base1}";
         case 124:
           return max switch
           {

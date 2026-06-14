@@ -104,6 +104,9 @@ namespace EQLogParser
     // (string). Populated at startup; consumed by ComputeHotTickInfo. See
     // memory project_dot_hot_validation Phase 2 + tools/spells/convert_spells.py.
     private readonly Dictionary<string, SpellEffects> _spellEffects = [];
+    // Spell lookup by numeric ID string — populated alongside _spellsNameDb.
+    // Consumed by SpellDetailsPopup to resolve [Spell N] references in effect text.
+    private readonly Dictionary<string, SpellData> _spellsById = [];
     private readonly ConcurrentDictionary<string, string> _classColors = new();
     private readonly ConcurrentDictionary<SpellClass, string> _classNames = new();
     private readonly ConcurrentDictionary<string, SpellClass> _classesByName = new(StringComparer.OrdinalIgnoreCase);
@@ -191,6 +194,11 @@ namespace EQLogParser
             else
             {
               _spellsNameDb[spellData.Name] = [spellData];
+            }
+
+            if (!string.IsNullOrEmpty(spellData.Id))
+            {
+              _spellsById.TryAdd(spellData.Id, spellData);
             }
 
             if (_spellsAbbrvDb.TryAdd(spellData.NameAbbrv, spellData))
@@ -638,6 +646,11 @@ namespace EQLogParser
         Log.Error("Error parsing spell-effects.json", ex);
       }
     }
+
+    // Returns the SpellData for a numeric spell ID, or null when not found.
+    // Used by SpellDetailsPopup to resolve [Spell N] references in effect text.
+    internal SpellData GetSpellById(int id) =>
+      _spellsById.TryGetValue(id.ToString(CultureInfo.InvariantCulture), out var s) ? s : null;
 
     // Returns the effect-slot data for a spell, or null when the spell isn't in
     // the sidecar (Healing Increment placeholders, etc.).

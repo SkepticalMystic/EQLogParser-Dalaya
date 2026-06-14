@@ -21,8 +21,26 @@
       <ItemsControl x:Name="effectsList">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,1,0,1"
-                       FontSize="{DynamicResource EQContentSize}" />
+            <Grid Margin="0,2,0,2">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="55" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="{Binding Label}" Opacity="0.55"
+                         FontSize="{DynamicResource EQContentSize}" VerticalAlignment="Top" />
+              <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap"
+                         FontSize="{DynamicResource EQContentSize}">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsStacking}" Value="True">
+                        <Setter Property="Opacity" Value="0.6" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+            </Grid>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

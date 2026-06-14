@@ -1,22 +1,26 @@
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Controls;
 
 namespace EQLogParser
 {
-  // Read-only popout showing a spell's decoded effect slots (via SpellEffectDecoder) plus
-  // basic metadata. Opened from a grid's "Spell Details" context-menu item, mirroring how
-  // HotEffectivenessTable is surfaced (SyncFusionUtil.OpenWindow). This is the first UI
-  // surface for the SPA decoder — see memory project_spell_tooltips.
   public partial class SpellDetailsPopup : UserControl
   {
+    // Separates the "Slot N" label from the effect description so the popup can
+    // render them in two aligned columns and dim stacking lines independently.
+    private record EffectLine(string Label, string Text, bool IsStacking);
+
+    // [Spell N] appears in proc/autocast/dispel effect text when the referenced
+    // spell id is encoded numerically. Replace with the spell name when known.
+    private static readonly Regex SpellRefRegex = new(@"\[Spell (\d+)\]", RegexOptions.Compiled);
+
     public SpellDetailsPopup()
     {
       InitializeComponent();
     }
 
-    // Render the spell's effects. Decoded at the spell's own min castable level (single value;
-    // most Dalaya buffs/heals/nukes use a flat formula so level doesn't change the numbers).
     internal void Init(SpellData spell)
     {
       if (spell == null)
@@ -29,10 +33,29 @@ namespace EQLogParser
 
       var effects = EQDataStore.Instance.GetSpellEffects(spell.Id);
       var lines = SpellEffectDecoder.Describe(effects, spell.Level, spell.Level);
-      effectsList.ItemsSource = lines.Count > 0
-        ? lines
-        : new List<string> { "No decoded effect data for this spell." };
+
+      if (lines.Count > 0)
+      {
+        effectsList.ItemsSource = lines.Select(line =>
+        {
+          var sep = line.IndexOf(": ", System.StringComparison.Ordinal);
+          var label = sep >= 0 ? line[..sep] : "";
+          var text = sep >= 0 ? line[(sep + 2)..] : line;
+          text = ResolveSpellRefs(text);
+          return new EffectLine(label, text, text.StartsWith("Stacking", System.StringComparison.Ordinal));
+        }).ToList();
+      }
+      else
+      {
+        effectsList.ItemsSource = new List<EffectLine> { new("", "No decoded effect data for this spell.", false) };
+      }
     }
+
+    private static string ResolveSpellRefs(string text) =>
+      SpellRefRegex.Replace(text, m =>
+        int.TryParse(m.Groups[1].Value, out var id) && EQDataStore.Instance.GetSpellById(id) is { } s
+          ? s.Name
+          : m.Value);
 
     private static string BuildMeta(SpellData spell)
     {
