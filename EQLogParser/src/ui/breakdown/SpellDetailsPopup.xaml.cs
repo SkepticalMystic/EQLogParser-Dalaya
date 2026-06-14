@@ -111,7 +111,20 @@ namespace EQLogParser
       var resist = DecodeResist(spell.Resist);
       if (!string.IsNullOrEmpty(resist))
       {
-        rows.Add(new("Resist", resist));
+        var resistText = spell.ResistMod != 0
+          ? $"{resist} ({(spell.ResistMod > 0 ? "+" : "")}{spell.ResistMod})"
+          : resist;
+        rows.Add(new("Resist", resistText));
+      }
+
+      if (spell.Mana > 0)
+      {
+        rows.Add(new("Mana", spell.Mana.ToString(CultureInfo.InvariantCulture)));
+      }
+
+      if (spell.Range > 0)
+      {
+        rows.Add(new("Range", $"{spell.Range}'"));
       }
 
       if (spell.CastingTimeMs > 0)

@@ -43,6 +43,9 @@ Mapping (see CLAUDE.md and EQDataStore.ParseCustomSpellData):
     23          100          Skill (SoD SpellSkill enum value; -1 = none, sign preserved)
     24          150          RecourseID (spell that procs when this lands; 0 = none)
     25          167          TimerID (shared AA/discipline cooldown group; 0 = none)
+    26          19           Mana cost (integer; 0 = no cost or ability)
+    27          9            Range in feet (0 = self-only or no direct range)
+    28          147          ResistMod (signed; negative = harder to resist; 0 = none)
     all others  -            hard-coded "0"
 
 Source cols 104..119 hold per-class level requirements in EQ classid order:
@@ -99,6 +102,9 @@ EMPTY_SLOT_SPA = 254
 SKILL_COL = 100
 RECOURSE_ID_COL = 150
 TIMER_ID_COL = 167
+MANA_COL = 19         # Mana cost (integer; 0 = no mana cost or no-mana ability)
+RANGE_COL = 9         # Spell range in feet (0 = self-only or AE with no range)
+RESIST_MOD_COL = 147  # Resist modifier (negative = harder to resist; 0 = none)
 
 
 CASTER_ADPS = 1
@@ -297,6 +303,9 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
     skill = _safe_int_signed(src_fields, SKILL_COL)
     recourse_id = _safe_int_signed(src_fields, RECOURSE_ID_COL)
     timer_id = _safe_int_signed(src_fields, TIMER_ID_COL)
+    mana = _safe_int(src_fields, MANA_COL)
+    range_ = _safe_int(src_fields, RANGE_COL)
+    resist_mod = _safe_int_signed(src_fields, RESIST_MOD_COL)
     level, class_mask = _level_and_class_mask(src_fields)
     damaging = "1" if (lands_on_you or lands_on_other or wear_off) else "0"
     # ADPS = union of category-derived bitmask and the upstream-overlay bitmask.
@@ -333,6 +342,9 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
         skill,            # 23 Skill (SoD SpellSkill enum value, source col 100; -1 = none)
         recourse_id,      # 24 RecourseID (proc-on-land spell id, source col 150; 0 = none)
         timer_id,         # 25 TimerID (shared AA/disc cooldown group, source col 167; 0 = none)
+        mana,             # 26 Mana cost (source col 19; 0 = no cost)
+        range_,           # 27 Range in feet (source col 9; 0 = self-only or no direct range)
+        resist_mod,       # 28 ResistMod (source col 147; negative = harder to resist)
     ])
 
 

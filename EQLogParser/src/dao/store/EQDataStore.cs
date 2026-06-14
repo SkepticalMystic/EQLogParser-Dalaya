@@ -789,7 +789,12 @@ namespace EQLogParser
             // spells.txt files without these fields fall back to 0.
             Skill = data.Length > 23 ? int.Parse(data[23], CultureInfo.InvariantCulture) : 0,
             RecourseID = data.Length > 24 ? int.Parse(data[24], CultureInfo.InvariantCulture) : 0,
-            TimerID = data.Length > 25 ? int.Parse(data[25], CultureInfo.InvariantCulture) : 0
+            TimerID = data.Length > 25 ? int.Parse(data[25], CultureInfo.InvariantCulture) : 0,
+            // Cols 26-28 (Mana/Range/ResistMod) added after v1.2.0. Default to 0
+            // on older spells.txt files.
+            Mana = data.Length > 26 ? int.Parse(data[26], CultureInfo.InvariantCulture) : 0,
+            Range = data.Length > 27 ? int.Parse(data[27], CultureInfo.InvariantCulture) : 0,
+            ResistMod = data.Length > 28 ? int.Parse(data[28], CultureInfo.InvariantCulture) : 0
           };
         }
       }

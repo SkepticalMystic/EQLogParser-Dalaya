@@ -531,6 +531,11 @@ namespace EQLogParser
     public int Skill { get; set; }
     public int RecourseID { get; set; }
     public int TimerID { get; set; }
+    // Mana/Range/ResistMod sourced from spells_us.txt cols 19/9/147 via parser
+    // cols 26/27/28. All default to 0 on pre-extension spells.txt files.
+    public int Mana { get; set; }
+    public int Range { get; set; }
+    public int ResistMod { get; set; }
   }
 
   // Per-spell 12-slot effect data, sourced from data/spell-effects.json (emitted
