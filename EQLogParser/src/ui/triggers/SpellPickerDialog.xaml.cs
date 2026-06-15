@@ -83,7 +83,7 @@ namespace EQLogParser
       {
         classFilter.Items.Add(className);
       }
-      SelectDefaultClass();
+      classFilter.SelectedIndex = 0;
 
       categoryFilter.Items.Add(AllCategories);
       foreach (var category in EQDataStore.Instance.GetAllCategories())
@@ -110,14 +110,6 @@ namespace EQLogParser
         inSlotFilter.Items.Add($"Slot {i}");
       }
       inSlotFilter.SelectedIndex = 0;
-    }
-
-    private void SelectDefaultClass()
-    {
-      var playerClass = PlayerRegistry.Instance.GetDefaultPlayerClass(ConfigUtil.PlayerName);
-      classFilter.SelectedItem = !string.IsNullOrEmpty(playerClass) && classFilter.Items.Contains(playerClass)
-        ? playerClass
-        : AllClasses;
     }
 
     private async void WindowLoaded(object sender, RoutedEventArgs e)
@@ -169,6 +161,12 @@ namespace EQLogParser
         hintText.Text = string.Empty;
     }
 
+    private void CasterTypeChanged(object sender, RoutedEventArgs e)
+    {
+      if (!_loaded) return;
+      otherCasterBox.IsEnabled = otherCastCheck.IsChecked == true;
+    }
+
     private void CatTypeChanged(object sender, RoutedEventArgs e)
     {
       if (!_loaded) return;
@@ -207,7 +205,7 @@ namespace EQLogParser
       searchBox.Clear();
       levelMin.Clear();
       levelMax.Clear();
-      SelectDefaultClass();
+      classFilter.SelectedIndex = 0;
       categoryFilter.SelectedIndex = 0;
       typeFilter.SelectedIndex     = 0;
       hasSpaFilter.SelectedIndex   = 0;
@@ -373,12 +371,16 @@ namespace EQLogParser
         return;
       }
 
-      var casterName = casterBox.Text.Trim();
-      var hasName    = !string.IsNullOrEmpty(casterName);
+      var isOther    = otherCastCheck.IsChecked == true;
+      var otherName  = otherCasterBox.Text.Trim();
+      var hasOther   = isOther && !string.IsNullOrEmpty(otherName);
 
-      var castingLine = hasName
-        ? $"{casterName} begins casting {spell.Name}."
-        : $"begins casting {spell.Name}.";
+      // "You begin casting" (first person) vs third-person forms.
+      var castingLine = !isOther
+        ? $"You begin casting {spell.Name}."
+        : hasOther
+          ? $"{otherName} begins casting {spell.Name}."
+          : $"begins casting {spell.Name}.";
 
       var landsOnOther = spell.LandsOnOther?.Trim();
       var hasLanding   = !string.IsNullOrEmpty(landsOnOther);
@@ -394,17 +396,12 @@ namespace EQLogParser
       {
         // Buff/HoT/DoT tracker: fires when spell lands on target.
         // Prepend {S1} to capture the target name.
-        // WearOff is first-person ("Your heartbeat steadies.") and only appears
-        // in the parser's own log — not in the log when it wears off a target.
-        // Leave EndEarlyPattern empty; the timer handles normal expiry.
         var prefix   = landsOnOther.StartsWith('\'') ? "{S1}" : "{S1} ";
         pattern      = prefix + landsOnOther;
         useRegex     = true;
         altTimerName = $"{spell.Name} - {{S1}}";
 
-        // Instant-cast spells produce no "begins casting" log line, so skip the
-        // previous-line constraint entirely. For timed casts, always match the
-        // cast line (even without a named caster) within castTime + 2 s.
+        // Instant-cast spells produce no "begins casting" log line.
         if (castSeconds > 0)
         {
           previousPattern           = castingLine;
@@ -416,7 +413,8 @@ namespace EQLogParser
           previousLineWindowSeconds = 0;
         }
 
-        endEarlyPattern  = string.Empty;
+        // Generic EQ wear-off line — fires when the spell drops off any target.
+        endEarlyPattern  = $"Your {spell.Name} spell affecting";
         endEarlyPattern2 = string.Empty;
       }
       else
@@ -426,9 +424,12 @@ namespace EQLogParser
         useRegex                  = false;
         previousPattern           = string.Empty;
         previousLineWindowSeconds = 0;
-        endEarlyPattern           = hasName
-          ? $"{casterName}'s {spell.Name} spell is interrupted."
-          : string.Empty;
+        // Interrupt line differs between self and other.
+        endEarlyPattern = !isOther
+          ? $"Your {spell.Name} spell is interrupted."
+          : hasOther
+            ? $"{otherName}'s {spell.Name} spell is interrupted."
+            : string.Empty;
         endEarlyPattern2 = string.Empty;
         altTimerName     = spell.Name;
       }

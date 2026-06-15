@@ -213,16 +213,22 @@
     <!-- Caster + overlay row (P4): visible only in bundle mode -->
     <StackPanel x:Name="casterRow" Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,8"
                 Visibility="Collapsed">
-      <TextBlock Text="Caster:" VerticalAlignment="Center" Margin="0,0,6,0"
+      <TextBlock Text="Caster: You" VerticalAlignment="Center" Margin="0,0,16,0"
                  FontSize="{DynamicResource EQContentSize}"
                  Foreground="{DynamicResource ContentForeground}" />
-      <TextBox x:Name="casterBox" MinWidth="180" Padding="4"
+      <CheckBox x:Name="otherCastCheck" Content="Other player:"
+                VerticalAlignment="Center" Margin="0,0,8,0"
+                FontSize="{DynamicResource EQContentSize}"
+                Foreground="{DynamicResource ContentForeground}"
+                Checked="CasterTypeChanged" Unchecked="CasterTypeChanged" />
+      <TextBox x:Name="otherCasterBox" MinWidth="160" Padding="4"
+               IsEnabled="False"
                FontSize="{DynamicResource EQContentSize}"
                BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
                Background="{DynamicResource ContentBackground}"
                Foreground="{DynamicResource ContentForeground}" />
-      <TextBlock Text="(leave blank to match any caster)" VerticalAlignment="Center"
-                 Margin="8,0,20,0" Opacity="0.6"
+      <TextBlock Text="(leave blank for any)" VerticalAlignment="Center"
+                 Margin="8,0,20,0" Opacity="0.4"
                  FontSize="{DynamicResource EQContentSize}"
                  Foreground="{DynamicResource ContentForeground}" />
       <TextBlock Text="Overlay:" VerticalAlignment="Center" Margin="0,0,6,0"
