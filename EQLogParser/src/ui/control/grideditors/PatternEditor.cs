@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace EQLogParser
 {
@@ -20,6 +21,11 @@ namespace EQLogParser
     private Button _spellButton;
     private Grid _grid;
     private bool _userTurnedOff;
+
+    // P4: set in Attach() so SpellButtonClick can write bundle fields directly to
+    // the model and trigger a property-grid refresh without owning the grid.
+    private TriggerPropertyModel _triggerModel;
+    private bool _isPatternField;
 
     public void SetForeground(string foreground)
     {
@@ -40,6 +46,10 @@ namespace EQLogParser
       };
 
       BindingOperations.SetBinding(_theTextBox, TextBox.TextProperty, binding);
+
+      // P4: only the Pattern-field editor enables bundle mode and holds the model ref.
+      _isPatternField = info.Name == "Pattern";
+      _triggerModel = _isPatternField ? info.SelectedObject as TriggerPropertyModel : null;
 
       var bindName = info.Name switch
       {
@@ -77,7 +87,7 @@ namespace EQLogParser
       _userTurnedOff = false;
       _grid = new Grid();
       _grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200, GridUnitType.Star) });
-      // Dalaya: column for the "Insert Spell..." button (see SpellPickerDialog).
+      // Dalaya: column for the "Spell..." button (see SpellPickerDialog).
       _grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
       _grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
 
@@ -94,8 +104,9 @@ namespace EQLogParser
       _theTextBox.SetValue(Grid.ColumnProperty, 0);
       _theTextBox.TextChanged += TheTextChanged;
 
-      // Dalaya: opens the spell picker and inserts a spell's log message into the
-      // pattern at the caret. See memory project-trigger-spell-picker.
+      // Dalaya: opens the spell picker and either inserts a spell's log message
+      // (insert mode) or writes a full cast-timer bundle to the trigger model
+      // (bundle mode, P4). See memory project-trigger-spell-picker.
       _spellButton = new Button
       {
         Content = "Spell…",
@@ -131,9 +142,23 @@ namespace EQLogParser
 
       try
       {
-        var dialog = new SpellPickerDialog();
+        var dialog = new SpellPickerDialog(enableBundleMode: _isPatternField);
         dialog.ShowDialog();
-        if (dialog.IsOkClicked && !string.IsNullOrEmpty(dialog.SelectedText))
+
+        if (dialog.BundleResult != null && _triggerModel != null)
+        {
+          // Bundle mode (P4): write all timer fields to the model, then refresh
+          // the property grid so the new values are visible immediately.
+          _theTextBox.Text = dialog.BundleResult.Pattern;
+          _theTextBox.CaretIndex = _theTextBox.Text.Length;
+          _theTextBox.Focus();
+          _triggerModel.EnableTimer = dialog.BundleResult.EnableTimer;
+          _triggerModel.DurationSeconds = dialog.BundleResult.DurationSeconds;
+          _triggerModel.EndEarlyPattern = dialog.BundleResult.EndEarlyPattern;
+          _triggerModel.EndEarlyPattern2 = dialog.BundleResult.EndEarlyPattern2;
+          RefreshPropertyGrid();
+        }
+        else if (dialog.IsOkClicked && !string.IsNullOrEmpty(dialog.SelectedText))
         {
           var caret = _theTextBox.CaretIndex;
           _theTextBox.Text = _theTextBox.Text.Insert(caret, dialog.SelectedText);
@@ -145,6 +170,24 @@ namespace EQLogParser
       {
         // A failure opening the picker shouldn't take down the property grid.
         Log.Error("Failed to open spell picker", ex);
+      }
+    }
+
+    // Walk the visual tree to find the containing PropertyGrid and force it to
+    // re-read all values from the model via the null/re-set pattern.
+    private void RefreshPropertyGrid()
+    {
+      DependencyObject parent = VisualTreeHelper.GetParent(_grid);
+      while (parent != null)
+      {
+        if (parent is PropertyGrid pg)
+        {
+          var obj = pg.SelectedObject;
+          pg.SelectedObject = null;
+          pg.SelectedObject = obj;
+          break;
+        }
+        parent = VisualTreeHelper.GetParent(parent);
       }
     }
 
@@ -202,6 +245,9 @@ namespace EQLogParser
 
     public override void Detach(PropertyViewItem property)
     {
+      _triggerModel = null;
+      _isPatternField = false;
+
       if (_theTextBox != null)
       {
         _theTextBox.TextChanged -= TheTextChanged;

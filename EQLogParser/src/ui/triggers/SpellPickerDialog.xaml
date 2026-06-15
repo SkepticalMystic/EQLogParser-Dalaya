@@ -1,4 +1,4 @@
-<syncfusion:ChromelessWindow x:Class="EQLogParser.SpellPickerDialog"
+﻿<syncfusion:ChromelessWindow x:Class="EQLogParser.SpellPickerDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -22,6 +22,8 @@
         Title="Insert Spell">
   <Grid Margin="12">
     <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
@@ -61,7 +63,42 @@
                 SelectionChanged="FilterChanged" />
     </Grid>
 
-    <syncfusion:SfDataGrid x:Name="dataGrid" Grid.Row="1"
+    <!-- Mode toggle (P4): shown only when dialog is opened from the Pattern field -->
+    <StackPanel x:Name="modeToggleRow" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8"
+                Visibility="Collapsed">
+      <TextBlock Text="Mode:" VerticalAlignment="Center" Margin="0,0,8,0"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <RadioButton x:Name="insertModeRadio" Content="Insert message" IsChecked="True"
+                   GroupName="PickerMode" VerticalAlignment="Center" Margin="0,0,20,0"
+                   FontSize="{DynamicResource EQContentSize}"
+                   Foreground="{DynamicResource ContentForeground}"
+                   Checked="ModeChanged" />
+      <RadioButton x:Name="bundleModeRadio" Content="Generate timer bundle"
+                   GroupName="PickerMode" VerticalAlignment="Center"
+                   FontSize="{DynamicResource EQContentSize}"
+                   Foreground="{DynamicResource ContentForeground}"
+                   Checked="ModeChanged" />
+    </StackPanel>
+
+    <!-- Caster row (P4): visible only in bundle mode -->
+    <StackPanel x:Name="casterRow" Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8"
+                Visibility="Collapsed">
+      <TextBlock Text="Caster:" VerticalAlignment="Center" Margin="0,0,6,0"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <TextBox x:Name="casterBox" MinWidth="180" Padding="4"
+               FontSize="{DynamicResource EQContentSize}"
+               BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
+               Background="{DynamicResource ContentBackground}"
+               Foreground="{DynamicResource ContentForeground}" />
+      <TextBlock Text="(leave blank to match any caster)" VerticalAlignment="Center"
+                 Margin="8,0,0,0" Opacity="0.6"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+    </StackPanel>
+
+    <syncfusion:SfDataGrid x:Name="dataGrid" Grid.Row="3"
                            AllowDraggingColumns="False"
                            AllowResizingColumns="True"
                            AllowSorting="True"
@@ -83,13 +120,13 @@
       </syncfusion:SfDataGrid.Columns>
     </syncfusion:SfDataGrid>
 
-    <!-- Insert bar -->
-    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+    <!-- Insert / Generate bar -->
+    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
       <TextBlock x:Name="hintText" VerticalAlignment="Center" Margin="0,0,12,0"
                  Opacity="0.7"
                  FontSize="{DynamicResource EQContentSize}"
                  Foreground="{DynamicResource ContentForeground}" />
-      <TextBlock Text="Insert message:" VerticalAlignment="Center" Margin="0,0,6,0"
+      <TextBlock x:Name="insertModeLabel" Text="Insert message:" VerticalAlignment="Center" Margin="0,0,6,0"
                  FontSize="{DynamicResource EQContentSize}"
                  Foreground="{DynamicResource ContentForeground}" />
       <ComboBox x:Name="messageField" MinWidth="140" Margin="0,0,12,0" />
