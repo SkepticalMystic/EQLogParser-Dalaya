@@ -35,7 +35,10 @@ function renderNav(currentId) {
 
     sidebarEl.innerHTML =
       '<button class="sidebar-toggle" id="sidebar-toggle" aria-expanded="false" aria-controls="sidebar-collapsible">' +
-        '<span class="sidebar-toggle-label">' + currentTitle + '</span>' +
+        '<span class="sidebar-toggle-left">' +
+          '<span class="sidebar-toggle-icon" aria-hidden="true">☰</span>' +
+          '<span class="sidebar-toggle-label">' + currentTitle + '</span>' +
+        '</span>' +
         '<span class="sidebar-toggle-chevron" aria-hidden="true">▾</span>' +
       '</button>' +
       '<div class="sidebar-collapsible" id="sidebar-collapsible">' +

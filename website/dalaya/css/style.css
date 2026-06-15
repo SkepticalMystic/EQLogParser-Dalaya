@@ -605,8 +605,30 @@ a.guide-card:hover {
   display: none;
 }
 
+.sidebar-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sidebar-toggle-icon {
+  color: var(--accent);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.sidebar-toggle-chevron {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
+  /* Prevent topbar title from wrapping into page content */
+  .nav-links {
+    display: none;
+  }
+
   .hero-title {
     font-size: 2rem;
   }
@@ -631,7 +653,7 @@ a.guide-card:hover {
     height: auto;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    padding: 0;
+    padding: 0.5rem 0.75rem 0;
   }
 
   /* Toggle button — shown on mobile */
@@ -640,25 +662,21 @@ a.guide-card:hover {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    background: var(--surface-2);
-    border: none;
-    border-bottom: 1px solid transparent;
-    padding: 0.85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
     color: var(--text);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
     font-family: inherit;
-    transition: background 0.12s;
+    transition: background 0.12s, border-color 0.12s;
   }
 
   .sidebar-toggle:active {
-    background: #2e2e2e;
-  }
-
-  .sidebar-toggle-chevron {
-    color: var(--text-muted);
-    font-size: 0.75rem;
+    background: var(--surface-2);
+    border-color: #444;
   }
 
   /* Collapsible nav — hidden until toggled */
