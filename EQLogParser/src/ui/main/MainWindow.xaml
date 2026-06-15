@@ -450,6 +450,12 @@
           </MenuItem>
         </MenuItem>
         <MenuItem Header="_Help" Margin="4,0,0,0">
+          <MenuItem Header="_Website" Click="OpenWebsiteClick" IsEnabled="True">
+            <MenuItem.Icon>
+              <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Visibility="Visible" Icon="Solid_Globe" />
+            </MenuItem.Icon>
+          </MenuItem>
+          <Separator />
           <MenuItem Header="_Report a Problem" Click="ReportProblemClick" IsEnabled="True">
             <MenuItem.Icon>
               <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Visibility="Visible" Icon="Solid_Bug" />

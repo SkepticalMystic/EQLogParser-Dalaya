@@ -50,28 +50,35 @@
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
       </Grid.RowDefinitions>
-      <TextBlock Grid.Row="0" Grid.Column="0" Text="Fork:" Margin="0,2,12,2"
+      <TextBlock Grid.Row="0" Grid.Column="0" Text="Website:" Margin="0,2,12,2"
                  FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
       <TextBlock Grid.Row="0" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
+        <Hyperlink NavigateUri="https://skepticalmystic.github.io/EQLogParser-Dalaya/"
+                   RequestNavigate="HyperlinkRequestNavigate">skepticalmystic.github.io/EQLogParser-Dalaya</Hyperlink>
+      </TextBlock>
+      <TextBlock Grid.Row="1" Grid.Column="0" Text="Fork:" Margin="0,2,12,2"
+                 FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
+      <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
         <Hyperlink NavigateUri="https://github.com/SkepticalMystic/EQLogParser-Dalaya"
                    RequestNavigate="HyperlinkRequestNavigate">github.com/SkepticalMystic/EQLogParser-Dalaya</Hyperlink>
       </TextBlock>
-      <TextBlock Grid.Row="1" Grid.Column="0" Text="Issues:" Margin="0,2,12,2"
+      <TextBlock Grid.Row="2" Grid.Column="0" Text="Issues:" Margin="0,2,12,2"
                  FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
-      <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
+      <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
         <Hyperlink NavigateUri="https://github.com/SkepticalMystic/EQLogParser-Dalaya/issues"
                    RequestNavigate="HyperlinkRequestNavigate">Report a problem</Hyperlink>
       </TextBlock>
-      <TextBlock Grid.Row="2" Grid.Column="0" Text="Upstream:" Margin="0,2,12,2"
+      <TextBlock Grid.Row="3" Grid.Column="0" Text="Upstream:" Margin="0,2,12,2"
                  FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
-      <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
+      <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
         <Hyperlink NavigateUri="https://eqlogparser.kizant.net"
                    RequestNavigate="HyperlinkRequestNavigate">eqlogparser.kizant.net</Hyperlink>
       </TextBlock>
-      <TextBlock Grid.Row="3" Grid.Column="0" Text="Server:" Margin="0,2,12,2"
+      <TextBlock Grid.Row="4" Grid.Column="0" Text="Server:" Margin="0,2,12,2"
                  FontSize="{DynamicResource EQContentSize}" Foreground="{DynamicResource ContentForegroundAlt}"/>
-      <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
+      <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,2,0,2" FontSize="{DynamicResource EQContentSize}">
         <Hyperlink NavigateUri="https://dalaya.org"
                    RequestNavigate="HyperlinkRequestNavigate">dalaya.org</Hyperlink>
       </TextBlock>
