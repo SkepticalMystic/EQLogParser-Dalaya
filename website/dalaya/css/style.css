@@ -624,9 +624,21 @@ a.guide-card:hover {
 
 /* Responsive */
 @media (max-width: 600px) {
-  /* Prevent topbar title from wrapping into page content */
+  /* Shrink topbar content to stay single-row on narrow screens */
+  .nav-inner {
+    padding: 0 0.85rem;
+  }
+
+  .nav-title {
+    font-size: 0.88rem;
+  }
+
   .nav-links {
-    display: none;
+    gap: 0.85rem;
+  }
+
+  .nav-links a {
+    font-size: 0.78rem;
   }
 
   .hero-title {
@@ -653,7 +665,7 @@ a.guide-card:hover {
     height: auto;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    padding: 0.5rem 0.75rem 0;
+    padding: 0.5rem 0.75rem 0.5rem;
   }
 
   /* Toggle button — shown on mobile */
