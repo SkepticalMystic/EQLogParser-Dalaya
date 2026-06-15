@@ -33,6 +33,7 @@ namespace EQLogParser
       string Pattern,
       bool UseRegex,
       string PreviousPattern,
+      double PreviousLineWindowSeconds,
       int TimerType,
       double DurationSeconds,
       string EndEarlyPattern,
@@ -384,6 +385,10 @@ namespace EQLogParser
 
       string pattern, previousPattern, endEarlyPattern, endEarlyPattern2, altTimerName;
       bool useRegex;
+      double previousLineWindowSeconds;
+
+      // Cast time in seconds; 0 means instant-cast (no "begins casting" log line).
+      var castSeconds = spell.CastingTimeMs / 1000.0;
 
       if (hasLanding)
       {
@@ -393,20 +398,35 @@ namespace EQLogParser
         // in the parser's own log — not in the log when it wears off a target.
         // Leave EndEarlyPattern empty; the timer handles normal expiry.
         var prefix   = landsOnOther.StartsWith('\'') ? "{S1}" : "{S1} ";
-        pattern          = prefix + landsOnOther;
-        useRegex         = true;
-        previousPattern  = hasName ? castingLine : string.Empty;
+        pattern      = prefix + landsOnOther;
+        useRegex     = true;
+        altTimerName = $"{spell.Name} - {{S1}}";
+
+        // Instant-cast spells produce no "begins casting" log line, so skip the
+        // previous-line constraint entirely. For timed casts, always match the
+        // cast line (even without a named caster) within castTime + 2 s.
+        if (castSeconds > 0)
+        {
+          previousPattern           = castingLine;
+          previousLineWindowSeconds = castSeconds + 2.0;
+        }
+        else
+        {
+          previousPattern           = string.Empty;
+          previousLineWindowSeconds = 0;
+        }
+
         endEarlyPattern  = string.Empty;
         endEarlyPattern2 = string.Empty;
-        altTimerName     = $"{spell.Name} - {{S1}}";
       }
       else
       {
         // Fallback: no landing message — use casting line as Pattern.
-        pattern          = castingLine;
-        useRegex         = false;
-        previousPattern  = string.Empty;
-        endEarlyPattern  = hasName
+        pattern                   = castingLine;
+        useRegex                  = false;
+        previousPattern           = string.Empty;
+        previousLineWindowSeconds = 0;
+        endEarlyPattern           = hasName
           ? $"{casterName}'s {spell.Name} spell is interrupted."
           : string.Empty;
         endEarlyPattern2 = string.Empty;
@@ -423,15 +443,16 @@ namespace EQLogParser
       }
 
       BundleResult = new TriggerBundle(
-        Pattern:          pattern,
-        UseRegex:         useRegex,
-        PreviousPattern:  previousPattern,
-        TimerType:        1,
-        DurationSeconds:  durationSeconds,
-        EndEarlyPattern:  endEarlyPattern,
-        EndEarlyPattern2: endEarlyPattern2,
-        AltTimerName:     altTimerName,
-        OverlayId:        overlayId
+        Pattern:                    pattern,
+        UseRegex:                   useRegex,
+        PreviousPattern:            previousPattern,
+        PreviousLineWindowSeconds:  previousLineWindowSeconds,
+        TimerType:                  1,
+        DurationSeconds:            durationSeconds,
+        EndEarlyPattern:            endEarlyPattern,
+        EndEarlyPattern2:           endEarlyPattern2,
+        AltTimerName:               altTimerName,
+        OverlayId:                  overlayId
       );
       IsOkClicked = true;
       Close();

@@ -154,9 +154,10 @@ namespace EQLogParser
           _theTextBox.Focus();
 
           // Trigger scalar fields
-          _triggerModel.UseRegex         = b.UseRegex;
-          _triggerModel.PreviousPattern  = b.PreviousPattern;
-          _triggerModel.TimerType        = b.TimerType;
+          _triggerModel.UseRegex                   = b.UseRegex;
+          _triggerModel.PreviousPattern            = b.PreviousPattern;
+          _triggerModel.PreviousLineWindowSeconds  = b.PreviousLineWindowSeconds;
+          _triggerModel.TimerType                  = b.TimerType;
           _triggerModel.DurationSeconds  = b.DurationSeconds;
           _triggerModel.EndEarlyPattern  = b.EndEarlyPattern;
           _triggerModel.EndEarlyPattern2 = b.EndEarlyPattern2;
