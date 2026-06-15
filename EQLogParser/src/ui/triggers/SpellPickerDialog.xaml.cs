@@ -339,7 +339,7 @@ namespace EQLogParser
         var casterName = catCasterBox.Text.Trim();
         var alt = string.Join("|", spells.Select(s => Regex.Escape(s.Name)).Distinct().OrderBy(x => x));
         pattern = string.IsNullOrEmpty(casterName)
-          ? $@"begins casting ({alt})\."
+          ? $@"{{S1}} begins casting ({alt})\."
           : $@"{Regex.Escape(casterName)} begins casting ({alt})\.";
       }
       else

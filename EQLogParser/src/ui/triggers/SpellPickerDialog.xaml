@@ -204,7 +204,7 @@
                BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
                Background="{DynamicResource ContentBackground}"
                Foreground="{DynamicResource ContentForeground}" />
-      <TextBlock x:Name="catCasterHint" Text="(leave blank for any caster)"
+      <TextBlock x:Name="catCasterHint" Text="(leave blank to capture caster as {S1})"
                  VerticalAlignment="Center" Margin="8,0,0,0" Opacity="0.6"
                  FontSize="{DynamicResource EQContentSize}"
                  Foreground="{DynamicResource ContentForeground}" />
