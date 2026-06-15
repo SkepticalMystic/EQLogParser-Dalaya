@@ -25,6 +25,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
     <!-- Filter bar: two rows -->
@@ -176,6 +177,16 @@
                            SelectionMode="Single"
                            CellDoubleTapped="OnCellDoubleTapped">
       <syncfusion:SfDataGrid.Columns>
+        <syncfusion:GridTemplateColumn HeaderText="" MappingName="Icon" Width="34" AllowSorting="False"
+                                       AllowFiltering="False">
+          <syncfusion:GridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Image Source="{Binding Icon}" Width="22" Height="22" Stretch="Uniform"
+                     VerticalAlignment="Center" HorizontalAlignment="Center"
+                     RenderOptions.BitmapScalingMode="HighQuality" />
+            </DataTemplate>
+          </syncfusion:GridTemplateColumn.CellTemplate>
+        </syncfusion:GridTemplateColumn>
         <syncfusion:GridTextColumn HeaderText="Spell"    MappingName="Name"     ColumnSizer="Star" />
         <syncfusion:GridTextColumn HeaderText="Lvl"      MappingName="Level"    Width="45" />
         <syncfusion:GridTextColumn HeaderText="Classes"  MappingName="Classes"  Width="180" />
@@ -188,7 +199,15 @@
       </syncfusion:SfDataGrid.Columns>
     </syncfusion:SfDataGrid>
 
-    <TextBlock x:Name="countLabel" Grid.Row="2" Margin="0,6,0,0"
+    <!-- Description of the selected spell, shown only when the spell has one -->
+    <Border x:Name="descPanel" Grid.Row="2" Visibility="Collapsed" Margin="0,6,0,0"
+            BorderBrush="{DynamicResource PrimaryDarken}"
+            BorderThickness="0,1,0,0" Padding="2,4,2,0">
+      <TextBlock x:Name="descText" FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" Opacity="0.85"
+                 TextWrapping="Wrap" FontStyle="Italic" />
+    </Border>
+    <TextBlock x:Name="countLabel" Grid.Row="3" Margin="0,4,0,0"
                FontSize="{DynamicResource EQContentSize}"
                Foreground="{DynamicResource ContentForeground}" Opacity="0.7" />
   </Grid>

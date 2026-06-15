@@ -536,6 +536,13 @@ namespace EQLogParser
     public int Mana { get; set; }
     public int Range { get; set; }
     public int ResistMod { get; set; }
+    // IconId sourced from spells_us.txt col 144 via parser col 29. Maps to
+    // data/icons/gemicon{N}.jpg. 0 means no icon. Defaults to 0 on older spells.txt.
+    public int IconId { get; set; }
+    // Human-readable spell description from dbstr_us.txt type-6 entries, loaded at
+    // startup from data/spell-descriptions.json (emitted by convert_spells.py --dbstr).
+    // Empty string when no description is available (e.g. AAs, unnamed spells).
+    public string Description { get; set; } = string.Empty;
   }
 
   // Per-spell 12-slot effect data, sourced from data/spell-effects.json (emitted

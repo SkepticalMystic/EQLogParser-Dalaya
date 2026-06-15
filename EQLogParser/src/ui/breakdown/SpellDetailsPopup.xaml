@@ -11,11 +11,17 @@
       <RowDefinition Height="{DynamicResource EQGridTitleHeight}" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
-    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left">
+    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+      <Image x:Name="iconImage" Width="28" Height="28" Margin="8,0,4,0" Stretch="Uniform"
+             RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed" />
       <Label x:Name="titleLabel" Content="Loading..." Style="{StaticResource EQTitleStyle}" />
     </StackPanel>
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="10,4,10,10">
       <StackPanel>
+        <!-- Human-readable spell description from dbstr_us.txt, hidden when not available -->
+        <TextBlock x:Name="descText" TextWrapping="Wrap" Margin="0,0,0,6"
+                   FontSize="{DynamicResource EQContentSize}" FontStyle="Italic"
+                   Opacity="0.75" Visibility="Collapsed" />
         <!-- Spell metadata rows (ID, Classes, Skill, Category, Target, Resist, timing, Duration) -->
         <ItemsControl x:Name="detailsList">
           <ItemsControl.ItemTemplate>

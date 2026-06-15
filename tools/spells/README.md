@@ -80,6 +80,13 @@ Mapping (see [`EQDataStore.ParseCustomSpellData`](../../EQLogParser/src/dao/stor
 | 20 | CastingTimeMs | 13 | integer ms |
 | 21 | RecastTimeMs | 15 | integer ms |
 | 22 | Category | 156/157/158 | semicolon-joined Dalaya CategoryDescID labels |
+| 23 | Skill | 100 | SoD SpellSkill enum value; -1 = none |
+| 24 | RecourseID | 150 | spell that procs when this lands; 0 = none |
+| 25 | TimerID | 167 | shared AA/discipline cooldown group; 0 = none |
+| 26 | Mana | 19 | mana cost; 0 = no cost or ability |
+| 27 | Range | 9 | range in feet; 0 = self-only or no direct range |
+| 28 | ResistMod | 147 | signed modifier; negative = harder to resist; 0 = none |
+| 29 | IconId | 144 | `gemicon{N}.jpg` index in `data/icons/`; 0 = no icon |
 
 Class-level cols 104..119 hold per-class level requirements in EQ classid order: 104=War, 105=Clr, 106=Pal, 107=Rng, 108=Shd, 109=Dru, 110=Mnk, 111=Brd, 112=Rog, 113=Shm, 114=Nec, 115=Wiz, 116=Mag, 117=Enc, 118=Bst, 119=Ber. Verified against wiki: https://wiki.shardsofdalaya.com/wiki/<Class>_spells.
 
@@ -121,9 +128,13 @@ The SoD `winspellparser` source (https://github.com/ngdeao/SoD-winspellparser) c
 - **Mgb (col 13)**: source col 185, always `0` in Dalaya. Confirmed via Dalaya forum that Soulbond replaced MGB on Dalaya.
 - **Rank (col 14)**: source col 208, always `0`. Parsed into `SpellData.Rank` in the parser but never read anywhere — dead field on both sides.
 
-## Spell-effects sidecar
+## Sidecar JSON files
 
-`convert_spells.py` also emits `EQLogParser/data/spell-effects.json` — a per-spell record of the 12 effect slots from `spells_us.txt`. Loaded by `EQDataStore` at startup to power `ComputeHotTickInfo` (and future per-tick / tooltip features). Schema:
+`convert_spells.py` emits two sidecar files alongside `spells.txt`:
+
+### spell-effects.json
+
+Per-spell record of the 12 effect slots from `spells_us.txt`. Loaded by `EQDataStore` at startup to power `ComputeHotTickInfo` and the `SpellEffectDecoder` (effects display in `SpellDetailsPopup`). Schema:
 
 ```json
 {
@@ -140,6 +151,21 @@ The SoD `winspellparser` source (https://github.com/ngdeao/SoD-winspellparser) c
 ```
 
 SPA 254 (unused marker) is always filtered. SPA 0 ("Hit Points") is kept when it carries a value — it's the real effect for instant heals, nukes, and classic per-tick DoTs/HoTs — and filtered only when base1/base2/max are all zero (padding). Spells with no non-empty slots are omitted entirely.
+
+### spell-descriptions.json
+
+Human-readable spell descriptions sourced from `dbstr_us.txt` (type-6 entries, keyed by `DescID` from source col 155). Requires `dbstr_us.txt` — pass `--dbstr F:/Dalaya/dbstr_us.txt` (this is the default path). Emitted to `EQLogParser/data/spell-descriptions.json`. Schema:
+
+```json
+{
+  "3": "Strikes target with a Divine Force doing #2 damage.",
+  "4": "Weakens target with poison, draining their strength and doing #1 damage per tick for %z."
+}
+```
+
+Keys are spell IDs (strings). Values are raw description strings from `dbstr_us.txt` — `#N` placeholders refer to spell effect slot N's value as displayed in the EQ client; these are currently shown as-is in the UI. Spells with no description (DescID = 0 or no matching entry) are omitted.
+
+Loaded by `EQDataStore` at startup and stamped onto `SpellData.Description`. Displayed as italic text above the details list in `SpellDetailsPopup` and in the selected-spell panel at the bottom of `SpellBrowserWindow`.
 
 ## Files
 

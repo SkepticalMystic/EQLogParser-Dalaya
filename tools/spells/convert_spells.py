@@ -46,6 +46,7 @@ Mapping (see CLAUDE.md and EQDataStore.ParseCustomSpellData):
     26          19           Mana cost (integer; 0 = no cost or ability)
     27          9            Range in feet (0 = self-only or no direct range)
     28          147          ResistMod (signed; negative = harder to resist; 0 = none)
+    29          144          IconId (gemicon{N}.jpg index; 0 = no icon)
     all others  -            hard-coded "0"
 
 Source cols 104..119 hold per-class level requirements in EQ classid order:
@@ -76,8 +77,10 @@ from pathlib import Path
 DEFAULT_SOURCE = Path(r"F:/Dalaya/spells_us.txt")
 DEFAULT_DEST = Path(__file__).resolve().parent.parent.parent / "EQLogParser" / "data" / "spells.txt"
 DEFAULT_EFFECTS = Path(__file__).resolve().parent.parent.parent / "EQLogParser" / "data" / "spell-effects.json"
+DEFAULT_DESCRIPTIONS = Path(__file__).resolve().parent.parent.parent / "EQLogParser" / "data" / "spell-descriptions.json"
 DEFAULT_ADPS_OVERLAY = Path(__file__).resolve().parent / "upstream-adps.json"
 DEFAULT_CATEGORIES = Path(__file__).resolve().parent / "dalaya-categories.json"
+DEFAULT_DBSTR = Path(r"F:/Dalaya/dbstr_us.txt")
 
 # Per-slot column layout in spells_us.txt (12 slots, slot index 0-11). Confirmed
 # via ngdeao/SoD-winspellparser/SpellParser.cs LoadSpell (lines 2814-2826).
@@ -105,6 +108,9 @@ TIMER_ID_COL = 167
 MANA_COL = 19         # Mana cost (integer; 0 = no mana cost or no-mana ability)
 RANGE_COL = 9         # Spell range in feet (0 = self-only or AE with no range)
 RESIST_MOD_COL = 147  # Resist modifier (negative = harder to resist; 0 = none)
+ICON_COL = 144        # Icon index for data/icons/gemicon{N}.jpg (0 = no icon)
+DESC_ID_COL = 155     # DescID — key into dbstr_us.txt type-6 entries for the
+                      # human-readable spell description (0 = no description)
 
 
 CASTER_ADPS = 1
@@ -306,6 +312,7 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
     mana = _safe_int(src_fields, MANA_COL)
     range_ = _safe_int(src_fields, RANGE_COL)
     resist_mod = _safe_int_signed(src_fields, RESIST_MOD_COL)
+    icon_id = _safe_int(src_fields, ICON_COL)
     level, class_mask = _level_and_class_mask(src_fields)
     damaging = "1" if (lands_on_you or lands_on_other or wear_off) else "0"
     # ADPS = union of category-derived bitmask and the upstream-overlay bitmask.
@@ -345,6 +352,7 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
         mana,             # 26 Mana cost (source col 19; 0 = no cost)
         range_,           # 27 Range in feet (source col 9; 0 = self-only or no direct range)
         resist_mod,       # 28 ResistMod (source col 147; negative = harder to resist)
+        icon_id,          # 29 IconId (source col 144; gemicon{N}.jpg index; 0 = no icon)
     ])
 
 
@@ -360,6 +368,32 @@ def load_categories(path: Path) -> dict[str, str]:
         return {}
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def load_spell_descriptions(path: Path) -> dict[int, str]:
+    """Parse dbstr_us.txt and return type-6 entries as {DescID: text}.
+
+    dbstr_us.txt format: Major^Minor^String(New)
+    Spell descriptions have Minor=6 and Major=DescID.
+    The header line is skipped.
+    """
+    if not path.is_file():
+        return {}
+    descriptions: dict[int, str] = {}
+    with path.open("r", encoding="utf-8", errors="replace") as f:
+        next(f, None)  # skip header "Major^Minor^String(New)"
+        for line in f:
+            line = line.rstrip("\r\n")
+            parts = line.split("^", 2)
+            if len(parts) < 3:
+                continue
+            major_str, minor_str, text = parts
+            if minor_str.strip() == "6":
+                try:
+                    descriptions[int(major_str.strip())] = text
+                except ValueError:
+                    pass
+    return descriptions
 
 
 def _safe_field_int(src_fields: list[str], col: int) -> int:
@@ -428,13 +462,23 @@ def extract_effects(src_fields: list[str]) -> dict | None:
     }
 
 
-def convert(source: Path, dest: Path, effects_dest: Path, adps_overlay: dict[str, int], categories: dict[str, str]) -> tuple[int, int, int, int]:
+def convert(
+    source: Path,
+    dest: Path,
+    effects_dest: Path,
+    desc_dest: Path,
+    adps_overlay: dict[str, int],
+    categories: dict[str, str],
+    spell_descriptions: dict[int, str],
+) -> tuple[int, int, int, int, int]:
     written = 0
     skipped = 0
     stamped = 0
     effects_emitted = 0
+    descs_emitted = 0
     out_lines: list[str] = []
     effects: dict[str, dict] = {}
+    descriptions_out: dict[str, str] = {}
     with source.open("r", encoding="utf-8", newline="") as f:
         for raw in f:
             line = raw.rstrip("\r\n")
@@ -460,6 +504,13 @@ def convert(source: Path, dest: Path, effects_dest: Path, adps_overlay: dict[str
                 effects[fields[0]] = effect_entry
                 effects_emitted += 1
 
+            # Description sidecar: look up DescID (col 155) in dbstr_us.txt type-6.
+            if spell_descriptions and len(fields) > DESC_ID_COL:
+                desc_id = _safe_field_int(fields, DESC_ID_COL)
+                if desc_id and desc_id in spell_descriptions:
+                    descriptions_out[fields[0]] = spell_descriptions[desc_id]
+                    descs_emitted += 1
+
     dest.parent.mkdir(parents=True, exist_ok=True)
     # Match the existing file's encoding/line endings: ASCII, LF, trailing newline.
     with dest.open("w", encoding="utf-8", newline="\n") as f:
@@ -471,7 +522,12 @@ def convert(source: Path, dest: Path, effects_dest: Path, adps_overlay: dict[str
         json.dump(effects, f, separators=(",", ":"), sort_keys=False)
         f.write("\n")
 
-    return written, skipped, stamped, effects_emitted
+    desc_dest.parent.mkdir(parents=True, exist_ok=True)
+    with desc_dest.open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(descriptions_out, f, separators=(",", ":"), sort_keys=False, ensure_ascii=False)
+        f.write("\n")
+
+    return written, skipped, stamped, effects_emitted, descs_emitted
 
 
 def main() -> int:
@@ -479,6 +535,8 @@ def main() -> int:
     parser.add_argument("source", nargs="?", default=str(DEFAULT_SOURCE), help=f"path to spells_us.txt (default: {DEFAULT_SOURCE})")
     parser.add_argument("dest", nargs="?", default=str(DEFAULT_DEST), help=f"path to spells.txt output (default: {DEFAULT_DEST})")
     parser.add_argument("--effects-dest", default=str(DEFAULT_EFFECTS), help=f"path to spell-effects.json output (default: {DEFAULT_EFFECTS})")
+    parser.add_argument("--desc-dest", default=str(DEFAULT_DESCRIPTIONS), help=f"path to spell-descriptions.json output (default: {DEFAULT_DESCRIPTIONS})")
+    parser.add_argument("--dbstr", default=str(DEFAULT_DBSTR), help=f"path to dbstr_us.txt for spell descriptions (default: {DEFAULT_DBSTR})")
     parser.add_argument("--adps-overlay", default=str(DEFAULT_ADPS_OVERLAY), help=f"path to upstream-adps.json (default: {DEFAULT_ADPS_OVERLAY})")
     parser.add_argument("--categories", default=str(DEFAULT_CATEGORIES), help=f"path to dalaya-categories.json (default: {DEFAULT_CATEGORIES})")
     args = parser.parse_args()
@@ -486,6 +544,8 @@ def main() -> int:
     source = Path(args.source)
     dest = Path(args.dest)
     effects_dest = Path(args.effects_dest)
+    desc_dest = Path(args.desc_dest)
+    dbstr_path = Path(args.dbstr)
     overlay_path = Path(args.adps_overlay)
     categories_path = Path(args.categories)
 
@@ -505,9 +565,18 @@ def main() -> int:
     else:
         print(f"warning: no category map at {categories_path} — Adps will rely on upstream overlay only", file=sys.stderr)
 
-    written, skipped, stamped, effects_emitted = convert(source, dest, effects_dest, adps_overlay, categories)
+    spell_descriptions = load_spell_descriptions(dbstr_path)
+    if spell_descriptions:
+        print(f"loaded {len(spell_descriptions)} spell descriptions from {dbstr_path}")
+    else:
+        print(f"warning: no spell descriptions loaded from {dbstr_path}", file=sys.stderr)
+
+    written, skipped, stamped, effects_emitted, descs_emitted = convert(
+        source, dest, effects_dest, desc_dest, adps_overlay, categories, spell_descriptions
+    )
     print(f"wrote {written} spells to {dest} ({stamped} with non-zero Adps)")
     print(f"wrote {effects_emitted} effect entries to {effects_dest}")
+    print(f"wrote {descs_emitted} descriptions to {desc_dest}")
     if skipped:
         print(f"skipped {skipped} blank/short lines")
     return 0

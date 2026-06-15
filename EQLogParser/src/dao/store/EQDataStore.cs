@@ -107,6 +107,10 @@ namespace EQLogParser
     // Spell lookup by numeric ID string — populated alongside _spellsNameDb.
     // Consumed by SpellDetailsPopup to resolve [Spell N] references in effect text.
     private readonly Dictionary<string, SpellData> _spellsById = [];
+    // Human-readable spell descriptions from data/spell-descriptions.json (keyed by
+    // spell id string), emitted by convert_spells.py --dbstr. Populated at startup
+    // and stamped onto SpellData.Description during spell loading.
+    private readonly Dictionary<string, string> _spellDescriptions = [];
     private readonly ConcurrentDictionary<string, string> _classColors = new();
     private readonly ConcurrentDictionary<SpellClass, string> _classNames = new();
     private readonly ConcurrentDictionary<string, SpellClass> _classesByName = new(StringComparer.OrdinalIgnoreCase);
@@ -176,6 +180,7 @@ namespace EQLogParser
       }
 
       LoadSpellEffects();
+      LoadSpellDescriptions();
 
       foreach (ref var line in CollectionsMarshal.AsSpan(ConfigUtil.ReadList(@"data\spells.txt")))
       {
@@ -667,6 +672,39 @@ namespace EQLogParser
       }
     }
 
+    // Loads data/spell-descriptions.json into _spellDescriptions. Called once from
+    // the constructor before spells.txt is parsed. Non-fatal — descriptions are
+    // cosmetic; all other features continue to work if the file is absent.
+    private void LoadSpellDescriptions()
+    {
+      const string path = @"data\spell-descriptions.json";
+      try
+      {
+        if (!File.Exists(path))
+        {
+          Log.Warn($"spell-descriptions sidecar not found at {path}; spell descriptions will not be available");
+          return;
+        }
+
+        var json = File.ReadAllText(path);
+        var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+        if (dict == null) return;
+
+        foreach (var (id, desc) in dict)
+        {
+          _spellDescriptions[string.Intern(id)] = desc;
+        }
+      }
+      catch (IOException ex)
+      {
+        Log.Error("Error reading spell-descriptions.json", ex);
+      }
+      catch (JsonException ex)
+      {
+        Log.Error("Error parsing spell-descriptions.json", ex);
+      }
+    }
+
     // Returns the SpellData for a numeric spell ID, or null when not found.
     // Used by SpellDetailsPopup to resolve [Spell N] references in effect text.
     internal SpellData GetSpellById(int id) =>
@@ -814,7 +852,11 @@ namespace EQLogParser
             // on older spells.txt files.
             Mana = data.Length > 26 ? int.Parse(data[26], CultureInfo.InvariantCulture) : 0,
             Range = data.Length > 27 ? int.Parse(data[27], CultureInfo.InvariantCulture) : 0,
-            ResistMod = data.Length > 28 ? int.Parse(data[28], CultureInfo.InvariantCulture) : 0
+            ResistMod = data.Length > 28 ? int.Parse(data[28], CultureInfo.InvariantCulture) : 0,
+            // Col 29 (IconId) added alongside spell-descriptions.json sidecar. Defaults
+            // to 0 (no icon) on older spells.txt files.
+            IconId = data.Length > 29 ? int.Parse(data[29], CultureInfo.InvariantCulture) : 0,
+            Description = _spellDescriptions.TryGetValue(string.Intern(data[0]), out var desc) ? desc : string.Empty
           };
         }
       }

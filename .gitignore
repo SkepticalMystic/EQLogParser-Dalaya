@@ -13,6 +13,7 @@ tools/spells/spells.previous.txt
 EQLogParserInstall/Output/
 CLAUDE.md
 BACKLOG.md
+CURRENT.md
 # Claude-purposed process runbooks (see memory `feedback_claude_files_gitignored`).
 # Read as general maintainer docs; revisit tracking if the project becomes collaborative.
 docs/ReleaseProcedure.md
@@ -27,3 +28,5 @@ tools/SoD-winspellparser/
 # (see EQLogParser.Test/src/integration). Each developer's logs + JSON baselines
 # stay local — see memory `project_baseline_regression_test` for rationale.
 EQLogParser.Test/Resources/baseline-logs/
+# WPF designer-generated temp project files
+EQLogParser/*_wpftmp.csproj

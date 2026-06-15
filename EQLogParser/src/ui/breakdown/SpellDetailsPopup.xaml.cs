@@ -28,6 +28,28 @@ namespace EQLogParser
       }
 
       titleLabel.Content = spell.Name;
+
+      var icon = SpellIconCache.Get(spell.IconId);
+      if (icon != null)
+      {
+        iconImage.Source = icon;
+        iconImage.Visibility = Visibility.Visible;
+      }
+      else
+      {
+        iconImage.Visibility = Visibility.Collapsed;
+      }
+
+      if (!string.IsNullOrEmpty(spell.Description))
+      {
+        descText.Text = spell.Description;
+        descText.Visibility = Visibility.Visible;
+      }
+      else
+      {
+        descText.Visibility = Visibility.Collapsed;
+      }
+
       detailsList.ItemsSource = BuildDetails(spell);
 
       var effects = EQDataStore.Instance.GetSpellEffects(spell.Id);

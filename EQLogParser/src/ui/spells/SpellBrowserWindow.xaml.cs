@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace EQLogParser
 {
@@ -19,15 +20,16 @@ namespace EQLogParser
 
     private record SpellBrowserRow(SpellData Spell)
     {
-      public string Name     => Spell.Name;
-      public int    Level    => Spell.Level == 255 ? 0 : Spell.Level;
-      public string Classes  => SpellDecoder.DecodeClasses(Spell.ClassMask, Spell.Level, showLevel: false);
-      public int    Mana     => Spell.Mana;
-      public int    Range    => Spell.Range;
-      public string Skill    => SpellDecoder.DecodeSkill(Spell.Skill);
-      public string Target   => SpellDecoder.DecodeTarget(Spell.Target);
-      public string Resist   => SpellDecoder.DecodeResist(Spell.Resist);
-      public string Category => Spell.Category?.Replace(";", ", ") ?? "";
+      public BitmapSource Icon     => SpellIconCache.Get(Spell.IconId);
+      public string Name           => Spell.Name;
+      public int    Level          => Spell.Level == 255 ? 0 : Spell.Level;
+      public string Classes        => SpellDecoder.DecodeClasses(Spell.ClassMask, Spell.Level, showLevel: false);
+      public int    Mana           => Spell.Mana;
+      public int    Range          => Spell.Range;
+      public string Skill          => SpellDecoder.DecodeSkill(Spell.Skill);
+      public string Target         => SpellDecoder.DecodeTarget(Spell.Target);
+      public string Resist         => SpellDecoder.DecodeResist(Spell.Resist);
+      public string Category       => Spell.Category?.Replace(";", ", ") ?? "";
     }
 
     // Displayed in the Has Effect combo as "N — Short Name".
@@ -90,6 +92,20 @@ namespace EQLogParser
       _loaded = true;
       ApplyFilter();
       searchBox.Focus();
+      dataGrid.SelectionChanged += OnSelectionChanged;
+    }
+
+    private void OnSelectionChanged(object sender, GridSelectionChangedEventArgs e)
+    {
+      if (dataGrid.SelectedItem is SpellBrowserRow row && !string.IsNullOrEmpty(row.Spell.Description))
+      {
+        descText.Text = row.Spell.Description;
+        descPanel.Visibility = Visibility.Visible;
+      }
+      else
+      {
+        descPanel.Visibility = Visibility.Collapsed;
+      }
     }
 
     private void FilterChanged(object sender, RoutedEventArgs e)
