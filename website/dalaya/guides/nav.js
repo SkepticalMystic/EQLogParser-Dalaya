@@ -19,19 +19,49 @@ function renderNav(currentId) {
 
   var sidebarEl = document.getElementById('guide-sidebar');
   if (sidebarEl) {
-    var html = '<p class="guide-sidebar-heading">Guides</p><ul class="guide-sidebar-list">';
+    var currentTitle = currentIndex >= 0 ? GUIDES[currentIndex].title : 'Guides';
+
+    var listHtml = '';
     for (var i = 0; i < GUIDES.length; i++) {
       var g = GUIDES[i];
       if (g.id === currentId) {
-        html += '<li><span class="guide-sidebar-link current">' + g.title + '</span></li>';
+        listHtml += '<li><span class="guide-sidebar-link current">' + g.title + '</span></li>';
       } else if (g.ready) {
-        html += '<li><a class="guide-sidebar-link" href="' + g.id + '.html">' + g.title + '</a></li>';
+        listHtml += '<li><a class="guide-sidebar-link" href="' + g.id + '.html">' + g.title + '</a></li>';
       } else {
-        html += '<li><span class="guide-sidebar-link soon">' + g.title + '<span class="soon-badge">soon</span></span></li>';
+        listHtml += '<li><span class="guide-sidebar-link soon">' + g.title + '<span class="soon-badge">soon</span></span></li>';
       }
     }
-    html += '</ul>';
-    sidebarEl.innerHTML = html;
+
+    sidebarEl.innerHTML =
+      '<button class="sidebar-toggle" id="sidebar-toggle" aria-expanded="false" aria-controls="sidebar-collapsible">' +
+        '<span class="sidebar-toggle-label">' + currentTitle + '</span>' +
+        '<span class="sidebar-toggle-chevron" aria-hidden="true">▾</span>' +
+      '</button>' +
+      '<div class="sidebar-collapsible" id="sidebar-collapsible">' +
+        '<p class="guide-sidebar-heading">Guides</p>' +
+        '<ul class="guide-sidebar-list">' + listHtml + '</ul>' +
+      '</div>';
+
+    var toggleBtn = document.getElementById('sidebar-toggle');
+    var collapsible = document.getElementById('sidebar-collapsible');
+
+    if (toggleBtn && collapsible) {
+      toggleBtn.addEventListener('click', function() {
+        var isOpen = collapsible.classList.toggle('open');
+        toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        toggleBtn.querySelector('.sidebar-toggle-chevron').textContent = isOpen ? '▴' : '▾';
+      });
+
+      var links = collapsible.querySelectorAll('a');
+      for (var j = 0; j < links.length; j++) {
+        links[j].addEventListener('click', function() {
+          collapsible.classList.remove('open');
+          toggleBtn.setAttribute('aria-expanded', 'false');
+          toggleBtn.querySelector('.sidebar-toggle-chevron').textContent = '▾';
+        });
+      }
+    }
   }
 
   var prevnextEl = document.getElementById('guide-prevnext');
