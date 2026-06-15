@@ -315,7 +315,10 @@ namespace EQLogParser
     // All spells, deduped by abbreviation (one row per unique name), sorted by name.
     // Unlike GetSpellsForPicker(), includes NPC/ability entries (no ClassMask filter).
     internal IEnumerable<SpellData> GetSpellsForBrowser() =>
-      _spellsAbbrvDb.Values.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase);
+      _spellsAbbrvDb.Values
+        .Where(static s => !string.IsNullOrWhiteSpace(s.Name) &&
+                           !(s.Name.Length >= 2 && char.IsLetter(s.Name[0]) && s.Name[1..].All(char.IsDigit)))
+        .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase);
 
     // Sorted distinct SPA numbers that appear in the loaded spell-effects data (SPA 254
     // excluded — it marks unused slots). Used to populate the Spell Browser "Has Effect"

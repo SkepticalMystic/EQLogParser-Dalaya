@@ -93,21 +93,55 @@
         <TextBlock Grid.Column="0" Text="Lvl:" VerticalAlignment="Center" Margin="0,0,6,0"
                    FontSize="{DynamicResource EQContentSize}"
                    Foreground="{DynamicResource ContentForeground}" />
-        <TextBox x:Name="levelMin" Grid.Column="1" Padding="4" Margin="0,0,4,0"
-                 FontSize="{DynamicResource EQContentSize}"
-                 BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
-                 Background="{DynamicResource ContentBackground}"
-                 Foreground="{DynamicResource ContentForeground}"
-                 TextChanged="FilterChanged" />
+        <Grid Grid.Column="1" Margin="0,0,4,0">
+          <TextBox x:Name="levelMin" Padding="4"
+                   FontSize="{DynamicResource EQContentSize}"
+                   BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
+                   Background="{DynamicResource ContentBackground}"
+                   Foreground="{DynamicResource ContentForeground}"
+                   TextChanged="FilterChanged" />
+          <TextBlock IsHitTestVisible="False" Text="1" Padding="5,0,0,0"
+                     Foreground="{DynamicResource ContentForeground}" Opacity="0.4"
+                     FontSize="{DynamicResource EQContentSize}"
+                     VerticalAlignment="Center" HorizontalAlignment="Left">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Text, ElementName=levelMin}" Value="">
+                    <Setter Property="Visibility" Value="Visible"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </Grid>
         <TextBlock Grid.Column="2" Text="–" VerticalAlignment="Center" Margin="0,0,4,0"
                    FontSize="{DynamicResource EQContentSize}"
                    Foreground="{DynamicResource ContentForeground}" />
-        <TextBox x:Name="levelMax" Grid.Column="3" Padding="4" Margin="0,0,16,0"
-                 FontSize="{DynamicResource EQContentSize}"
-                 BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
-                 Background="{DynamicResource ContentBackground}"
-                 Foreground="{DynamicResource ContentForeground}"
-                 TextChanged="FilterChanged" />
+        <Grid Grid.Column="3" Margin="0,0,16,0">
+          <TextBox x:Name="levelMax" Padding="4"
+                   FontSize="{DynamicResource EQContentSize}"
+                   BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
+                   Background="{DynamicResource ContentBackground}"
+                   Foreground="{DynamicResource ContentForeground}"
+                   TextChanged="FilterChanged" />
+          <TextBlock IsHitTestVisible="False" Text="65" Padding="5,0,0,0"
+                     Foreground="{DynamicResource ContentForeground}" Opacity="0.4"
+                     FontSize="{DynamicResource EQContentSize}"
+                     VerticalAlignment="Center" HorizontalAlignment="Left">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Visibility" Value="Collapsed"/>
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Text, ElementName=levelMax}" Value="">
+                    <Setter Property="Visibility" Value="Visible"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </Grid>
 
         <TextBlock Grid.Column="4" Text="Has Effect:" VerticalAlignment="Center" Margin="0,0,6,0"
                    FontSize="{DynamicResource EQContentSize}"
