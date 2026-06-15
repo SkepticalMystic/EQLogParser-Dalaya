@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Spell Parser</title>
+  <meta name="description" content="How to use the Spell Browser, Spell Details popup, and HoT/DoT analysis in EQLogParser-Dalaya." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Spell Parser</h1>
+      <p class="guide-subtitle">Browsing the Dalaya spell database and analyzing spell effects.</p>
+
+      <p>
+        EQLogParser-Dalaya ships with a spell database built from Dalaya's actual game data.
+        This database powers the spell name lookups in DPS breakdowns, HoT/DoT tick computations,
+        and a dedicated Spell Browser window for exploring spells directly.
+      </p>
+
+      <h2>The Spell Browser</h2>
+      <p>
+        Open the Spell Browser from the <strong>Tools</strong> menu. It lists every spell in
+        the Dalaya database with its icon, name, and a brief summary.
+      </p>
+
+      <h3>Searching and filtering</h3>
+      <p>
+        Type in the search box to filter spells by name. You can also filter by:
+      </p>
+      <ul>
+        <li><strong>Class</strong> — show only spells for a specific class</li>
+        <li><strong>Spell type</strong> — narrow to beneficial, detrimental, HoTs, DoTs, nukes, etc.</li>
+      </ul>
+      <p>Combine filters to narrow a large list quickly.</p>
+
+      <h3>Spell icons</h3>
+      <p>
+        Each spell displays its gem icon from Dalaya's spell graphics — the same icon you see
+        in the spell gem bar in-game. Icons are loaded from the <code>data/icons/</code> folder
+        in the application directory.
+      </p>
+
+      <h2>Spell Details popup</h2>
+      <p>
+        Click any spell in the Spell Browser (or right-click a spell in the Spell Counts tab
+        and choose <strong>Spell Details</strong>) to open the Spell Details popup. It shows:
+      </p>
+      <ul>
+        <li>The spell's icon, name, and description text from the Dalaya database</li>
+        <li>All active effect slots decoded into human-readable form, for example:</li>
+      </ul>
+      <pre><code>Slot 1: Increase Hit Points by 800 (L1) to 1150 (L60)
+Slot 2: Increase Armor Class by 25 (L1) to 40 (L60)</code></pre>
+      <p>
+        The level scaling shown — <code>(L1) to (L60)</code> — reflects the spell's computed
+        values at the minimum and maximum caster level, using Dalaya's spell formula engine.
+      </p>
+      <div class="callout tip">
+        <p>
+          The Spell Details popup can also be opened from the trigger Spell Picker — a useful
+          way to verify you've selected the right spell before inserting it into a pattern.
+        </p>
+      </div>
+
+      <h2>HoT and DoT analysis in the Healing view</h2>
+      <p>
+        HoT (Heal over Time) spells appear in the Healing Summary alongside direct heals.
+        The parser computes per-tick heal values for each HoT based on the caster's level
+        and the spell data, giving you accurate heal totals rather than estimates.
+      </p>
+
+      <h3>HoT Effectiveness table</h3>
+      <p>
+        Right-click any HoT entry in the Healing Summary and choose
+        <strong>HoT Effectiveness</strong> to open a per-cast breakdown showing:
+      </p>
+      <ul>
+        <li>Each cast instance and the ticks received from it</li>
+        <li>The expected tick value for that spell at the caster's level</li>
+        <li>Whether any ticks appear to have been missed (interrupted HoT, target death, etc.)</li>
+      </ul>
+      <p>
+        This is useful for identifying HoTs that were consistently landing short — indicating
+        resist patterns, early mob deaths, or situations where re-casting sooner would have
+        been more efficient.
+      </p>
+
+      <h2>Keeping spell data current</h2>
+      <p>
+        The spell database is rebuilt from Dalaya's game files whenever the server patches and
+        spell data changes. If you notice spells with wrong names, missing effects, or incorrect
+        icons after a Dalaya patch, a rebuild is likely needed.
+      </p>
+      <p>
+        Rebuilding is a developer-side step documented in the repository under
+        <code>tools/spells/README.md</code>. Updated spell data is distributed with each
+        new release of EQLogParser-Dalaya — keep the application up to date to get the
+        latest spell database.
+      </p>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("spell-parser");</script>
+
+</body>
+</html>

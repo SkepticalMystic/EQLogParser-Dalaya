@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Regex Reference</title>
+  <meta name="description" content="Regular expression basics and .NET syntax tips for writing EQLogParser-Dalaya trigger patterns." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Regex Reference</h1>
+      <p class="guide-subtitle">Regular expression syntax for trigger pattern fields.</p>
+
+      <p>
+        Enabling <strong>Regex</strong> on a trigger lets you write patterns that match flexible text
+        rather than a fixed string. EQLogParser uses .NET regular expressions.
+        This page covers the syntax you'll use most often in trigger patterns.
+      </p>
+
+      <h2>Basics</h2>
+      <ul>
+        <li><code>.</code> &mdash; matches <strong>any single character</strong> (except newline).
+          <em>Example: <code>a.c</code> matches "abc", "axc", "a-c"</em></li>
+        <li><code>*</code> &mdash; zero or more of the preceding element.
+          <em>Example: <code>a*</code> matches "", "a", "aa", "aaa"</em></li>
+        <li><code>+</code> &mdash; one or more of the preceding element.
+          <em>Example: <code>a+</code> matches "a", "aa" but not ""</em></li>
+        <li><code>?</code> &mdash; makes the preceding element optional.
+          <em>Example: <code>colou?r</code> matches "color" or "colour"</em></li>
+        <li><code>[...]</code> &mdash; matches one character from the set.
+          <em>Example: <code>[abc]</code> matches "a", "b", or "c"</em></li>
+        <li><code>[^...]</code> &mdash; matches one character <strong>not</strong> in the set.
+          <em>Example: <code>[^0-9]</code> matches any non-digit character</em></li>
+      </ul>
+
+      <h2>Anchors</h2>
+      <ul>
+        <li><code>^</code> &mdash; start of the line.
+          <em>Example: <code>^You cast</code> matches only if "You cast" is at the very start</em></li>
+        <li><code>$</code> &mdash; end of the line.
+          <em>Example: <code>wears off\.$</code> matches "wears off." at the end of a line</em></li>
+      </ul>
+
+      <h2>Character shortcuts</h2>
+      <ul>
+        <li><code>\d</code> &mdash; any digit (0–9)</li>
+        <li><code>\w</code> &mdash; any word character (letter, digit, or underscore)</li>
+        <li><code>\s</code> &mdash; any whitespace (space, tab)</li>
+        <li><code>\b</code> &mdash; word boundary (the edge between a word character and a non-word character)</li>
+      </ul>
+
+      <h2>Grouping and OR</h2>
+      <ul>
+        <li><code>( ... )</code> &mdash; groups elements together.
+          <em>Example: <code>(cat|dog)</code> matches "cat" or "dog"</em></li>
+        <li><code>|</code> &mdash; OR — matches either side.
+          <em>Example: <code>yes|no</code> matches "yes" or "no"</em></li>
+      </ul>
+
+      <h2>Escaping special characters</h2>
+      <p>
+        A backslash <code>\</code> before a special character treats it as a literal character.
+        <em>Example: <code>\.</code> matches a literal period, not "any character".</em>
+      </p>
+      <p>Characters that must be escaped if you mean them literally:</p>
+      <pre><code>.  ^  $  *  +  ?  (  )  [  ]  {  }  \  |</code></pre>
+
+      <h2>Repetition counts</h2>
+      <ul>
+        <li><code>{n}</code> &mdash; exactly n times. <em><code>a{3}</code> matches "aaa" only</em></li>
+        <li><code>{n,}</code> &mdash; at least n times. <em><code>a{2,}</code> matches "aa", "aaa", etc.</em></li>
+        <li><code>{n,m}</code> &mdash; between n and m times. <em><code>a{2,4}</code> matches "aa", "aaa", or "aaaa"</em></li>
+      </ul>
+
+      <h2>.NET regex specifics</h2>
+      <ul>
+        <li><strong>No slashes</strong> — just type the pattern directly. Do not wrap it in <code>/like this/</code></li>
+        <li><strong>Case-sensitive by default</strong> — "cast" does not match "Cast"</li>
+        <li><strong>Spaces and punctuation must match exactly</strong> as they appear in the log line</li>
+        <li><strong>Named groups are supported</strong> — <code>(?&lt;name&gt;...)</code> captures into a named variable.
+          The trigger variables <code>{S1}</code>, <code>{N1}</code>, etc. expand to named groups internally.</li>
+        <li><strong>Do not use <code>$1</code>, <code>$2</code></strong> for group references — use the trigger variable syntax instead</li>
+      </ul>
+
+      <h2>Performance tips</h2>
+      <ul>
+        <li>Keep patterns <strong>specific</strong> — a pattern that starts with a distinctive phrase like
+          <code>^Your target</code> is far faster than one starting with <code>.*</code></li>
+        <li><strong>Avoid <code>.*</code> in the middle</strong> of a pattern unless necessary</li>
+        <li><strong>Avoid deeply nested groups</strong> or complex alternations with many branches</li>
+        <li><strong>Start with a fixed word or phrase</strong> from the log line — this lets the engine
+          skip non-matching lines instantly</li>
+        <li>Don't write patterns that try to match entire multi-line blocks</li>
+      </ul>
+
+      <div class="callout tip">
+        <p>To test a pattern against a real log line before saving a trigger, paste the line into the
+        <strong>Test Trigger</strong> field in the Trigger Manager and run it.</p>
+      </div>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("regex");</script>
+
+</body>
+</html>

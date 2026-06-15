@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Trigger Variables</title>
+  <meta name="description" content="Reference for all special variables available in EQLogParser-Dalaya trigger patterns and message fields." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Trigger Variables</h1>
+      <p class="guide-subtitle">Special codes used in trigger Pattern and message fields.</p>
+
+      <p>
+        Trigger variables are codes you embed in trigger fields to capture values from the log line
+        or to insert dynamic information into your alerts. They work in both <strong>Pattern</strong> fields
+        (to capture) and in output fields like <strong>Text to Speak</strong>, <strong>Text to Display</strong>,
+        and <strong>Alternate Timer Name</strong> (to display the captured value).
+      </p>
+      <p>
+        Variables are case-insensitive: <code>{c}</code> and <code>{C}</code> behave identically.
+        For indexed variables like <code>{Sx}</code> or <code>{Nx}</code>, <code>x</code> is any digit
+        from 0 to 9, allowing multiple captures in the same trigger.
+      </p>
+
+      <h2>Modifiers</h2>
+      <p>
+        Captured values can be transformed for display using dot-modifiers. These only work in output
+        fields, not in Pattern fields.
+      </p>
+      <ul>
+        <li><code>{S1.capitalize}</code> &mdash; capitalizes the first letter</li>
+        <li><code>{N.number}</code> &mdash; formats the number with thousands separators (e.g. 1,250)</li>
+        <li><code>{S1.upper}</code> &mdash; converts to uppercase</li>
+        <li><code>{S1.lower}</code> &mdash; converts to lowercase</li>
+      </ul>
+
+      <h2>{C}</h2>
+      <p>
+        Replaced by your character name. Use it in any Pattern field to match lines that include your
+        own name, and in any output field to speak or display your name.
+      </p>
+
+      <h2>{S}, {Sx}</h2>
+      <p>
+        Acts as a wildcard that captures any text, including multiple words. The captured value can
+        then be used in any output field. Requires <strong>Regex</strong> to be enabled — the parser
+        internally expands <code>{S1}</code> to <code>(?&lt;s1&gt;.+)</code>.
+      </p>
+      <p>Example: a Pattern of <code>{S1} begins casting Malo</code> captures the caster's name
+      and you can speak <code>{S1} is casting Malo</code>.</p>
+
+      <h2>{N}, {Nx}</h2>
+      <p>
+        Like <code>{S}</code> but captures a single number (no spaces). Useful for capturing damage
+        values, spell durations, or HP amounts from the log line.
+      </p>
+
+      <h2>{N&gt;y}, {y&lt;N&lt;z}</h2>
+      <p>
+        Works like <code>{N}</code> but adds a range check — the trigger only fires if the captured
+        number satisfies the condition. Use operators <code>&gt;</code>, <code>&lt;</code>,
+        <code>&gt;=</code>, <code>&lt;=</code>, or <code>==</code>. Combine conditions with
+        <code>|</code>.
+      </p>
+      <p>
+        Example: <code>{100&lt;=N&lt;=500}</code> fires only when the number is between 100 and 500 inclusive.
+      </p>
+
+      <h2>{L}</h2>
+      <p>
+        Replaced by the full log line that triggered the event (minus the date/time prefix).
+        Useful for debugging — add it to Text to Display to see exactly what line fired the trigger.
+        Available only in <strong>Text to Display</strong>, <strong>Text to Speak</strong>, and
+        <strong>Alternate Timer Name</strong>.
+      </p>
+
+      <h2>{LOGTIME}</h2>
+      <p>
+        Replaced by the timestamp from the triggering log line in <code>hh:mm:ss</code> format.
+        Available in <strong>Text to Display</strong>, <strong>Text to Speak</strong>,
+        <strong>Text to Send</strong>, and <strong>Alternate Timer Name</strong>.
+      </p>
+
+      <h2>{REPEATED}</h2>
+      <p>
+        Replaced by the number of times the trigger has fired with the same captured values.
+        The count resets after 750 ms (configurable via <strong>Repeated Reset Time</strong> on the trigger).
+        Available in <strong>Text to Display</strong>, <strong>Text to Speak</strong>, and
+        <strong>Alternate Timer Name</strong>.
+      </p>
+      <p>Example: <code>{S1} hit {repeated}x</code> prints how many times the same source triggered.</p>
+
+      <h2>{COUNTER}</h2>
+      <p>
+        Similar to <code>{REPEATED}</code> but counts total firings regardless of what values were
+        captured. Also uses <strong>Repeated Reset Time</strong> to determine when the count resets.
+      </p>
+
+      <h2>{TS}</h2>
+      <p>
+        Captures a timestamp in <code>hh:mm:ss</code> format or a plain number of seconds from the
+        log line, and uses it as the <strong>Timer Duration</strong>. Requires <strong>Regex</strong>
+        to be enabled. Used to set a timer dynamically from a value in the log line itself.
+      </p>
+
+      <h2>{NULL}</h2>
+      <p>
+        When placed in any display or speak field, suppresses the output entirely. Useful for
+        overriding a <strong>Timer End Early</strong> action when you want the timer to stop silently
+        without speaking or displaying anything.
+      </p>
+
+      <h2>{TIMER-WARN-TIME-VALUE}</h2>
+      <p>
+        Replaced by the value configured in the trigger's <strong>Warn With Time Remaining</strong>
+        setting. Lets your warning message reference its own configuration value.
+      </p>
+
+      <h2>{EQLP:STOP}</h2>
+      <p>
+        Not a variable — this is a command you send in-game (via <code>/say</code>, <code>/group</code>,
+        <code>/raid</code>, or a custom channel). When EQLogParser sees a line starting with
+        <code>{EQLP:STOP}</code> from your own character, it reloads triggers, closes overlays,
+        and stops all audio. Only responds to lines originating from you.
+      </p>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("trigger-variables");</script>
+
+</body>
+</html>

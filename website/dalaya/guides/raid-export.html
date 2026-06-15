@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Exporting for Raid DPS</title>
+  <meta name="description" content="How to find and share your EverQuest log file for use in the Raid DPS multi-log merger." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Exporting for Raid DPS</h1>
+      <p class="guide-subtitle">How to share your log file so it can be merged with others.</p>
+
+      <p>
+        The Raid Damage window combines raw log files from multiple players to build a complete,
+        cross-player view of a raid encounter. There is no special export step — what you share
+        is your EverQuest log file directly.
+      </p>
+
+      <h2>Before the raid: make sure logging is on</h2>
+      <p>
+        Logging must be active for the entire raid session to capture all events. If you miss
+        the start of a fight because logging wasn't enabled, those events can't be recovered.
+      </p>
+      <ul>
+        <li>Type <code>/log on</code> in-game before the raid begins</li>
+        <li>Or set <code>Log=TRUE</code> in <code>eqclient.ini</code> to enable it automatically every session</li>
+      </ul>
+      <p>See the <a href="installation.html">Installation guide</a> for more detail on enabling logging.</p>
+
+      <h2>Finding your log file</h2>
+      <p>Your log file is in the <code>Logs</code> subfolder of your EverQuest installation:</p>
+      <pre><code>[EQ folder]\Logs\eqlog_CharacterName_eqemu.txt</code></pre>
+      <p>
+        The filename includes your character name and the server identifier (<code>eqemu</code> for
+        Dalaya). For example:
+      </p>
+      <pre><code>C:\Sony\EverQuest\Logs\eqlog_Kateila_eqemu.txt</code></pre>
+      <div class="callout tip">
+        <p>
+          In Windows Explorer, navigate to your EQ folder, open the <code>Logs</code> folder,
+          and sort by Date Modified to find your most recent log file quickly.
+        </p>
+      </div>
+
+      <h2>Sharing your log file</h2>
+      <p>
+        Copy the log file and share it with whoever is running the Raid Damage merge — typically
+        the raid leader or a designated parser. Any file transfer method works: Discord, a shared
+        folder, direct message, etc.
+      </p>
+      <p>
+        Consider renaming the file to include your character name before sharing, since all Dalaya
+        log files have the same filename format:
+      </p>
+      <pre><code>eqlog_Kateila_eqemu.txt  →  Kateila_2026-06-15.txt</code></pre>
+      <p>
+        This makes it easier for the person loading multiple logs to keep track of whose file is whose.
+      </p>
+
+      <h2>What data is in the log</h2>
+      <p>
+        Your log file contains everything EverQuest wrote during your session — combat events,
+        chat, system messages, and more. The Raid Damage window reads only the combat-relevant
+        lines; the rest is ignored.
+      </p>
+      <p>
+        Only events your client witnessed are in your log. If a player was out of range when
+        a damage proc fired, that event won't appear in their log. This is why combining logs
+        from multiple players gives a more complete picture than any single log alone.
+      </p>
+
+      <h2>Archiving your logs</h2>
+      <p>
+        EverQuest appends to the same log file across multiple sessions. Over time this file
+        grows large and older content can be harder to locate. A few options:
+      </p>
+      <ul>
+        <li>
+          After each raid, copy the current log to an archive folder with a dated name before
+          the next session starts appending to it
+        </li>
+        <li>
+          Use EQLogParser's built-in <strong>Log Backup</strong> utility (in the Tools menu) to
+          automate periodic log archiving
+        </li>
+        <li>
+          Clear or rename the log file between raids to keep each session cleanly separated
+          — EverQuest creates a new file automatically if the old one is missing
+        </li>
+      </ul>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("raid-export");</script>
+
+</body>
+</html>

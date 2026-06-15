@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Dalaya vs Upstream</title>
+  <meta name="description" content="What's different between EQLogParser-Dalaya and kauffman12's EQLogParser upstream project." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Dalaya vs Upstream</h1>
+      <p class="guide-subtitle">What changed in this fork and what stayed the same.</p>
+
+      <p>
+        EQLogParser-Dalaya is a fork of
+        <a href="https://github.com/kauffman12/EQLogParser" target="_blank">kauffman12's EQLogParser</a>.
+        The vast majority of the application is identical. This page describes what was changed,
+        why it had to change, and what is exclusive to this fork.
+      </p>
+
+      <h2>What is unchanged</h2>
+      <p>All of the following work exactly as they do in the upstream project:</p>
+      <ul>
+        <li>The entire user interface — all windows, tabs, controls, and layout</li>
+        <li>Audio triggers: the Trigger Manager, all trigger variable types, timers, overlays</li>
+        <li>Game overlays — damage meter, countdown timer bars</li>
+        <li>Healing, Tanking, and Spell Counts analysis</li>
+        <li>Raid Damage multi-log merging</li>
+        <li>Deaths, Loot, and Special stats tracking</li>
+        <li>The auto-updater</li>
+        <li>Log backup utility</li>
+      </ul>
+      <p>
+        If you are already familiar with the upstream EQLogParser, everything you know carries over.
+      </p>
+
+      <h2>Log format differences</h2>
+      <p>
+        Shards of Dalaya runs on EverQuest Emulator (EQEmu), which produces a combat log that
+        differs from Live and TLP EverQuest in several ways. These differences required changes
+        to the damage line parser.
+      </p>
+
+      <h3>Spell damage attribution</h3>
+      <p>On Live EQ, a caster's spell damage appears as:</p>
+      <pre><code>Target has taken 500 damage from Caster by SpellName.</code></pre>
+      <p>On Dalaya, the attacker and spell name are reversed:</p>
+      <pre><code>Target has taken 500 damage from SpellName by Caster.</code></pre>
+      <p>
+        This fork detects the Dalaya format and swaps the fields back before processing,
+        so DPS is correctly attributed to the caster rather than the spell name.
+      </p>
+
+      <h3>Self-damage lines</h3>
+      <p>On Live EQ, your own spells appear with your character name in the damage line.
+      On Dalaya, the word "your" is used instead:</p>
+      <pre><code>Target has taken 500 damage from your SpellName.</code></pre>
+      <p>
+        This fork resolves "your" to your character's name (read from the log filename) so
+        your own damage is correctly attributed to you rather than treated as anonymous.
+      </p>
+
+      <h3>Named pets</h3>
+      <p>
+        Dalaya has named pets — Bonaparte, Fireballs, Otto, and Weens — that appear in the log
+        with a trailing space in their name due to how EQEmu formats certain log lines.
+        This fork detects the trailing space as the pet identity signal and correctly normalizes
+        the name across melee, spell, and DoT lines without misattributing the pet's kills in
+        raid logs where other players' pets may also appear.
+      </p>
+
+      <h2>Spell database</h2>
+      <p>
+        The upstream EQLogParser ships with a spell list built from Live EverQuest data.
+        This fork replaces that entirely with a <code>spells.txt</code> built from Dalaya's
+        actual game files, giving you:
+      </p>
+      <ul>
+        <li>Correct Dalaya spell names in DPS and spell count breakdowns</li>
+        <li>Accurate HoT and DoT tick values for Dalaya spells</li>
+        <li>Spell icons matching what you see in game</li>
+        <li>Spell descriptions and SPA effect text from Dalaya's database</li>
+      </ul>
+
+      <h2>Features added in this fork</h2>
+      <p>These features do not exist in the upstream project:</p>
+      <ul>
+        <li>
+          <strong>Spell Browser</strong> — browse and search the Dalaya spell database with icons,
+          descriptions, and decoded effect text for every spell slot
+        </li>
+        <li>
+          <strong>HoT Effectiveness table</strong> — per-spell breakdown of HoT tick values received
+          vs. expected, accessible from the Healing Summary right-click menu
+        </li>
+        <li>
+          <strong>Spell Details popup</strong> — shows all SPA effect slots for any spell in a
+          human-readable format, accessible from the Spell Counts view
+        </li>
+        <li>
+          <strong>Trigger spell picker</strong> — browse Dalaya spells when writing trigger patterns
+          and optionally generate complete timer bundles for buff spells
+        </li>
+      </ul>
+
+      <h2>Reporting Dalaya-specific issues</h2>
+      <p>
+        If a log line is parsing incorrectly — wrong player credited, a spell name showing where
+        a player name should be, or a pet appearing as an unknown entity — please open an issue:
+      </p>
+      <p>
+        <a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya/issues" target="_blank">
+          github.com/SkepticalMystic/EQLogParser-Dalaya/issues
+        </a>
+      </p>
+      <p>Include the raw line from your log file. Log files are at:</p>
+      <pre><code>[EQ folder]\Logs\eqlog_CharacterName_eqemu.txt</code></pre>
+      <p>
+        For general EQLogParser questions not specific to Dalaya, the upstream
+        <a href="https://github.com/kauffman12/EQLogParser/discussions" target="_blank">GitHub Discussions</a>
+        page is also a good resource.
+      </p>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("dalaya-vs-upstream");</script>
+
+</body>
+</html>

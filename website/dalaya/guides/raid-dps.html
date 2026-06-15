@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Using Raid DPS</title>
+  <meta name="description" content="How to load multiple player logs and read the merged raid damage and healing view in EQLogParser-Dalaya." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Using Raid DPS</h1>
+      <p class="guide-subtitle">Merging multiple player logs into a complete raid-wide view.</p>
+
+      <p>
+        The Raid Damage window combines log files from multiple players and deduplicates overlapping
+        events so you get an accurate raid-wide picture of damage dealt and healing done — without
+        double-counting events that appeared in more than one log.
+      </p>
+
+      <h2>Opening the Raid Damage window</h2>
+      <p>
+        Open the Raid Damage window from the <strong>File</strong> menu or the toolbar. It opens
+        as a separate window alongside the main parser — both can be open at the same time.
+      </p>
+
+      <h2>Loading log files</h2>
+      <p>
+        In the Raid Damage window, use the <strong>Add Log</strong> button (or the equivalent control)
+        to load each player's log file. Repeat for every player whose log you have collected.
+      </p>
+      <p>
+        There is no fixed limit on the number of logs you can load. Load as many as you have —
+        the more logs, the more complete the merged picture.
+      </p>
+      <div class="callout tip">
+        <p>
+          Load the raid leader's or main tank's log last. Since they're typically in range of all
+          combat, their log often has the most events and provides the best baseline for
+          the merged fight timeline.
+        </p>
+      </div>
+
+      <h2>How the merge works</h2>
+      <p>
+        When multiple players log the same damage event — for example, a wizard's nuke that three
+        nearby players all witnessed — that event appears in all three logs. The merger detects
+        these duplicates by comparing the event type, attacker, target, damage amount, and
+        timestamp, and keeps only one copy.
+      </p>
+      <p>
+        Players' system clocks are rarely perfectly synchronized. The merger automatically detects
+        the time offset between each log and adjusts all events onto a shared timeline before
+        deduplication and aggregation. You don't need to do anything for this — it's handled
+        automatically.
+      </p>
+
+      <h2>Reading the merged DPS view</h2>
+      <p>
+        The fight list in the Raid Damage window shows encounters built from the combined logs.
+        Select a fight to view its merged stats. The DPS Summary works the same as in the
+        single-player view — click a column to sort, right-click for per-spell breakdowns.
+      </p>
+      <p>
+        Because events from all logs are combined, players who were out of range of some events
+        are still accurately represented as long as at least one other player's log captured
+        those events.
+      </p>
+
+      <h2>Healing tab</h2>
+      <p>
+        The Raid Damage window includes a Healing tab that aggregates healing done across all
+        loaded log files. Unlike damage records (which may appear in multiple logs and need
+        deduplication), heal events are sourced independently per log — each player's heals
+        are visible only in their own log or the logs of those nearby.
+      </p>
+      <p>
+        The merger aligns each source's heal records onto the shared timeline and combines them.
+        The result is a raid-wide view of who healed how much and with what spells.
+      </p>
+
+      <h2>Limitations</h2>
+      <ul>
+        <li>
+          <strong>Range visibility</strong> — if no loaded log captured a particular event (because
+          every player was out of range at that moment), it won't appear in the merged data
+        </li>
+        <li>
+          <strong>Charm pets</strong> — charmed pets can be ambiguous in multi-log contexts;
+          their damage may appear under different identities in different logs
+        </li>
+        <li>
+          <strong>Raid Damage is read-only</strong> — you can't modify fight boundaries or
+          re-assign pets inside the Raid Damage window; do that in the main parser first
+        </li>
+        <li>
+          <strong>No live tailing</strong> — the Raid Damage window reads complete log files;
+          it doesn't tail logs live while a raid is in progress
+        </li>
+      </ul>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("raid-dps");</script>
+
+</body>
+</html>

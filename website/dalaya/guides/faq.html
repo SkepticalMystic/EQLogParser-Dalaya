@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — FAQ</title>
+  <meta name="description" content="Frequently asked questions about EQLogParser-Dalaya: parsing, overlays, triggers, and Dalaya-specific issues." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>FAQ</h1>
+      <p class="guide-subtitle">Common questions and their answers.</p>
+
+      <h2>Why do some spells not appear in the Spell Counts table?</h2>
+      <p>
+        Two common reasons:
+      </p>
+      <ol>
+        <li>
+          Some spells produce no log message when they land on a player, so the parser has
+          nothing to count. This is a game limitation.
+        </li>
+        <li>
+          Some spells produce log messages that only you can see in your own log. These are
+          hidden by default in the Spell Counts table because the main purpose of that view
+          is to compare your counts with other players — and other players can't see those lines.
+          To show them, use the visibility dropdown at the top of the Spell Counts tab to
+          switch to <strong>Show All</strong>.
+        </li>
+      </ol>
+
+      <h2>Why does "Unknown" or a spell name appear in the DPS Summary?</h2>
+      <ol>
+        <li>
+          <strong>Unknown player:</strong> If a DoT is ticking on an NPC when the caster dies
+          or zones out, the log may stop attributing further ticks to a player name. These
+          ticks are counted under "Unknown" so the total damage for the encounter remains
+          accurate. Check the damage breakdown for the Unknown row to identify the source.
+        </li>
+        <li>
+          <strong>Spell name in player position:</strong> In rare cases — usually when a player
+          leaves the zone mid-fight — an older-style log entry may place the spell name where
+          the player name should be. This is infrequent and a quirk of how the game writes
+          certain log lines.
+        </li>
+      </ol>
+
+      <h2>Why is my pet's damage not showing under my name?</h2>
+      <p>
+        Pet ownership must be established before the parser can fold a pet's damage under
+        its owner. This happens three ways: a pre-configured <code>petmapping.txt</code> entry,
+        the pet announcing "My leader is X" in group chat, or a manual assignment in the
+        Pet Owners UI (right-click the pet's row in the DPS Summary).
+      </p>
+      <p>
+        Dalaya's named pets (Bonaparte, Fireballs, Otto, Weens) are correctly identified as
+        pets by this fork, but ownership still needs to be confirmed via one of the three
+        methods above. They will not be auto-assigned to your character name to avoid
+        misattribution in raid logs.
+      </p>
+
+      <h2>My damage totals look too low. What could cause this?</h2>
+      <p>
+        A few things to check:
+      </p>
+      <ul>
+        <li>
+          <strong>Logging was off for part of the fight.</strong> Any damage that occurred
+          before logging was enabled is not in the log file and cannot be counted. Enable
+          logging before pulling.
+        </li>
+        <li>
+          <strong>You are tailing live instead of reading from the start.</strong> If you
+          opened the log file after the fight had already begun, only events from that point
+          onward are captured. Use <strong>File &rarr; Open Log File</strong> to read the
+          full file from the beginning.
+        </li>
+        <li>
+          <strong>Damage Shield (DS) damage.</strong> DS damage is only visible in the log
+          of the player who has the DS buff. If you're looking at someone else's log, their
+          totals won't include DS hits they couldn't see.
+        </li>
+      </ul>
+
+      <h2>My overlays are not showing, or they display the wrong colors</h2>
+      <ol>
+        <li>
+          <strong>Check the Overlay configuration.</strong> Open the Overlay settings and
+          verify that a <strong>Default</strong> overlay is checked. Triggers without a
+          specific overlay assigned use the default one as a fallback.
+        </li>
+        <li>
+          <strong>Preview the overlay.</strong> Use the Preview button in the Overlay settings
+          to confirm the overlay is visible. Save any changes.
+        </li>
+        <li>
+          <strong>Check Custom Active Color and Custom Font Color</strong> on the trigger itself.
+          If either is set, it overrides the overlay's color settings. Even if the field shows
+          "Click to Select Custom Color," click it and explicitly save a color or clear it.
+        </li>
+        <li>
+          <strong>EverQuest must be in windowed mode.</strong> Overlays cannot render on top
+          of a fullscreen EverQuest window. Switch EQ to windowed or borderless windowed mode.
+        </li>
+        <li>
+          <strong>Check for Transparent color.</strong> A common issue is that Transparent is
+          inadvertently selected for a color, making the overlay invisible. Set an explicit
+          color to test, then reset if needed.
+        </li>
+      </ol>
+
+      <h2>Trigger Log shows a trigger firing, but I can't find it in the Trigger Manager</h2>
+      <p>
+        Click the row in the Trigger Log — this selects and highlights the corresponding
+        trigger in the Trigger Manager automatically, as long as the Trigger Manager is open.
+        You can also use the <strong>Trigger Search</strong> box above the folder tree to search
+        by trigger name or by any text in its pattern fields.
+      </p>
+      <p>
+        Dragging the Trigger Log and Trigger Manager tabs so they are visible side-by-side
+        is a useful working arrangement when building or debugging triggers.
+      </p>
+
+      <h2>Copy or Quick Share doesn't work — nothing is copied to the clipboard</h2>
+      <p>
+        Check the error log under <strong>Tools &rarr; Error Log</strong> for a line containing:
+      </p>
+      <pre><code>ERROR EQLogParser.UiUtil - Failed to set Clipboard Text: OpenClipboard Failed (0x800401D0)</code></pre>
+      <p>
+        If you see this, your antivirus software is blocking clipboard access by EQLogParser.
+        Add an exception for <code>EQLogParser-Dalaya.exe</code> in your antivirus settings.
+        This is common with ESET — look for HIPS settings and add the exception there.
+      </p>
+
+      <h2>Where do I report a bug or ask a question?</h2>
+      <p>
+        For bugs or issues specific to the Dalaya version (parsing errors, wrong spell names,
+        pet attribution problems), open an issue on the Dalaya fork:
+      </p>
+      <p>
+        <a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya/issues" target="_blank">
+          github.com/SkepticalMystic/EQLogParser-Dalaya/issues
+        </a>
+      </p>
+      <p>When reporting a parsing problem, always include the raw log line that isn't being handled correctly. Log files are at:</p>
+      <pre><code>[EQ folder]\Logs\eqlog_CharacterName_eqemu.txt</code></pre>
+      <p>
+        For general questions about EQLogParser features that are not Dalaya-specific, the
+        upstream project's
+        <a href="https://github.com/kauffman12/EQLogParser/discussions" target="_blank">GitHub Discussions</a>
+        page is a good additional resource.
+      </p>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("faq");</script>
+
+</body>
+</html>

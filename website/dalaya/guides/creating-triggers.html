@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Creating Triggers</title>
+  <meta name="description" content="How to create audio triggers, timers, and alerts in EQLogParser-Dalaya." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Creating Triggers</h1>
+      <p class="guide-subtitle">Audio alerts, timers, and overlays that react to your combat log.</p>
+
+      <p>
+        Triggers watch your EverQuest log in real time. When a line matches a trigger's pattern,
+        it fires: speaking a text-to-speech alert, displaying a message in an overlay, starting
+        a countdown timer, playing a sound, or any combination of these.
+      </p>
+
+      <h2>Opening the Trigger Manager</h2>
+      <p>
+        Click the <strong>Trigger Manager</strong> button in the toolbar, or open it from the
+        main menu. It opens as a panel or separate window with a folder tree on the left and
+        the trigger editor on the right.
+      </p>
+
+      <h2>Organizing triggers into folders</h2>
+      <p>
+        All triggers live inside folders. Folders let you group related triggers and enable or
+        disable entire categories at once. Create a folder structure that matches how you think
+        about your triggers — for example, by content area, character, or trigger type.
+      </p>
+      <ol>
+        <li>Right-click in the folder tree and choose <strong>New Folder</strong></li>
+        <li>Give it a descriptive name (e.g., "Mob AEs", "Buff Timers", "Procs")</li>
+        <li>Folders can be nested — create sub-folders inside folders for finer organization</li>
+      </ol>
+      <p>
+        The checkbox next to each folder enables or disables all triggers inside it.
+        Disabling a folder is useful when switching characters or content areas.
+      </p>
+
+      <h2>Creating a trigger</h2>
+      <ol>
+        <li>Select the folder where the trigger should live</li>
+        <li>Right-click and choose <strong>New Trigger</strong>, or click the Add button</li>
+        <li>Give the trigger a clear name</li>
+        <li>Enter a <strong>Pattern</strong> — the text the parser looks for in your log</li>
+        <li>Check <strong>Regex</strong> if your pattern uses regular expression syntax (recommended)</li>
+        <li>Fill in at least one action field (Text to Speak, Text to Display, Timer, or Sound)</li>
+        <li>Click <strong>Save</strong></li>
+      </ol>
+      <div class="callout tip">
+        <p>
+          Name triggers specifically enough that you can tell what they do at a glance in the
+          Trigger Log — "Malo Landing" is better than "Spell trigger 3".
+        </p>
+      </div>
+
+      <h2>Writing patterns</h2>
+      <p>
+        The Pattern field matches against the content of each log line, after the date/time prefix
+        is stripped. The match is case-sensitive by default.
+      </p>
+      <p>
+        A good pattern is specific enough not to fire on unrelated lines, but not so rigid that
+        small log variations break it. For example, to catch a Darkness spell landing:
+      </p>
+      <pre><code>You feel darkness creep over you\.</code></pre>
+      <p>
+        The <code>\.</code> escapes the period so it matches a literal dot, not any character.
+      </p>
+      <p>
+        Use trigger variables to capture values from the line and reuse them in your alert:
+      </p>
+      <pre><code>{S1} begins casting Malo on {S2}\.</code></pre>
+      <p>
+        Then speak: <code>{S1} is Maloing {S2}</code> — the captured names are substituted in.
+        See the <a href="trigger-variables.html">Trigger Variables</a> and
+        <a href="regex.html">Regex Reference</a> guides for full syntax.
+      </p>
+
+      <h2>Using the spell picker</h2>
+      <p>
+        Rather than typing spell names manually, right-click the Pattern field to open the
+        <strong>Spell Picker</strong>. It lists the full Dalaya spell database with search and
+        filtering by class or spell type.
+      </p>
+      <ul>
+        <li>Find the spell you want and click <strong>Insert</strong> to paste its log text into the pattern</li>
+        <li>For buff spells with a known duration, click <strong>Generate Timer Bundle</strong> to create
+            a complete set of triggers — cast, landing, and timer — automatically</li>
+        <li>For a whole category of spells (e.g., all Necromancer DoTs), use
+            <strong>Generate Alternation</strong> to produce a single pattern that matches any
+            spell in that group</li>
+      </ul>
+
+      <h2>Action types</h2>
+
+      <h3>Text to Speak</h3>
+      <p>
+        Spoken aloud by the text-to-speech engine when the trigger fires. Keep it short and clear —
+        one or two words is often enough for an audio cue you'll be processing mid-combat.
+        You can use trigger variables here: <code>{S1} is casting</code>.
+      </p>
+
+      <h3>Text to Display</h3>
+      <p>
+        Shown in an overlay window over the game. Useful for longer messages or when you
+        want a visual cue alongside (or instead of) audio.
+      </p>
+
+      <h3>Timer</h3>
+      <p>
+        Starts a visible countdown bar when the trigger fires. Set the duration in seconds.
+        The timer appears in the overlay window you've configured. Common uses:
+      </p>
+      <ul>
+        <li>Buff durations — the timer counts down to when you need to re-cast</li>
+        <li>Mob AE cooldowns — know when the next AE is coming</li>
+        <li>Recast windows — track spell cooldowns</li>
+      </ul>
+      <p>
+        Use <code>{TS}</code> in the Pattern to capture a duration from the log line itself
+        and apply it dynamically as the timer length.
+      </p>
+
+      <h3>End Early Pattern</h3>
+      <p>
+        A second pattern that cancels a running timer before it expires. Use this for spells
+        that can be resisted, absorbed, or removed early — the timer stops cleanly rather
+        than counting down to zero on a buff that's already gone.
+      </p>
+
+      <h3>Sound</h3>
+      <p>
+        Plays an audio file when the trigger fires. Useful as an alternative to TTS for
+        short, distinct alert sounds. Point the trigger at a <code>.wav</code> or
+        <code>.mp3</code> file on your system.
+      </p>
+
+      <h2>Testing triggers</h2>
+      <p>
+        Use the <strong>Test Trigger</strong> button in the trigger editor to simulate a log
+        line matching the pattern. This lets you verify the TTS text, check that variables
+        are captured correctly, and confirm that timer durations look right — without having
+        to recreate the in-game event.
+      </p>
+      <p>
+        The <strong>Trigger Log</strong> tab (in the main window) records every trigger that
+        fires in real time, showing the trigger name, the line that matched, and the time.
+        Selecting a row in the Trigger Log highlights the corresponding trigger in the
+        Trigger Manager, making it easy to jump to a trigger from its firing event.
+      </p>
+
+      <h2>Sharing and importing triggers</h2>
+      <p>
+        Triggers can be exported to a file and shared with other players, or imported from
+        a file someone else has created. Use the right-click menu on a folder in the Trigger
+        Manager to access import and export options.
+      </p>
+      <div class="callout warning">
+        <p>
+          Imported triggers replace or merge with your existing configuration.
+          Review imports before enabling them, especially pattern fields, to make sure they
+          match the exact log format for Dalaya's EQEmu server.
+        </p>
+      </div>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("creating-triggers");</script>
+
+</body>
+</html>

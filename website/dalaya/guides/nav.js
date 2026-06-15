@@ -1,14 +1,14 @@
 var GUIDES = [
-  { id: "installation",       title: "Installation",              ready: true  },
-  { id: "parser",             title: "Using the parser",          ready: false },
-  { id: "raid-export",        title: "Exporting for raid DPS",    ready: false },
-  { id: "raid-dps",           title: "Using raid DPS",            ready: false },
-  { id: "creating-triggers",  title: "Creating triggers",         ready: false },
-  { id: "trigger-variables",  title: "Trigger variables",         ready: false },
-  { id: "regex",              title: "Regex reference",           ready: false },
-  { id: "dalaya-vs-upstream", title: "Dalaya vs upstream",        ready: false },
-  { id: "spell-parser",       title: "Spell parser",              ready: false },
-  { id: "faq",                title: "FAQ",                       ready: false },
+  { id: "installation",       title: "Installation",              ready: true },
+  { id: "parser",             title: "Using the parser",          ready: true },
+  { id: "raid-export",        title: "Exporting for raid DPS",    ready: true },
+  { id: "raid-dps",           title: "Using raid DPS",            ready: true },
+  { id: "creating-triggers",  title: "Creating triggers",         ready: true },
+  { id: "trigger-variables",  title: "Trigger variables",         ready: true },
+  { id: "regex",              title: "Regex reference",           ready: true },
+  { id: "dalaya-vs-upstream", title: "Dalaya vs upstream",        ready: true },
+  { id: "spell-parser",       title: "Spell parser",              ready: true },
+  { id: "faq",                title: "FAQ",                       ready: true },
 ];
 
 function renderNav(currentId) {
