@@ -1,6 +1,7 @@
 using Syncfusion.UI.Xaml.Grid;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace EQLogParser
@@ -41,6 +42,10 @@ namespace EQLogParser
     );
 
     public TriggerBundle BundleResult { get; private set; }
+
+    // Category regex mode (P5): only Pattern is returned; caller sets UseRegex = true.
+    public record CategoryRegex(string Pattern);
+    public CategoryRegex CategoryRegexResult { get; private set; }
 
     private readonly List<SpellData> _allSpells;
     private readonly bool _enableBundleMode;
@@ -147,12 +152,52 @@ namespace EQLogParser
     {
       if (!_loaded) return;
 
-      var isBundle = bundleModeRadio.IsChecked == true;
-      casterRow.Visibility     = isBundle ? Visibility.Visible   : Visibility.Collapsed;
-      insertModeLabel.Visibility = isBundle ? Visibility.Collapsed : Visibility.Visible;
-      messageField.Visibility  = isBundle ? Visibility.Collapsed : Visibility.Visible;
-      insertButton.Content     = isBundle ? "Generate" : "Insert";
-      hintText.Text            = string.Empty;
+      var isBundle   = bundleModeRadio.IsChecked == true;
+      var isCatRegex = catRegexModeRadio.IsChecked == true;
+      var isInsert   = !isBundle && !isCatRegex;
+
+      casterRow.Visibility      = isBundle   ? Visibility.Visible   : Visibility.Collapsed;
+      catRegexRow.Visibility    = isCatRegex ? Visibility.Visible   : Visibility.Collapsed;
+      insertModeLabel.Visibility = isInsert  ? Visibility.Visible   : Visibility.Collapsed;
+      messageField.Visibility   = isInsert   ? Visibility.Visible   : Visibility.Collapsed;
+      insertButton.Content      = isInsert   ? "Insert" : "Generate";
+
+      if (isCatRegex)
+        UpdateCatRegexHint();
+      else
+        hintText.Text = string.Empty;
+    }
+
+    private void CatTypeChanged(object sender, RoutedEventArgs e)
+    {
+      if (!_loaded) return;
+      var isCast = castRadio.IsChecked == true;
+      catCasterLabel.Visibility = isCast ? Visibility.Visible : Visibility.Collapsed;
+      catCasterBox.Visibility   = isCast ? Visibility.Visible : Visibility.Collapsed;
+      catCasterHint.Visibility  = isCast ? Visibility.Visible : Visibility.Collapsed;
+      UpdateCatRegexHint();
+    }
+
+    private void UpdateCatRegexHint()
+    {
+      var spells = dataGrid.ItemsSource as List<SpellData>;
+      var count  = spells?.Count ?? 0;
+      if (count == 0)
+      {
+        hintText.Text = "No spells match the current filters.";
+        return;
+      }
+      if (landingRadio.IsChecked == true)
+      {
+        var withLanding = spells.Count(s => !string.IsNullOrWhiteSpace(s.LandsOnOther));
+        hintText.Text = withLanding == 0
+          ? "No landing messages found for the filtered spells."
+          : $"{withLanding} spell{(withLanding == 1 ? "" : "s")} with landing text (of {count} matching).";
+      }
+      else
+      {
+        hintText.Text = $"{count} spell{(count == 1 ? "" : "s")} will be included.";
+      }
     }
 
     private void ResetClick(object sender, RoutedEventArgs e)
@@ -217,7 +262,10 @@ namespace EQLogParser
       }
 
       dataGrid.ItemsSource = query.ToList();
-      hintText.Text = string.Empty;
+      if (catRegexModeRadio?.IsChecked == true)
+        UpdateCatRegexHint();
+      else
+        hintText.Text = string.Empty;
     }
 
     private void SpellSelectionChanged(object sender, GridSelectionChangedEventArgs e)
@@ -247,6 +295,11 @@ namespace EQLogParser
 
     private void TryInsert()
     {
+      if (catRegexModeRadio.IsChecked == true)
+      {
+        TryCategoryRegex();
+        return;
+      }
       if (bundleModeRadio.IsChecked == true)
       {
         TryGenerate();
@@ -267,6 +320,46 @@ namespace EQLogParser
       }
 
       SelectedText = text;
+      IsOkClicked = true;
+      Close();
+    }
+
+    private void TryCategoryRegex()
+    {
+      var spells = dataGrid.ItemsSource as List<SpellData>;
+      if (spells == null || spells.Count == 0)
+      {
+        hintText.Text = "No spells match the current filters.";
+        return;
+      }
+
+      string pattern;
+      if (castRadio.IsChecked == true)
+      {
+        var casterName = catCasterBox.Text.Trim();
+        var alt = string.Join("|", spells.Select(s => Regex.Escape(s.Name)).Distinct().OrderBy(x => x));
+        pattern = string.IsNullOrEmpty(casterName)
+          ? $@"begins casting ({alt})\."
+          : $@"{Regex.Escape(casterName)} begins casting ({alt})\.";
+      }
+      else
+      {
+        var texts = spells
+          .Select(s => s.LandsOnOther?.Trim())
+          .Where(t => !string.IsNullOrEmpty(t))
+          .Select(Regex.Escape)
+          .Distinct()
+          .OrderBy(x => x)
+          .ToList();
+        if (texts.Count == 0)
+        {
+          hintText.Text = "No landing messages found for the filtered spells.";
+          return;
+        }
+        pattern = $"({string.Join("|", texts)})";
+      }
+
+      CategoryRegexResult = new CategoryRegex(pattern);
       IsOkClicked = true;
       Close();
     }

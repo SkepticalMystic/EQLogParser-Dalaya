@@ -192,6 +192,15 @@ namespace EQLogParser
 
           RefreshPropertyGrid();
         }
+        else if (dialog.CategoryRegexResult != null && _triggerModel != null)
+        {
+          // P5: category regex — sets Pattern + UseRegex only; leaves all timer fields alone.
+          _theTextBox.Text = dialog.CategoryRegexResult.Pattern;
+          _theTextBox.CaretIndex = _theTextBox.Text.Length;
+          _theTextBox.Focus();
+          _triggerModel.UseRegex = true;
+          RefreshPropertyGrid();
+        }
         else if (dialog.IsOkClicked && !string.IsNullOrEmpty(dialog.SelectedText))
         {
           var caret = _theTextBox.CaretIndex;

@@ -26,6 +26,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
@@ -168,14 +169,49 @@
                    Foreground="{DynamicResource ContentForeground}"
                    Checked="ModeChanged" />
       <RadioButton x:Name="bundleModeRadio" Content="Generate timer bundle"
+                   GroupName="PickerMode" VerticalAlignment="Center" Margin="0,0,20,0"
+                   FontSize="{DynamicResource EQContentSize}"
+                   Foreground="{DynamicResource ContentForeground}"
+                   Checked="ModeChanged" />
+      <RadioButton x:Name="catRegexModeRadio" Content="Generate category regex"
                    GroupName="PickerMode" VerticalAlignment="Center"
                    FontSize="{DynamicResource EQContentSize}"
                    Foreground="{DynamicResource ContentForeground}"
                    Checked="ModeChanged" />
     </StackPanel>
 
-    <!-- Caster + overlay row (P4/P5): visible only in bundle mode -->
-    <StackPanel x:Name="casterRow" Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8"
+    <!-- Category regex options row (P5): visible only in category regex mode -->
+    <StackPanel x:Name="catRegexRow" Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,8"
+                Visibility="Collapsed">
+      <TextBlock Text="Type:" VerticalAlignment="Center" Margin="0,0,8,0"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <RadioButton x:Name="castRadio" Content="Cast detection" IsChecked="True"
+                   GroupName="CatRegexType" VerticalAlignment="Center" Margin="0,0,20,0"
+                   FontSize="{DynamicResource EQContentSize}"
+                   Foreground="{DynamicResource ContentForeground}"
+                   Checked="CatTypeChanged" />
+      <RadioButton x:Name="landingRadio" Content="Landing detection"
+                   GroupName="CatRegexType" VerticalAlignment="Center" Margin="0,0,20,0"
+                   FontSize="{DynamicResource EQContentSize}"
+                   Foreground="{DynamicResource ContentForeground}"
+                   Checked="CatTypeChanged" />
+      <TextBlock x:Name="catCasterLabel" Text="Caster:" VerticalAlignment="Center" Margin="0,0,6,0"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+      <TextBox x:Name="catCasterBox" MinWidth="180" Padding="4"
+               FontSize="{DynamicResource EQContentSize}"
+               BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
+               Background="{DynamicResource ContentBackground}"
+               Foreground="{DynamicResource ContentForeground}" />
+      <TextBlock x:Name="catCasterHint" Text="(leave blank for any caster)"
+                 VerticalAlignment="Center" Margin="8,0,0,0" Opacity="0.6"
+                 FontSize="{DynamicResource EQContentSize}"
+                 Foreground="{DynamicResource ContentForeground}" />
+    </StackPanel>
+
+    <!-- Caster + overlay row (P4): visible only in bundle mode -->
+    <StackPanel x:Name="casterRow" Grid.Row="4" Orientation="Horizontal" Margin="0,0,0,8"
                 Visibility="Collapsed">
       <TextBlock Text="Caster:" VerticalAlignment="Center" Margin="0,0,6,0"
                  FontSize="{DynamicResource EQContentSize}"
@@ -196,7 +232,7 @@
                 FontSize="{DynamicResource EQContentSize}" />
     </StackPanel>
 
-    <syncfusion:SfDataGrid x:Name="dataGrid" Grid.Row="4"
+    <syncfusion:SfDataGrid x:Name="dataGrid" Grid.Row="5"
                            AllowDraggingColumns="False"
                            AllowResizingColumns="True"
                            AllowSorting="True"
@@ -219,7 +255,7 @@
     </syncfusion:SfDataGrid>
 
     <!-- Insert / Generate bar -->
-    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+    <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
       <TextBlock x:Name="hintText" VerticalAlignment="Center" Margin="0,0,12,0"
                  Opacity="0.7"
                  FontSize="{DynamicResource EQContentSize}"
