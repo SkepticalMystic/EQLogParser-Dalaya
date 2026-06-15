@@ -71,6 +71,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -370,6 +371,70 @@ def load_categories(path: Path) -> dict[str, str]:
         return json.load(f)
 
 
+_SLOT_PLACEHOLDER = re.compile(r'([#$@])(\d+)')
+
+
+def _format_duration(ticks: int) -> str:
+    """Format DurationBase ticks (each = 6 seconds) as a human-readable string."""
+    secs = ticks * 6
+    if secs <= 0:
+        return "instant"
+    if secs < 60:
+        return f"{secs} second{'s' if secs != 1 else ''}"
+    minutes, remainder = divmod(secs, 60)
+    if remainder == 0:
+        return f"{minutes} minute{'s' if minutes != 1 else ''}"
+    return f"{minutes} minute{'s' if minutes != 1 else ''} {remainder} second{'s' if remainder != 1 else ''}"
+
+
+def resolve_description(text: str, src_fields: list[str]) -> str:
+    """Resolve EQ description format tokens using the spell's source data.
+
+    Token reference (SoD SpellParser.cs comment):
+      #N  — raw base1 of slot N (1-indexed).  Displayed as abs value.
+      $N  — raw base2 of slot N (1-indexed).  Displayed as abs value.
+      @N  — level-scaled value of slot N.  We approximate as: abs(max) when
+            max != 0, else abs(base1).  The max field is the level-cap formula
+            output — close enough for display without needing a specific level.
+      %z  — spell duration derived from DurationBase (source col 17, 6-sec ticks).
+
+    Slots in the description are 1-indexed; our SLOT_*_COL arrays are 0-indexed,
+    so #1 → col BASE1+0, #2 → col BASE1+1, etc.
+
+    Unknown token numbers (>12) or missing fields are left as-is.
+    """
+    # Build per-slot lookup once.  Keys are 1-indexed (matching description tokens).
+    base1: dict[int, int] = {}
+    base2: dict[int, int] = {}
+    max_: dict[int, int] = {}
+    for i in range(12):
+        base1[i + 1] = _safe_field_int(src_fields, SLOT_BASE1_COL + i)
+        base2[i + 1] = _safe_field_int(src_fields, SLOT_BASE2_COL + i)
+        max_[i + 1] = _safe_field_int(src_fields, SLOT_MAX_COL + i)
+
+    def _replace(m: re.Match) -> str:
+        prefix = m.group(1)
+        n = int(m.group(2))
+        if n < 1 or n > 12:
+            return m.group(0)
+        if prefix == '#':
+            return str(abs(base1.get(n, 0)))
+        if prefix == '$':
+            return str(abs(base2.get(n, 0)))
+        # '@' — level-scaled; approximate from max, fall back to base1
+        mv = max_.get(n, 0)
+        return str(abs(mv) if mv != 0 else abs(base1.get(n, 0)))
+
+    text = _SLOT_PLACEHOLDER.sub(_replace, text)
+
+    # Duration placeholder
+    if '%z' in text:
+        ticks = _safe_field_int(src_fields, 17)
+        text = text.replace('%z', _format_duration(ticks))
+
+    return text
+
+
 def load_spell_descriptions(path: Path) -> dict[int, str]:
     """Parse dbstr_us.txt and return type-6 entries as {DescID: text}.
 
@@ -504,11 +569,13 @@ def convert(
                 effects[fields[0]] = effect_entry
                 effects_emitted += 1
 
-            # Description sidecar: look up DescID (col 155) in dbstr_us.txt type-6.
+            # Description sidecar: look up DescID (col 155) in dbstr_us.txt type-6,
+            # then resolve #N/$N/@N/%z placeholders using this spell's source data.
             if spell_descriptions and len(fields) > DESC_ID_COL:
                 desc_id = _safe_field_int(fields, DESC_ID_COL)
                 if desc_id and desc_id in spell_descriptions:
-                    descriptions_out[fields[0]] = spell_descriptions[desc_id]
+                    raw_desc = spell_descriptions[desc_id]
+                    descriptions_out[fields[0]] = resolve_description(raw_desc, fields)
                     descs_emitted += 1
 
     dest.parent.mkdir(parents=True, exist_ok=True)
