@@ -84,9 +84,10 @@
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="50" />
           <ColumnDefinition Width="Auto" />
-          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="90" />
+          <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
@@ -119,7 +120,7 @@
         <TextBlock Grid.Column="2" Text="–" VerticalAlignment="Center" Margin="0,0,4,0"
                    FontSize="{DynamicResource EQContentSize}"
                    Foreground="{DynamicResource ContentForeground}" />
-        <Grid Grid.Column="3" Margin="0,0,16,0">
+        <Grid Grid.Column="3" Margin="0,0,4,0">
           <TextBox x:Name="levelMax" Padding="4"
                    FontSize="{DynamicResource EQContentSize}"
                    BorderBrush="{DynamicResource PrimaryDarken}" BorderThickness="1"
@@ -143,7 +144,7 @@
           </TextBlock>
         </Grid>
 
-        <TextBlock Grid.Column="4" Text="Has Effect:" VerticalAlignment="Center" Margin="0,0,6,0"
+        <TextBlock Grid.Column="4" Text="Has Effect:" VerticalAlignment="Center" Margin="12,0,6,0"
                    FontSize="{DynamicResource EQContentSize}"
                    Foreground="{DynamicResource ContentForeground}" />
         <ComboBox x:Name="hasSpaFilter" Grid.Column="5" Margin="0,0,12,0"
@@ -152,10 +153,10 @@
         <TextBlock Grid.Column="6" Text="In Slot:" VerticalAlignment="Center" Margin="0,0,6,0"
                    FontSize="{DynamicResource EQContentSize}"
                    Foreground="{DynamicResource ContentForeground}" />
-        <ComboBox x:Name="inSlotFilter" Grid.Column="7" Margin="0,0,12,0"
+        <ComboBox x:Name="inSlotFilter" Grid.Column="7"
                   SelectionChanged="FilterChanged" />
 
-        <Button Grid.Column="8" Content="Reset" Click="ResetClick"
+        <Button Grid.Column="9" Content="Reset" Click="ResetClick"
                 Height="{DynamicResource EQButtonHeight}" Padding="12,0,12,0"
                 Foreground="{DynamicResource PrimaryDarken}" />
       </Grid>
