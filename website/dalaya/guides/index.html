@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Guides</title>
+  <meta name="description" content="Guides for EQLogParser-Dalaya: installation, parser usage, raid DPS, triggers, and more." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main style="padding-top: 44px;">
+    <div class="guide-index-header">
+      <h1>Guides</h1>
+      <p>Step-by-step documentation for EQLogParser-Dalaya.</p>
+    </div>
+
+    <div class="guide-index-grid" id="guide-index-grid">
+      <!-- rendered by script below -->
+    </div>
+  </main>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>
+    var descriptions = {
+      "installation":       "Download, install dependencies, and connect the parser to your EverQuest log file.",
+      "parser":             "Navigate the main window, parse fights, and understand the DPS summary table.",
+      "raid-export":        "Save and share parse data across multiple players for raid-wide analysis.",
+      "raid-dps":           "Load multi-player exports to build a complete picture of raid damage and healing.",
+      "creating-triggers":  "Set up audio alerts and timers that react to events in your combat log.",
+      "trigger-variables":  "Reference for all special variables available in trigger patterns and messages.",
+      "regex":              "Regular expression basics and .NET syntax tips for trigger pattern writing.",
+      "dalaya-vs-upstream": "What’s different between this fork and kauffman12’s EQLogParser.",
+      "spell-parser":       "Browse Dalaya’s spell database and analyze spell effects and HoT/DoT data.",
+      "faq":                "Answers to common questions about parsing, overlays, triggers, and display issues.",
+    };
+
+    var grid = document.getElementById('guide-index-grid');
+    var html = '';
+    for (var i = 0; i < GUIDES.length; i++) {
+      var g = GUIDES[i];
+      var desc = descriptions[g.id] || '';
+      if (g.ready) {
+        html += '<a class="guide-card" href="' + g.id + '.html">'
+          + '<div class="guide-card-body">'
+          + '<div class="guide-card-title">' + g.title + '</div>'
+          + '<p class="guide-card-desc">' + desc + '</p>'
+          + '</div>'
+          + '<span class="guide-card-arrow">→</span>'
+          + '</a>';
+      } else {
+        html += '<div class="guide-card soon">'
+          + '<div class="guide-card-body">'
+          + '<div class="guide-card-title">' + g.title + '</div>'
+          + '<p class="guide-card-desc">' + desc + '</p>'
+          + '</div>'
+          + '<span class="guide-card-soon-badge">Coming soon</span>'
+          + '</div>';
+      }
+    }
+    grid.innerHTML = html;
+  </script>
+
+</body>
+</html>

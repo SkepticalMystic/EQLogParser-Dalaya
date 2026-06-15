@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Installation</title>
+  <meta name="description" content="How to install EQLogParser-Dalaya: system requirements, .NET setup, and first launch." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Installation</h1>
+      <p class="guide-subtitle">System requirements, dependencies, and first launch.</p>
+
+      <h2>Requirements</h2>
+      <ul>
+        <li><strong>Windows 10 or 11</strong>, 64-bit</li>
+        <li><strong>.NET 8 Desktop Runtime (x64)</strong> &mdash; see Step 1</li>
+        <li><strong>EverQuest</strong> with logging enabled &mdash; see Step 2</li>
+        <li><strong>Windowed mode</strong> in EverQuest if you plan to use overlays (damage meter, timer bars)</li>
+      </ul>
+
+      <h2>Step 1 &mdash; Install .NET 8</h2>
+      <p>
+        EQLogParser-Dalaya requires the .NET 8 Desktop Runtime from Microsoft.
+        If you already have it installed (for example, because you have run another .NET 8 app), you can skip this step.
+      </p>
+      <p>
+        Download the <strong>.NET 8 Desktop Runtime (x64)</strong> from Microsoft and run the installer:
+        <br /><br />
+        <a href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0" target="_blank">https://dotnet.microsoft.com/en-us/download/dotnet/8.0</a>
+      </p>
+      <p>
+        On that page, look for <strong>Desktop Runtime</strong> under the Windows column and download the x64 installer.
+        Run it and follow the prompts &mdash; no configuration is needed.
+      </p>
+
+      <h2>Step 2 &mdash; Enable EverQuest logging</h2>
+      <p>
+        EQLogParser reads your EverQuest log file in real time.
+        Logging is off by default and must be enabled each session, or set permanently in your EQ config.
+      </p>
+      <p><strong>To enable for the current session:</strong> type <code>/log on</code> in the EverQuest chat window.
+      You will see a confirmation message. Logging stays active until you type <code>/log off</code> or log out.</p>
+      <p><strong>To enable permanently:</strong> open <code>eqclient.ini</code> in your EverQuest folder
+      and set <code>Log=TRUE</code>. This enables logging automatically every time EQ launches.</p>
+      <p>Your log file is written to the <code>Logs</code> subfolder of your EverQuest installation:</p>
+      <pre><code>[EQ folder]\Logs\eqlog_CharacterName_eqemu.txt</code></pre>
+      <p>
+        The <code>eqemu</code> portion of the filename is the server identifier used by EverQuest emulator servers,
+        including Dalaya. For example, a character named Kateila would have a log file at:
+      </p>
+      <pre><code>C:\Sony\EverQuest\Logs\eqlog_Kateila_eqemu.txt</code></pre>
+      <div class="callout tip">
+        <p>Log in to your character before proceeding to Step 4 so the log file already exists on disk when you select it in the parser.</p>
+      </div>
+
+      <h2>Step 3 &mdash; Download and install EQLogParser-Dalaya</h2>
+      <ol>
+        <li>Go to the <a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya/releases/latest" target="_blank">latest release on GitHub</a></li>
+        <li>Under <strong>Assets</strong>, download <code>EQLogParser-install-X.Y.Z.exe</code></li>
+        <li>Run the installer</li>
+      </ol>
+      <div class="callout warning">
+        <p>
+          Because the installer is not signed with a commercial certificate, Windows may show a
+          <em>"Windows protected your PC"</em> SmartScreen warning.
+          Click <strong>More info</strong> and then <strong>Run anyway</strong> to proceed.
+          The installer places the application in <code>C:\Program Files\EQLogParser-Dalaya\</code>
+          and creates a desktop shortcut.
+        </p>
+      </div>
+
+      <h2>Step 4 &mdash; First launch</h2>
+      <ol>
+        <li>Launch <strong>EQLogParser-Dalaya</strong> from the desktop shortcut or Start menu</li>
+        <li>Click the <strong>folder icon</strong> in the top-left of the toolbar to open the log file picker</li>
+        <li>
+          Navigate to your EverQuest <code>Logs</code> folder and select the log file for your character
+          (<code>eqlog_CharacterName_eqemu.txt</code>)
+        </li>
+        <li>
+          The title bar updates with your character name and the parser begins reading the log in real time.
+          Combat events from that point forward will be captured automatically.
+        </li>
+      </ol>
+      <div class="callout tip">
+        <p>
+          To catch fights you were already in before opening the parser, use
+          <strong>File &rarr; Open Log File</strong> and select the same log. This reads the full file from
+          the beginning rather than tailing it live.
+        </p>
+      </div>
+
+      <h2>Updates</h2>
+      <p>
+        EQLogParser-Dalaya checks for new releases automatically on startup.
+        When an update is available, a notification appears in the toolbar.
+        Download the new installer from the releases page and run it over the existing installation &mdash;
+        settings and trigger configurations are preserved.
+      </p>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("installation");</script>
+
+</body>
+</html>
