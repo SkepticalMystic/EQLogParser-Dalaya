@@ -291,7 +291,8 @@ footer {
 .guide-page-wrapper {
   display: grid;
   grid-template-columns: 220px 1fr;
-  margin-top: 44px;
+  max-width: 1400px;
+  margin: 44px auto 0;
   min-height: calc(100vh - 44px);
 }
 
@@ -369,8 +370,10 @@ a.guide-sidebar-link:hover {
 
 /* Guide main content */
 .guide-main {
-  max-width: 740px;
+  max-width: 860px;
+  margin: 0 auto;
   padding: 2.5rem 3rem 2rem;
+  width: 100%;
 }
 
 .guide-main h1 {
@@ -510,7 +513,7 @@ a.guide-sidebar-link:hover {
 
 /* Guide index page */
 .guide-index-header {
-  max-width: 740px;
+  max-width: 860px;
   margin: 2.5rem auto 0;
   padding: 0 3rem;
 }
@@ -528,7 +531,7 @@ a.guide-sidebar-link:hover {
 }
 
 .guide-index-grid {
-  max-width: 740px;
+  max-width: 860px;
   margin: 0 auto;
   padding: 0 3rem 3rem;
   display: flex;
