@@ -296,11 +296,14 @@ namespace EQLogParser
       {
         // Buff/HoT/DoT tracker: fires when spell lands on target.
         // Prepend {S1} to capture the target name.
+        // WearOff is first-person ("Your heartbeat steadies.") and only appears
+        // in the parser's own log — not in the log when it wears off a target.
+        // Leave EndEarlyPattern empty; the timer handles normal expiry.
         var prefix   = landsOnOther.StartsWith('\'') ? "{S1}" : "{S1} ";
         pattern          = prefix + landsOnOther;
         useRegex         = true;
         previousPattern  = hasName ? castingLine : string.Empty;
-        endEarlyPattern  = spell.WearOff?.Trim() ?? string.Empty;
+        endEarlyPattern  = string.Empty;
         endEarlyPattern2 = string.Empty;
         altTimerName     = $"{spell.Name} - {{S1}}";
       }
@@ -317,7 +320,8 @@ namespace EQLogParser
         altTimerName     = spell.Name;
       }
 
-      var durationSeconds = spell.Duration * 6.0;
+      // spell.Duration is already in seconds (loaded as raw ticks × 6 from spells.txt).
+      var durationSeconds = (double)spell.Duration;
       var overlayId = overlayPicker.SelectedItem is OverlayOption op ? op.Id : null;
 
       if (durationSeconds == 0)
