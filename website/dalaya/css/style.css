@@ -290,9 +290,8 @@ footer {
 
 .guide-page-wrapper {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  max-width: 1400px;
-  margin: 44px auto 0;
+  grid-template-columns: 260px 1fr;
+  margin-top: 44px;
   min-height: calc(100vh - 44px);
 }
 
@@ -329,9 +328,9 @@ footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.35rem 0.6rem;
+  padding: 0.35rem 0.75rem;
   border-radius: 5px;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   text-decoration: none;
   color: var(--text-muted);
   transition: background 0.12s, color 0.12s;
@@ -370,7 +369,7 @@ a.guide-sidebar-link:hover {
 
 /* Guide main content */
 .guide-main {
-  max-width: 860px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 2.5rem 3rem 2rem;
   width: 100%;
@@ -513,7 +512,7 @@ a.guide-sidebar-link:hover {
 
 /* Guide index page */
 .guide-index-header {
-  max-width: 860px;
+  max-width: 1100px;
   margin: 2.5rem auto 0;
   padding: 0 3rem;
 }
@@ -531,7 +530,7 @@ a.guide-sidebar-link:hover {
 }
 
 .guide-index-grid {
-  max-width: 860px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 3rem 3rem;
   display: flex;
@@ -638,6 +637,8 @@ a.guide-card:hover {
 
   .guide-main {
     padding: 1.5rem 1.25rem;
+    max-width: 100%;
+    margin: 0;
   }
 
   .guide-index-header,
