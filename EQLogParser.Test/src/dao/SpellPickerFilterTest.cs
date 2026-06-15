@@ -12,14 +12,17 @@ namespace EQLogParserTest
   public class SpellPickerFilterTest
   {
     private static SpellData Spell(string name, int classMask = 0, string category = "",
-      string landsOnYou = "", string landsOnOther = "", string wearOff = "") => new()
+      string landsOnYou = "", string landsOnOther = "", string wearOff = "",
+      byte level = 10, bool isBeneficial = true) => new()
     {
       Name = name,
       ClassMask = (ushort)classMask,
       Category = category,
       LandsOnYou = landsOnYou,
       LandsOnOther = landsOnOther,
-      WearOff = wearOff
+      WearOff = wearOff,
+      Level = level,
+      IsBeneficial = isBeneficial
     };
 
     private static List<SpellData> Sample() =>
@@ -123,6 +126,102 @@ namespace EQLogParserTest
     public void WhitespaceSearch_IsIgnored()
     {
       Assert.AreEqual(4, SpellPickerFilter.Apply(Sample(), "   ", null, null).Count());
+    }
+
+    [TestMethod]
+    public void TypeFilter_Beneficial_ExcludesDetrimental()
+    {
+      var spells = new[]
+      {
+        Spell("Heal", isBeneficial: true),
+        Spell("Nuke", isBeneficial: false)
+      };
+      var result = SpellPickerFilter.Apply(spells, null, null, null, beneficial: true).ToList();
+      Assert.AreEqual(1, result.Count);
+      Assert.AreEqual("Heal", result[0].Name);
+    }
+
+    [TestMethod]
+    public void TypeFilter_Detrimental_ExcludesBeneficial()
+    {
+      var spells = new[]
+      {
+        Spell("Heal", isBeneficial: true),
+        Spell("Nuke", isBeneficial: false)
+      };
+      var result = SpellPickerFilter.Apply(spells, null, null, null, beneficial: false).ToList();
+      Assert.AreEqual(1, result.Count);
+      Assert.AreEqual("Nuke", result[0].Name);
+    }
+
+    [TestMethod]
+    public void LevelFilter_MinOnly()
+    {
+      var spells = new[]
+      {
+        Spell("Low",  level: 5),
+        Spell("High", level: 20)
+      };
+      var result = SpellPickerFilter.Apply(spells, null, null, null, minLevel: 10).ToList();
+      Assert.AreEqual(1, result.Count);
+      Assert.AreEqual("High", result[0].Name);
+    }
+
+    [TestMethod]
+    public void LevelFilter_MaxOnly()
+    {
+      var spells = new[]
+      {
+        Spell("Low",  level: 5),
+        Spell("High", level: 20)
+      };
+      var result = SpellPickerFilter.Apply(spells, null, null, null, maxLevel: 10).ToList();
+      Assert.AreEqual(1, result.Count);
+      Assert.AreEqual("Low", result[0].Name);
+    }
+
+    [TestMethod]
+    public void LevelFilter_Range()
+    {
+      var spells = new[]
+      {
+        Spell("Low",  level: 5),
+        Spell("Mid",  level: 15),
+        Spell("High", level: 30)
+      };
+      var result = SpellPickerFilter.Apply(spells, null, null, null, minLevel: 10, maxLevel: 20).ToList();
+      Assert.AreEqual(1, result.Count);
+      Assert.AreEqual("Mid", result[0].Name);
+    }
+
+    [TestMethod]
+    public void LevelFilter_Level255_DisplaysAs0()
+    {
+      // Level 255 is treated as 0 for range checks.
+      var spells = new[]
+      {
+        Spell("AnyLevel", level: 255),
+        Spell("Normal",   level: 10)
+      };
+      // minLevel 1 should exclude level-255 (treated as 0) but include Normal (10).
+      var result = SpellPickerFilter.Apply(spells, null, null, null, minLevel: 1).ToList();
+      Assert.AreEqual(1, result.Count);
+      Assert.AreEqual("Normal", result[0].Name);
+    }
+
+    [TestMethod]
+    public void CombinedFilters_TypeAndLevel()
+    {
+      var spells = new[]
+      {
+        Spell("HealLow",  level: 3,  isBeneficial: true),
+        Spell("HealHigh", level: 20, isBeneficial: true),
+        Spell("NukeLow",  level: 3,  isBeneficial: false)
+      };
+      var result = SpellPickerFilter.Apply(spells, null, null, null,
+        beneficial: true, minLevel: 5).ToList();
+      Assert.AreEqual(1, result.Count);
+      Assert.AreEqual("HealHigh", result[0].Name);
     }
   }
 }

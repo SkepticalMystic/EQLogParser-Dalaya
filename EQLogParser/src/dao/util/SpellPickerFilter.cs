@@ -16,7 +16,10 @@ namespace EQLogParser
     // searchText matches Name / LandsOnYou / LandsOnOther / WearOff as a
     // case-insensitive substring. Results are ordered by spell name.
     internal static IEnumerable<SpellData> Apply(
-      IEnumerable<SpellData> spells, string searchText, SpellClass? classFlag, string category)
+      IEnumerable<SpellData> spells, string searchText, SpellClass? classFlag, string category,
+      bool? beneficial = null,
+      int? minLevel = null,
+      int? maxLevel = null)
     {
       if (spells == null)
       {
@@ -35,6 +38,22 @@ namespace EQLogParser
       {
         query = query.Where(s => !string.IsNullOrEmpty(s.Category) &&
           s.Category.Split(';').Contains(category, StringComparer.OrdinalIgnoreCase));
+      }
+
+      if (beneficial.HasValue)
+      {
+        query = query.Where(s => s.IsBeneficial == beneficial.Value);
+      }
+
+      if (minLevel.HasValue || maxLevel.HasValue)
+      {
+        query = query.Where(s =>
+        {
+          var lvl = s.Level == 255 ? 0 : (int)s.Level;
+          if (minLevel.HasValue && lvl < minLevel.Value) return false;
+          if (maxLevel.HasValue && lvl > maxLevel.Value) return false;
+          return true;
+        });
       }
 
       if (!string.IsNullOrWhiteSpace(searchText))

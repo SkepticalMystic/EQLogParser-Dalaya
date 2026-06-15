@@ -1,7 +1,9 @@
 ﻿using log4net;
 using Syncfusion.Windows.PropertyGrid;
 using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -133,12 +135,9 @@ namespace EQLogParser
       return _grid;
     }
 
-    private void SpellButtonClick(object sender, RoutedEventArgs e)
+    private async void SpellButtonClick(object sender, RoutedEventArgs e)
     {
-      if (_theTextBox == null)
-      {
-        return;
-      }
+      if (_theTextBox == null) return;
 
       try
       {
@@ -147,15 +146,50 @@ namespace EQLogParser
 
         if (dialog.BundleResult != null && _triggerModel != null)
         {
-          // Bundle mode (P4): write all timer fields to the model, then refresh
-          // the property grid so the new values are visible immediately.
-          _theTextBox.Text = dialog.BundleResult.Pattern;
+          var b = dialog.BundleResult;
+
+          // Pattern field (the one this editor owns)
+          _theTextBox.Text = b.Pattern;
           _theTextBox.CaretIndex = _theTextBox.Text.Length;
           _theTextBox.Focus();
-          _triggerModel.EnableTimer = dialog.BundleResult.EnableTimer;
-          _triggerModel.DurationSeconds = dialog.BundleResult.DurationSeconds;
-          _triggerModel.EndEarlyPattern = dialog.BundleResult.EndEarlyPattern;
-          _triggerModel.EndEarlyPattern2 = dialog.BundleResult.EndEarlyPattern2;
+
+          // Trigger scalar fields
+          _triggerModel.UseRegex         = b.UseRegex;
+          _triggerModel.PreviousPattern  = b.PreviousPattern;
+          _triggerModel.TimerType        = b.TimerType;
+          _triggerModel.DurationSeconds  = b.DurationSeconds;
+          _triggerModel.EndEarlyPattern  = b.EndEarlyPattern;
+          _triggerModel.EndEarlyPattern2 = b.EndEarlyPattern2;
+          _triggerModel.AltTimerName     = b.AltTimerName;
+
+          // Overlay: update both the persisted ID list and the UI binding
+          if (b.OverlayId != null)
+          {
+            if (!_triggerModel.SelectedOverlays.Contains(b.OverlayId))
+            {
+              _triggerModel.SelectedOverlays.Add(b.OverlayId);
+            }
+
+            var item = _triggerModel.SelectedTimerOverlays?
+                         .FirstOrDefault(x => x.Value == b.OverlayId);
+            if (item != null)
+            {
+              item.IsChecked = true;
+            }
+            else if (_triggerModel.SelectedTimerOverlays == null)
+            {
+              // New trigger not yet loaded via TriggerUtil.Copy — build the collection now.
+              var all = await TriggerStateDB.Instance.GetAllOverlays();
+              _triggerModel.SelectedTimerOverlays = new ObservableCollection<ComboBoxItemDetails>(
+                all.Select(o => new ComboBoxItemDetails
+                {
+                  IsChecked = o.Id == b.OverlayId,
+                  Text  = o.Name,
+                  Value = o.Id
+                }));
+            }
+          }
+
           RefreshPropertyGrid();
         }
         else if (dialog.IsOkClicked && !string.IsNullOrEmpty(dialog.SelectedText))
@@ -168,7 +202,6 @@ namespace EQLogParser
       }
       catch (Exception ex)
       {
-        // A failure opening the picker shouldn't take down the property grid.
         Log.Error("Failed to open spell picker", ex);
       }
     }
