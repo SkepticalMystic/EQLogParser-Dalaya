@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya</title>
+  <meta name="description" content="EQLogParser-Dalaya is a real-time combat log analyzer and damage parser for the Shards of Dalaya EverQuest private server. Download the latest release." />
+  <meta name="robots" content="index, follow" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1 class="hero-title">EQLogParser-Dalaya</h1>
+      <p class="hero-sub">Real-time combat parser for the <strong>Shards of Dalaya</strong> EverQuest server</p>
+      <p class="version-badge" id="version-badge">&nbsp;</p>
+      <div class="hero-actions">
+        <a id="download-btn" class="btn-primary" href="https://github.com/SkepticalMystic/EQLogParser-Dalaya/releases/latest">
+          Download Latest
+        </a>
+        <a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya/releases" class="btn-secondary">
+          All Releases
+        </a>
+      </div>
+      <p class="requirements">Windows 10/11 (64-bit) &bull; .NET 8 Desktop Runtime required</p>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+      <div class="section-inner">
+        <h2>Features</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <h3>Damage Parsing</h3>
+            <p>Real-time DPS tracking per player, pet, and spell with full breakdowns of damage dealt and received across any encounter.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Healing Analytics</h3>
+            <p>Track heals, HoTs, and effective healing per caster with per-spell breakdowns and HoT tick effectiveness analysis.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Spell Timelines</h3>
+            <p>Visualize spell cast timelines and ADPS buff coverage for up to two players side-by-side on a shared time axis.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Audio Triggers</h3>
+            <p>Create text-to-speech alerts, sound cues, and timer overlays triggered by mob abilities, spell procs, or any log text.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Game Overlays</h3>
+            <p>Live damage meters, countdown timer bars, and visual feedback displayed directly over the EverQuest window.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Multi-Log Raid View</h3>
+            <p>Merge logs from multiple group members to build a complete raid-wide damage and healing picture in one window.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dalaya-specific -->
+    <section class="about">
+      <div class="section-inner">
+        <h2>Built for Dalaya</h2>
+        <p>
+          Shards of Dalaya has a combat log format that differs from Live and TLP EverQuest servers.
+          This fork handles those differences automatically so your parses are always accurate.
+        </p>
+        <ul>
+          <li>
+            <strong>Spell damage attribution</strong> &mdash; correctly parses Dalaya's reversed attacker/spell order
+            and <code>your</code>-style self-damage lines
+          </li>
+          <li>
+            <strong>Named pet tracking</strong> &mdash; identifies Dalaya named pets (Bonaparte, Fireballs, Otto, Weens)
+            correctly across melee, spell, and DoT lines without misattribution in raid logs
+          </li>
+          <li>
+            <strong>Dalaya spell database</strong> &mdash; ships with a <code>spells.txt</code> built from Dalaya's
+            actual game data, including spell icons, effects, and descriptions
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Credits -->
+    <section class="credits">
+      <div class="section-inner">
+        <h2>Credits &amp; Links</h2>
+        <div class="credits-grid">
+          <div class="credit-card">
+            <h3>Upstream Project</h3>
+            <p>
+              EQLogParser-Dalaya is a fork of <strong>kauffman12's EQLogParser</strong>.
+              The core parsing engine, WPF UI framework, overlay system, and trigger engine
+              are all from the upstream project. Please consider supporting the original.
+            </p>
+            <div class="credit-links">
+              <a href="https://github.com/kauffman12/EQLogParser" target="_blank">GitHub &rarr;</a>
+            </div>
+          </div>
+          <div class="credit-card">
+            <h3>Shards of Dalaya</h3>
+            <p>
+              A fan-run EverQuest emulation server with unique content, custom classes, and
+              its own spell library &mdash; keeping classic EverQuest alive for a dedicated community.
+            </p>
+            <div class="credit-links">
+              <a href="https://www.dalaya.org" target="_blank">dalaya.org &rarr;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EverQuest franchise.</p>
+  </footer>
+
+  <script>
+    fetch('https://api.github.com/repos/SkepticalMystic/EQLogParser-Dalaya/releases/latest')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var badge = document.getElementById('version-badge');
+        var btn = document.getElementById('download-btn');
+        if (data.tag_name) {
+          badge.textContent = 'v' + data.tag_name;
+          var asset = data.assets && data.assets.find(function(a) { return a.name.endsWith('.exe'); });
+          if (asset) {
+            btn.href = asset.browser_download_url;
+            btn.textContent = 'Download v' + data.tag_name;
+          }
+        }
+      })
+      .catch(function() {
+        document.getElementById('version-badge').textContent = '';
+      });
+  </script>
+
+</body>
+</html>
