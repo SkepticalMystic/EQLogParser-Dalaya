@@ -39,7 +39,19 @@ namespace EQLogParser
     private int _currentCountType;
     private int _currentMinFreqCount;
     private string _currentCategory;
+    private int _currentAdpsFilter;
     private string _title;
+
+    // 0xFF = any non-zero Adps bit; 1/2/4/8 = specific bucket; 0 = inactive.
+    private static int ParseAdpsFilter(string selection) => selection switch
+    {
+      "ADPS — All"     => 0xFF,
+      "ADPS — Caster"  => 1,
+      "ADPS — Melee"   => 2,
+      "ADPS — Tank"    => 4,
+      "ADPS — Healing" => 8,
+      _ => 0
+    };
 
     public SpellCountTable()
     {
@@ -91,7 +103,7 @@ namespace EQLogParser
         }
       }
 
-      var items = new List<string> { "All Categories" };
+      var items = new List<string> { "All Categories", "ADPS — All", "ADPS — Caster", "ADPS — Melee", "ADPS — Tank", "ADPS — Healing" };
       items.AddRange(categories);
       var saved = categoryFilter.SelectedItem as string;
       categoryFilter.ItemsSource = items;
@@ -176,7 +188,7 @@ namespace EQLogParser
             foreach (var id in _theSpellCounts.PlayerCastCounts[player].Keys)
             {
               var spell = _theSpellCounts.UniqueSpells[id];
-              if (PassFilters(spell, false))
+              if (PassFilters(spell, false) && (_currentAdpsFilter == 0 || (spell.Adps & _currentAdpsFilter) != 0))
               {
                 totalCasts = UpdateMaps(id, player, _theSpellCounts.PlayerCastCounts[player][id], _theSpellCounts.MaxCastCounts,
                   totalCountMap, uniqueSpellsMap, filteredPlayerMap, false, totalCasts);
@@ -190,7 +202,7 @@ namespace EQLogParser
             foreach (var id in value.Keys)
             {
               var spell = _theSpellCounts.UniqueSpells[id];
-              if (PassFilters(spell, true))
+              if (PassFilters(spell, true) && (_currentAdpsFilter == 0 || (spell.Adps & _currentAdpsFilter) != 0))
               {
                 totalCasts = UpdateMaps(id, player, value[id], _theSpellCounts.MaxReceivedCounts,
                   totalCountMap, uniqueSpellsMap, filteredPlayerMap, true, totalCasts);
@@ -363,12 +375,17 @@ namespace EQLogParser
 
     private void UpdateOptions(bool force = false)
     {
-      var newCategory = categoryFilter.SelectedItem as string == "All Categories" ? null : categoryFilter.SelectedItem as string;
-      if (dataGrid?.View != null && (force || _currentCountType != countTypes.SelectedIndex || _currentMinFreqCount != minFreqList.SelectedIndex || newCategory != _currentCategory))
+      var selItem = categoryFilter.SelectedItem as string;
+      var newAdpsFilter = ParseAdpsFilter(selItem);
+      // When an ADPS filter is active, clear CurrentCategory so PassFilters
+      // doesn't attempt a text-match against the ADPS item label.
+      var newCategory = (selItem == "All Categories" || newAdpsFilter != 0) ? null : selItem;
+      if (dataGrid?.View != null && (force || _currentCountType != countTypes.SelectedIndex || _currentMinFreqCount != minFreqList.SelectedIndex || newCategory != _currentCategory || newAdpsFilter != _currentAdpsFilter))
       {
         _currentCountType = countTypes.SelectedIndex;
         _currentMinFreqCount = minFreqList.SelectedIndex;
         _currentCategory = newCategory;
+        _currentAdpsFilter = newAdpsFilter;
         CurrentCategory = _currentCategory;
         titleLabel.Content = "Loading...";
         dataGrid.ItemsSource = null;

@@ -189,6 +189,43 @@ CATEGORY_TO_ADPS: dict[str, int] = {
     # Everything not listed contributes 0 — see the module-level comment.
 }
 
+# High-confidence SPA → ADPS bitmask for the SPA-inference fallback.
+# Applied only when neither category data nor the upstream overlay produces a
+# non-zero ADPS bit (~54 auras and recourses with no CategoryDescID).
+# Requires base1 > 0 to exclude debuff slots that share the same SPA id.
+# Haste SPAs (11, 98, 119) require base1 > 100; handled in _adps_from_spa_inference.
+# SPA numbering is SoD-specific — verified against SpellEffectDecoder.cs cases.
+SPA_TO_ADPS: dict[int, int] = {
+    # Melee: ATK, STR, DEX
+    2: MELEE_ADPS,   # ATK
+    4: MELEE_ADPS,   # Strength (STR)
+    5: MELEE_ADPS,   # Dexterity (DEX)
+    # Tank: AC, AGI, STA, resists, absorbs, max HP
+    1: TANK_ADPS,    # Armor Class (AC)
+    6: TANK_ADPS,    # Agility (AGI — defensive avoidance)
+    7: TANK_ADPS,    # Stamina (STA)
+    46: TANK_ADPS,   # Fire Resist
+    47: TANK_ADPS,   # Cold Resist
+    48: TANK_ADPS,   # Poison Resist
+    49: TANK_ADPS,   # Disease Resist
+    50: TANK_ADPS,   # Magic Resist
+    55: TANK_ADPS,   # Absorb Damage
+    69: TANK_ADPS,   # Max Hit Points (HP buff)
+    78: TANK_ADPS,   # Absorb Magical Damage (rune)
+    111: TANK_ADPS,  # All Resists
+    # Caster: INT, WIS, mana, spell-haste
+    8: CASTER_ADPS,  # Intelligence (INT)
+    9: CASTER_ADPS,  # Wisdom (WIS)
+    15: CASTER_ADPS, # Current Mana per tick (mana regen)
+    97: CASTER_ADPS, # Max Mana
+    127: CASTER_ADPS, # Casting Time decrease (positive base1 = spell haste)
+    # Healing: HoT
+    100: HEALING_ADPS, # Current HP per tick (HoT, positive base1)
+}
+
+# Haste SPAs use base 100 + delta encoding: > 100 = haste, < 100 = slow.
+_HASTE_SPAS: frozenset[int] = frozenset({11, 98, 119})
+
 
 CLASS_LEVEL_FIRST_COL = 104  # source col for classid=1 (Warrior); +15 reaches Berserker.
 
@@ -294,6 +331,25 @@ def _adps_from_categories(src_fields: list[str], categories: dict[str, str]) -> 
     return mask
 
 
+def _adps_from_spa_inference(src_fields: list[str]) -> int:
+    """Infer an ADPS bitmask from the spell's SPA effect slots.
+
+    Called only when both category-derived and upstream-overlay bitmasks are 0.
+    Maps high-confidence SPAs to ADPS buckets (see SPA_TO_ADPS). Requires
+    base1 > 0 to exclude debuff slots. Haste SPAs (11/98/119) require base1 > 100.
+    """
+    mask = 0
+    for slot_idx in range(12):
+        spa = _safe_field_int(src_fields, SLOT_SPA_COL + slot_idx)
+        base1 = _safe_field_int(src_fields, SLOT_BASE1_COL + slot_idx)
+        if spa in _HASTE_SPAS:
+            if base1 > 100:
+                mask |= MELEE_ADPS
+        elif spa in SPA_TO_ADPS and base1 > 0:
+            mask |= SPA_TO_ADPS[spa]
+    return mask
+
+
 def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories: dict[str, str]) -> str:
     spell_id = src_fields[0]
     name = src_fields[1]
@@ -316,10 +372,13 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
     icon_id = _safe_int(src_fields, ICON_COL)
     level, class_mask = _level_and_class_mask(src_fields)
     damaging = "1" if (lands_on_you or lands_on_other or wear_off) else "0"
-    # ADPS = union of category-derived bitmask and the upstream-overlay bitmask.
-    # Upstream is hand-curated by humans, categories are sourced from Dalaya
-    # itself; combining them maximizes coverage without losing precision.
+    # ADPS = category-derived | upstream-overlay | SPA-inference (third fallback).
+    # Category data is from Dalaya itself; upstream overlay is hand-curated.
+    # SPA inference only fires when both primary sources produce 0, covering
+    # ~54 auras/recourses with no CategoryDescID and absent from upstream.
     adps_value = _adps_from_categories(src_fields, categories) | adps_overlay.get(name, 0)
+    if adps_value == 0:
+        adps_value = _adps_from_spa_inference(src_fields)
     adps = str(adps_value)
     category = _category_labels(src_fields, categories) if categories else ""
 
