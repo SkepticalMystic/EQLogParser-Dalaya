@@ -31,6 +31,10 @@ namespace EQLogParser
     // MainWindow reads the setting at startup and reflects user toggles back here.
     internal static bool MergeDiagnosticsEnabled;
 
+    // Temporary test hook: when non-null, MergeBlocks appends split sample strings here
+    // instead of (or in addition to) log4net output, so integration tests can inspect splits.
+    internal static System.Collections.Concurrent.ConcurrentBag<string> DiagnosticSplits;
+
     private static readonly Regex EqLogFileRegex =
       new(@"^eqlog_([^_]+)_[^.]+\.txt$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -228,6 +232,7 @@ namespace EQLogParser
         }
       }
 
+      ReconcileUnknownDdSubTypes(perRecord);
       CollapseModifierMaskVariants(perRecord);
 
       if (MergeDiagnosticsEnabled)
@@ -290,6 +295,58 @@ namespace EQLogParser
           return ag;
         })
         .ToList();
+    }
+
+    // Pre-pass for DD attribution: when one source attributed a DD hit to a spell name
+    // and another source recorded the same hit as "Unknown" (because it didn't observe
+    // the cast line), the two records have different SubTypes and may also have different
+    // ModifiersMasks. LooseDamageKey includes SubType literally, so CollapseModifierMaskVariants
+    // cannot group them. This pass folds Unknown-SubType DD records into their matching
+    // named-SubType counterpart so CollapseModifierMaskVariants can handle any remaining
+    // mask differences in one consolidated bucket.
+    private static void ReconcileUnknownDdSubTypes(Dictionary<DamageRecord, List<double>[]> perRecord)
+    {
+      if (perRecord.Count < 2) return;
+
+      var namedTargets = new Dictionary<DdPhysicalKey, (DamageRecord Record, List<double>[] BySource)>();
+      var unknowns = new List<(DamageRecord Record, List<double>[] BySource)>();
+
+      foreach (var (record, bySource) in perRecord)
+      {
+        if (record.Type != Labels.Dd) continue;
+        var key = DdPhysicalKey.From(record);
+        if (record.SubType == Labels.Unk)
+        {
+          unknowns.Add((record, bySource));
+        }
+        else if (!namedTargets.ContainsKey(key))
+        {
+          namedTargets[key] = (record, bySource);
+        }
+      }
+
+      if (unknowns.Count == 0 || namedTargets.Count == 0) return;
+
+      foreach (var (unknown, unknownBySource) in unknowns)
+      {
+        var key = DdPhysicalKey.From(unknown);
+        if (!namedTargets.TryGetValue(key, out var target)) continue;
+        for (var s = 0; s < target.BySource.Length; s++)
+          target.BySource[s].AddRange(unknownBySource[s]);
+        perRecord.Remove(unknown);
+      }
+    }
+
+    // Physical-hit identity for DD records: everything except SubType and ModifiersMask.
+    // Used by ReconcileUnknownDdSubTypes to match Unknown-SubType records against their
+    // named counterparts from sources that could observe the cast line.
+    private readonly record struct DdPhysicalKey(
+      string Attacker, string AttackerOwner, string Defender, string DefenderOwner,
+      bool AttackerIsSpell, uint Total, uint OverTotal)
+    {
+      internal static DdPhysicalKey From(DamageRecord r) =>
+        new(r.Attacker, r.AttackerOwner, r.Defender, r.DefenderOwner,
+            r.AttackerIsSpell, r.Total, r.OverTotal);
     }
 
     // Identity for "the same physical hit" — everything that should match across sources
@@ -516,6 +573,7 @@ namespace EQLogParser
       foreach (var sample in samples)
       {
         Log.Info($"[MergeDiag]   sample: {sample}");
+        DiagnosticSplits?.Add($"[{fightName}/{blockKind}] {sample}");
       }
     }
 

@@ -76,6 +76,7 @@ namespace EQLogParser
     // Typed as interfaces so tests can inject Moq stand-ins.
     private readonly IEQDataStore _dataStore;
     private readonly PlayerRegistry _playerRegistry;
+    private readonly SpellCastTracker _castTracker;
 
     // FightManager is set after construction (FightManager constructs with a DamageLineParser
     // reference, so we use property injection here to avoid the construction cycle). Live
@@ -89,12 +90,13 @@ namespace EQLogParser
       set => _fightManager = value;
     }
 
-    public DamageLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance) { }
+    public DamageLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance, SpellCastTracker.Instance) { }
 
-    public DamageLineParser(IEQDataStore dataStore, PlayerRegistry playerRegistry)
+    public DamageLineParser(IEQDataStore dataStore, PlayerRegistry playerRegistry, SpellCastTracker castTracker = null)
     {
       _dataStore = dataStore;
       _playerRegistry = playerRegistry;
+      _castTracker = castTracker;
     }
 
     static DamageLineParser()
@@ -111,6 +113,7 @@ namespace EQLogParser
       _lastCrit = null;
       _delayCritRecord = null;
       lock (SlainQueue) { SlainQueue.Clear(); }
+      _castTracker?.Clear();
     }
 
     // Test hook: re-raise exceptions so tests can see root cause instead of the silent catch in ParseLine.
@@ -866,13 +869,27 @@ namespace EQLogParser
         attacker = UpdateAttacker(attacker, Labels.Dd);
         defender = UpdateDefender(defender, attacker);
 
-        subType = Labels.Dd;
+        subType = Labels.Unk;
         var end = stop + 1;
 
         if (split.Length > end && split[end].StartsWith('(') && string.Join(" ", split, end, split.Length - stop - 1) is { } oldSpell && oldSpell.Length > 2)
         {
           subType = oldSpell[1..^1];
           subType = TextUtils.ToUpper(subType);
+        }
+
+        // Try cast-window attribution when the paren spell name (EMU format) was not present.
+        // Attribution is restricted to the context player's own spells: other players' cast
+        // visibility varies by proximity in multi-log scenarios, so an observer's partial cast
+        // record can disagree with the caster's own log and produce different SubTypes for the
+        // same physical hit — causing a double-count in the merger. Self-casts are reliable
+        // because the caster always sees their own cast lines.
+        // Non-attributed DDs (non-self, or self with no matching cast) default to Labels.Unk
+        // so the Unknown wildcard in DamageRecord.Equals deduplicates them against named-SubType
+        // records from the attacker's own log.
+        if (subType == Labels.Unk && _castTracker != null && attacker == _playerRegistry.PlayerName)
+        {
+          subType = _castTracker.TryAttributeHit(attacker, lineData.BeginTime) ?? Labels.Unk;
         }
 
         record = CreateDamageRecord(lineData, split, stop, attacker, defender, damage, Labels.Dd, subType);

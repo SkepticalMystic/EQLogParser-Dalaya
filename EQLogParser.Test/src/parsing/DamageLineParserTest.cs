@@ -525,7 +525,7 @@ namespace EQLogParserTest
       Assert.AreEqual("Pixtt Invi Mal", record.Defender);
       Assert.AreEqual((uint)150, record.Total);
       Assert.AreEqual(Labels.Dd, record.Type);
-      Assert.AreEqual(Labels.Dd, record.SubType);
+      Assert.AreEqual(Labels.Unk, record.SubType);
       Assert.IsFalse(record.AttackerIsSpell);
     }
 

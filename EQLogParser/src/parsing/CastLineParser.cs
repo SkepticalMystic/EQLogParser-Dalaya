@@ -26,13 +26,15 @@ namespace EQLogParser
 
     private readonly EQDataStore _dataStore;
     private readonly PlayerRegistry _playerRegistry;
+    private readonly SpellCastTracker _castTracker;
 
-    public CastLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance) { }
+    public CastLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance, SpellCastTracker.Instance) { }
 
-    public CastLineParser(EQDataStore dataStore, PlayerRegistry playerRegistry)
+    public CastLineParser(EQDataStore dataStore, PlayerRegistry playerRegistry, SpellCastTracker castTracker = null)
     {
       _dataStore = dataStore;
       _playerRegistry = playerRegistry;
+      _castTracker = castTracker;
     }
 
     public bool Process(LineData lineData)
@@ -160,6 +162,12 @@ namespace EQLogParser
                 spellData = _dataStore.AddUnknownSpell(spellName);
               }
 
+              // Queue damaging spells for DD attribution in DamageLineParser.
+              if (_castTracker != null && _dataStore.GetDamagingSpellByName(spellName) is { } dmgSpell)
+              {
+                _castTracker.Push(player, spellName, dmgSpell.CastingTimeMs, currentTime);
+              }
+
               var cast = new SpellCast { Caster = string.Intern(player), Spell = string.Intern(spellName), SpellData = spellData };
               RecordsStore.Instance.Add(cast, currentTime);
 
@@ -175,6 +183,7 @@ namespace EQLogParser
             }
             else
             {
+              _castTracker?.Cancel(player, spellName);
               foreach (var (beginTime, action) in RecordsStore.Instance.GetSpellsDuring(currentTime - 10, currentTime, true))
               {
                 if (action is SpellCast sc && sc.Spell == spellName && sc.Caster == player)

@@ -511,5 +511,90 @@ namespace EQLogParserTest
       Assert.IsNull(DamageLineParser.Instance.ParseLine(null));
       Assert.IsNull(DamageLineParser.Instance.ParseLine("This is not a damage line."));
     }
+
+    // =============== DD attribution via SpellCastTracker ===============
+    // Dalaya "X hit Y for N points of non-melee damage." lines carry no spell name.
+    // DamageLineParser peeks the SpellCastTracker queue to attribute the hit when a
+    // matching damaging cast was observed by CastLineParser within the hit window.
+    // Attribution is restricted to the context player's own spells (attacker == PlayerName)
+    // to avoid split-attribution across multi-log sources that have different cast visibility.
+    // All non-attributed DDs (non-self, or self with no matching cast) produce Labels.Unk
+    // so the Unknown wildcard in DamageRecord.Equals can dedup them correctly.
+
+    [TestMethod]
+    public void DdAttribution_AttributedToSpellWhenCastPrecedes()
+    {
+      // Push a damaging cast for the context player (Selfie) — attribution only fires for
+      // attacker == PlayerName.
+      SpellCastTracker.Instance.Push("Selfie", "Burst of Flames", 2500, 1000.0);
+
+      var hit = ProcessLineWithResult("Selfie hit Kara`Kadar for 2804 points of non-melee damage.", 1003.0);
+      Assert.IsNotNull(hit);
+      Assert.AreEqual("Selfie", hit.Attacker);
+      Assert.AreEqual(2804u, hit.Total);
+      Assert.AreEqual(Labels.Dd, hit.Type);
+      Assert.AreEqual("Burst of Flames", hit.SubType, "SubType must be the spell name when a cast was queued");
+    }
+
+    [TestMethod]
+    public void DdAttribution_UnknownWhenNoCastQueued()
+    {
+      // No cast pushed for the context player — SubType must be Labels.Unk ("Unknown").
+      var hit = ProcessLineWithResult("Selfie hit Kara`Kadar for 2804 points of non-melee damage.", 1003.0);
+      Assert.IsNotNull(hit);
+      Assert.AreEqual(Labels.Unk, hit.SubType, "Unattributed self-DD must have SubType = Labels.Unk");
+    }
+
+    [TestMethod]
+    public void DdAttribution_UnknownWhenCastIsStale()
+    {
+      SpellCastTracker.Instance.Push("Selfie", "Burst of Flames", 2500, 1000.0); // window closes at T=1004.5
+      var hit = ProcessLineWithResult("Selfie hit Kara`Kadar for 2804 points of non-melee damage.", 1010.0); // stale
+      Assert.IsNotNull(hit);
+      Assert.AreEqual(Labels.Unk, hit.SubType);
+    }
+
+    [TestMethod]
+    public void DdAttribution_NonSelfAttackerAlwaysUnknown()
+    {
+      // Non-self attackers never get attribution — their DDs default to Labels.Unk regardless
+      // of what the tracker holds. This prevents different sources from attributing the same DD
+      // to different spell names and causing a double-count in the multi-log merger.
+      SpellCastTracker.Instance.Push("Owez", "Burst of Flames", 2500, 1000.0);
+      var hit = ProcessLineWithResult("Owez hit Kara`Kadar for 2804 points of non-melee damage.", 1003.0);
+      Assert.IsNotNull(hit);
+      Assert.AreEqual(Labels.Unk, hit.SubType, "Non-self DD must always be Unknown regardless of tracker");
+    }
+
+    [TestMethod]
+    public void DdAttribution_IsolatedParserHasItsOwnTracker()
+    {
+      // Push to singleton tracker — should NOT affect an isolated parser with its own tracker.
+      // Set PlayerName = "Owez" on the isolated parser so the attacker==PlayerName check passes
+      // and we genuinely exercise tracker isolation (empty tracker → no attribution → Unk).
+      SpellCastTracker.Instance.Push("Owez", "Burst of Flames", 2500, 1000.0);
+      var tracker = new SpellCastTracker(); // empty tracker
+      var pr = new PlayerRegistry(autoSave: false) { PlayerName = "Owez" };
+      var dlp = new DamageLineParser(new EQDataStore(), pr, tracker);
+      var hit = dlp.ParseLine("Owez hit Kara`Kadar for 2804 points of non-melee damage.");
+      Assert.IsNotNull(hit);
+      Assert.AreEqual(Labels.Unk, hit.SubType, "Isolated parser must not see singleton tracker pushes");
+    }
+
+    private static DamageRecord ProcessLineWithResult(string action, double beginTime)
+    {
+      DamageRecord captured = null;
+      void Handler(DamageProcessedEvent e) { captured = e.Record; }
+      DamageLineParser.Instance.EventsDamageProcessed += Handler;
+      try
+      {
+        DamageLineParser.Instance.Process(new LineData { Action = action, BeginTime = beginTime, Split = action.Split(' ') });
+      }
+      finally
+      {
+        DamageLineParser.Instance.EventsDamageProcessed -= Handler;
+      }
+      return captured;
+    }
   }
 }
