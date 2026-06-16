@@ -2,6 +2,14 @@
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.3.4 | 06/16/26\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab {\b Spell hover tooltips}: Hover any spell name in {\b Spell Counts}, {\b Damage Breakdown}, {\b Healing Breakdown}, or {\b HoT Effectiveness} for 800ms to see decoded spell effects -- description, then each slot as wiki-style text ("Slot 2: Increase Max HP by 1150").\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 2.\tx360\tab {\b Spell Counts ADPS filter}: The category dropdown now includes {\b ADPS -- All / Caster / Melee / Tank / Healing} to quickly scope the table to buff-bar spells without picking a specific category.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 3.\tx360\tab {\b Category badges}: Spell categories in {\b Spell Counts} render as color-coded pill badges instead of plain text.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 4.\tx360\tab {\b HoT Effectiveness -- Base Heal}: The {\b Base Heal} column is now hidden by default to reduce noise in normal play. Right-click the table to toggle {\b Show/Hide Base Heal}.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 5.\tx360\tab {\b Classic regen spells}: Regeneration, Chloroplast, Pack Regeneration, and similar HP-regen spells now show correct {\b Base Heal} and {\b Amplifier} values in {\b HoT Effectiveness} (previously blank due to a missing SPA lookup fallback).\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 6.\tx360\tab {\b Spell decoder coverage}: Effect tooltips now decode Dalaya-specific SPAs 168-198 (Melee Mitigation, Accuracy, Damage, Dodge, Endurance) and 203-463 (Soulbond, Force Aggro, Add Spell Proc, etc.). Illusion forms now show names ("Illusion: Wolf") instead of numeric IDs.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 7.\tx360\tab {\b ADPS data update}: 333 additional spells stamped with ADPS classifications via a new SPA-inference pass -- auras and recourses that lacked category tags are now correctly classified for the {\b Timeline} and {\b Spell Counts} ADPS filter.\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.3.3 | 06/15/26\par}
 {\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab Added {\b Hide Dupes (multi-character)} to {\b Text Overlays}. The setting is now listed under {\b Basic Overlay Options} for all overlay types -- it was previously only available on {\b Timer Overlays} under {\b Timer Options}. When enabled, duplicate Timers or Text messages fired by multiple characters responding to the same trigger are suppressed.\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.3.2 | 06/15/26\par}
