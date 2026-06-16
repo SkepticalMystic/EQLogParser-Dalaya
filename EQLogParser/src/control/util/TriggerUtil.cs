@@ -115,6 +115,7 @@ namespace EQLogParser
         toTrigger.IconSource = fromTrigger.IconSource;
         toTrigger.VoiceRate = fromTrigger.VoiceRate;
         toTrigger.Volume = fromTrigger.Volume;
+        toTrigger.SpellNameLookup = fromTrigger.SpellNameLookup;
 
         if (toTrigger is TriggerPropertyModel toModel)
         {
