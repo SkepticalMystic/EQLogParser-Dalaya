@@ -117,8 +117,10 @@ namespace EQLogParser
 
       var textBlock = new FrameworkElementFactory(typeof(TextBlock));
       textBlock.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
-      var binding = new Binding("Spell");
-      textBlock.SetBinding(TextBlock.TextProperty, binding);
+      textBlock.SetBinding(TextBlock.TextProperty, new Binding("Spell"));
+      textBlock.SetBinding(FrameworkElement.ToolTipProperty, new Binding("Spell") { Converter = new SpellNameTooltipConverter() });
+      textBlock.SetValue(ToolTipService.InitialShowDelayProperty, 800);
+      textBlock.SetValue(ToolTipService.ShowDurationProperty, 15000);
       stackPanel.AppendChild(textBlock);
       cellTemplate.VisualTree = stackPanel;
 

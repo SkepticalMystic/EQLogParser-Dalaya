@@ -12,6 +12,7 @@
     <Grid.Resources>
       <local:ComboBoxItemTemplateSelector x:Key="ComboBoxSelector" />
       <local:ZeroConverter x:Key="ZeroConverter" />
+      <local:SpellNameTooltipConverter x:Key="SpellTooltipConverter" />
     </Grid.Resources>
     <Grid.RowDefinitions>
       <RowDefinition Height="{DynamicResource EQGridTitleHeight}"></RowDefinition>
@@ -87,7 +88,15 @@
         </ContextMenu>
       </syncfusion:SfTreeGrid.ContextMenu>
       <syncfusion:SfTreeGrid.Columns>
-        <syncfusion:TreeGridTextColumn MappingName="Name" HeaderText="Name" Width="160"/>
+        <syncfusion:TreeGridTemplateColumn MappingName="Name" HeaderText="Name" Width="160">
+          <syncfusion:TreeGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                         ToolTipService.InitialShowDelay="800" ToolTipService.ShowDuration="15000"
+                         ToolTip="{Binding Name, Converter={StaticResource SpellTooltipConverter}}" />
+            </DataTemplate>
+          </syncfusion:TreeGridTemplateColumn.CellTemplate>
+        </syncfusion:TreeGridTemplateColumn>
         <syncfusion:TreeGridTextColumn MaximumWidth="80" MappingName="Percent" DisplayBinding="{Binding Path=Percent, Converter={StaticResource ZeroConverter}}" ShowHeaderToolTip="True" HeaderToolTipTemplate="{StaticResource HeaderTotalTemplateToolTip}" TextAlignment="Right" HeaderText="% Player" />
         <syncfusion:TreeGridNumericColumn NumberDecimalDigits="0" NumberGroupSizes="3" MappingName="Total" TextAlignment="Right" HeaderText="Heal" />
         <syncfusion:TreeGridNumericColumn NumberDecimalDigits="0" NumberGroupSizes="3" MappingName="Extra" ShowHeaderToolTip="True" HeaderToolTipTemplate="{StaticResource HeaderOverHealTemplateToolTip}" TextAlignment="Right" HeaderText="Over Healed" />

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace EQLogParser
 {
@@ -36,9 +37,7 @@ namespace EQLogParser
 
     private void BuildColumns()
     {
-      AddText("SpellName", "Spell",
-        "Spell name as recorded in the heal log.",
-        TextAlignment.Left, ThemeConfig.CurrentSpellWidth);
+      AddSpellNameColumn("SpellName", ThemeConfig.CurrentSpellWidth);
 
       AddNumeric("TickCount", "Ticks",
         "Number of HoT ticks observed within the active fight selection.",
@@ -85,6 +84,28 @@ namespace EQLogParser
         HeaderText = header,
         TextAlignment = align,
         HeaderTemplate = HeaderTemplateWithTooltip(header, tooltip)
+      };
+      if (width.HasValue) col.Width = width.Value;
+      dataGrid.Columns.Add(col);
+    }
+
+    // Spell-name column: template column with 800ms hover tooltip showing decoded spell effects.
+    private void AddSpellNameColumn(string mapping, double? width = null)
+    {
+      var converter = new SpellNameTooltipConverter();
+      var tb = new FrameworkElementFactory(typeof(TextBlock));
+      tb.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+      tb.SetBinding(TextBlock.TextProperty, new Binding(mapping));
+      tb.SetBinding(FrameworkElement.ToolTipProperty, new Binding(mapping) { Converter = converter });
+      tb.SetValue(ToolTipService.InitialShowDelayProperty, 800);
+      tb.SetValue(ToolTipService.ShowDurationProperty, 15000);
+
+      var col = new GridTemplateColumn
+      {
+        MappingName = mapping,
+        HeaderText = "Spell",
+        HeaderTemplate = HeaderTemplateWithTooltip("Spell", "Spell name as recorded in the heal log."),
+        CellTemplate = new DataTemplate { VisualTree = tb }
       };
       if (width.HasValue) col.Width = width.Value;
       dataGrid.Columns.Add(col);

@@ -12,6 +12,7 @@
     <Grid.Resources>
       <local:ComboBoxItemTemplateSelector x:Key="ComboBoxSelector" />
       <local:ZeroConverter x:Key="ZeroConverter" />
+      <local:SpellNameTooltipConverter x:Key="SpellTooltipConverter" />
     </Grid.Resources>
     <Grid.RowDefinitions>
       <RowDefinition Height="{DynamicResource EQGridTitleHeight}"></RowDefinition>
@@ -88,7 +89,15 @@
         </ContextMenu>
       </syncfusion:SfTreeGrid.ContextMenu>
       <syncfusion:SfTreeGrid.Columns>
-        <syncfusion:TreeGridTextColumn MappingName="Name" HeaderText="Name" />
+        <syncfusion:TreeGridTemplateColumn MappingName="Name" HeaderText="Name">
+          <syncfusion:TreeGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                         ToolTipService.InitialShowDelay="800" ToolTipService.ShowDuration="15000"
+                         ToolTip="{Binding Name, Converter={StaticResource SpellTooltipConverter}}" />
+            </DataTemplate>
+          </syncfusion:TreeGridTemplateColumn.CellTemplate>
+        </syncfusion:TreeGridTemplateColumn>
         <syncfusion:TreeGridTextColumn MappingName="Percent" DisplayBinding="{Binding Path=Percent, Converter={StaticResource ZeroConverter}}" HeaderToolTipTemplate="{StaticResource HeaderTotalTemplateToolTip}" TextAlignment="Right" HeaderText="% Player" />
         <syncfusion:TreeGridNumericColumn NumberDecimalDigits="0" NumberGroupSizes="3" MappingName="Total" TextAlignment="Right" HeaderText="Damage" />
         <syncfusion:TreeGridNumericColumn NumberDecimalDigits="0" NumberGroupSizes="3" MappingName="TotalAss" TextAlignment="Right" HeaderText="Assassinate" />
