@@ -296,6 +296,7 @@ namespace EQLogParser
               CheckPreviousLine(wrapper, _previousLines, lineData.BeginTime, out var previousMatches, out var previousSwTime))
           {
             swTime += previousSwTime;
+            ResolveSpellName(wrapper, matches);
             await HandleTriggerAsync(wrapper, lineData, matches, previousMatches, dynamicDuration, swTime, beginTicks);
           }
         }
@@ -402,6 +403,18 @@ namespace EQLogParser
       }
 
       return found;
+    }
+
+    // For landing-mode category triggers the SpellName capture group contains the
+    // "lands on other" text; SpellNameLookup maps that text to the canonical spell name.
+    private static void ResolveSpellName(TriggerWrapper wrapper, Dictionary<string, string> matches)
+    {
+      if (wrapper.SpellNameLookup == null || matches == null) return;
+      if (matches.TryGetValue("SpellName", out var landingText) &&
+          wrapper.SpellNameLookup.TryGetValue(landingText, out var spellName))
+      {
+        matches["SpellName"] = spellName;
+      }
     }
 
     internal static bool CheckPreviousLine(TriggerWrapper wrapper, LinkedList<LineData> previousLines, double currentBeginTime, out Dictionary<string, string> matches, out long swTime)
@@ -1255,7 +1268,8 @@ namespace EQLogParser
               HasLogTimeTimer = modifiedTimerName?.Contains(LogTimeCode, StringComparison.OrdinalIgnoreCase) == true,
               HasLogTimeSendToChat = modifiedSendToChat?.Contains(LogTimeCode, StringComparison.OrdinalIgnoreCase) == true,
               TimerIcon = UiElementUtil.CreateBitmap(trigger.IconSource),
-              ModifiedEndEarlyPattern3 = PreProcessCodes(trigger.EndEarlyPattern3, trigger)
+              ModifiedEndEarlyPattern3 = PreProcessCodes(trigger.EndEarlyPattern3, trigger),
+              SpellNameLookup = trigger.SpellNameLookup
             };
 
             // temp

@@ -193,6 +193,10 @@ namespace EQLogParser
     public double LockoutTime { get; set; }
     public int VoiceRate { get; set; }  // 0 for system setting
     public int Volume { get; set; } = 4; // no increase
+    // Populated by the spell picker's category-regex mode for landing triggers only.
+    // Maps each "lands on other" text (as it appears in the log) → canonical spell name.
+    // Null for cast-mode category triggers and manually-typed patterns.
+    public Dictionary<string, string> SpellNameLookup { get; set; }
   }
 
   internal class TimerOverlayPropertyModel : Overlay
@@ -365,5 +369,6 @@ namespace EQLogParser
     public string StartText { get; set; }
     public string PreviousStartText { get; set; }
     public long LockedOutTicks { get; set; }
+    public Dictionary<string, string> SpellNameLookup { get; init; }
   }
 }

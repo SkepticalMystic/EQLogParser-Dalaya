@@ -200,6 +200,7 @@ namespace EQLogParser
           _theTextBox.CaretIndex = _theTextBox.Text.Length;
           _theTextBox.Focus();
           _triggerModel.UseRegex = true;
+          _triggerModel.SpellNameLookup = dialog.CategoryRegexResult.SpellNameLookup;
           RefreshPropertyGrid();
         }
         else if (dialog.IsOkClicked && !string.IsNullOrEmpty(dialog.SelectedText))

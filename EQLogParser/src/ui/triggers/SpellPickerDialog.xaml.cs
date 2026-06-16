@@ -1,4 +1,5 @@
 using Syncfusion.UI.Xaml.Grid;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -45,7 +46,9 @@ namespace EQLogParser
     public TriggerBundle BundleResult { get; private set; }
 
     // Category regex mode (P5): only Pattern is returned; caller sets UseRegex = true.
-    public record CategoryRegex(string Pattern);
+    // SpellNameLookup is non-null for landing-mode triggers only: maps each matched
+    // "lands on other" text back to the canonical spell name for {SpellName} substitution.
+    public record CategoryRegex(string Pattern, Dictionary<string, string> SpellNameLookup = null);
     public CategoryRegex CategoryRegexResult { get; private set; }
 
     private readonly List<SpellData> _allSpells;
@@ -333,32 +336,44 @@ namespace EQLogParser
       }
 
       string pattern;
+      Dictionary<string, string> spellNameLookup = null;
       if (castRadio.IsChecked == true)
       {
+        // The (?<SpellName>...) group captures the spell name directly from the log line.
         var casterName = catCasterBox.Text.Trim();
         var alt = string.Join("|", spells.Select(s => Regex.Escape(s.Name)).Distinct().OrderBy(x => x));
         pattern = string.IsNullOrEmpty(casterName)
-          ? $@"{{S1}} begins casting ({alt})\."
-          : $@"{Regex.Escape(casterName)} begins casting ({alt})\.";
+          ? $@"{{S1}} begins casting (?<SpellName>{alt})\."
+          : $@"{Regex.Escape(casterName)} begins casting (?<SpellName>{alt})\.";
       }
       else
       {
-        var texts = spells
-          .Select(s => s.LandsOnOther?.Trim())
-          .Where(t => !string.IsNullOrEmpty(t))
-          .Select(Regex.Escape)
-          .Distinct()
-          .OrderBy(x => x)
+        var landingSpells = spells
+          .Select(s => (Text: s.LandsOnOther?.Trim(), s.Name))
+          .Where(x => !string.IsNullOrEmpty(x.Text))
           .ToList();
-        if (texts.Count == 0)
+        if (landingSpells.Count == 0)
         {
           hintText.Text = "No landing messages found for the filtered spells.";
           return;
         }
-        pattern = $"({string.Join("|", texts)})";
+
+        // Build lookup before escaping so keys match the raw log text.
+        spellNameLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (text, name) in landingSpells)
+          spellNameLookup.TryAdd(text, name);
+
+        var texts = landingSpells
+          .Select(x => Regex.Escape(x.Text))
+          .Distinct()
+          .OrderBy(x => x)
+          .ToList();
+        // (?<SpellName>...) captures the landing text; TriggerProcessor resolves it to
+        // the spell name via SpellNameLookup at match time.
+        pattern = $"(?<SpellName>{string.Join("|", texts)})";
       }
 
-      CategoryRegexResult = new CategoryRegex(pattern);
+      CategoryRegexResult = new CategoryRegex(pattern, spellNameLookup);
       IsOkClicked = true;
       Close();
     }
