@@ -23,7 +23,8 @@ namespace EQLogParser
       if (EQDataStore.Instance.GetSpellByAbbrv(abbrvName) == null)
         return DependencyProperty.UnsetValue;
 
-      var tip = new ToolTip();
+      var tip = new ToolTip { Padding = new Thickness(0) };
+      if (Application.Current.Resources["ContentBackground"] is Brush bg) tip.Background = bg;
       tip.Opened += (s, _) =>
       {
         var t = (ToolTip)s;
