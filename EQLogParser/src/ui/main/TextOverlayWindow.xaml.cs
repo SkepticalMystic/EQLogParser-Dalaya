@@ -34,6 +34,7 @@ namespace EQLogParser
     private volatile int _isTicking;
     private volatile bool _isClosed;
     private volatile bool _newData;
+    private volatile bool _hideDupes;
 
     internal TextOverlayWindow(TriggerNode node, Dictionary<string, Window> previews = null)
     {
@@ -88,12 +89,28 @@ namespace EQLogParser
 
       lock (_bufferLock)
       {
+        if (_hideDupes && IsDuplicateText(text))
+          return;
+
         _buffer.Add(newText);
         _newData = true;
       }
 
       // ensure timer is running
       _timer?.Change(0, 150);
+    }
+
+    private bool IsDuplicateText(string text)
+    {
+      for (var i = 0; i < _buffer.Count; i++)
+      {
+        if (_buffer.GetFromNewest(i) is { } existing &&
+            string.Equals(existing.Text, text, StringComparison.Ordinal))
+        {
+          return true;
+        }
+      }
+      return false;
     }
 
     // Keep on UI thread
@@ -416,6 +433,7 @@ namespace EQLogParser
       Top = _node.OverlayData.Top;
       Left = _node.OverlayData.Left;
       Title = _node.Name;
+      _hideDupes = _node.OverlayData.HideDuplicates;
 
       if (_streamerMode != _node.OverlayData.StreamerMode && !_preview)
       {
