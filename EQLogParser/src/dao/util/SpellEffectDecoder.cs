@@ -9,10 +9,11 @@ namespace EQLogParser
   // Direct port of ngdeao/SoD-winspellparser SpellParser.ParseEffect (the case<spa> switch at
   // SpellParser.cs:1391-1808) plus its FormatCount/FormatPercent/CalcValueRange helpers.
   //
-  // SPA cases 0-200 are ported faithfully from SoD. Dalaya-specific SPAs above 200 were
-  // reverse-engineered from spell data and the Dalaya wiki. Teleport zone names (SPA 83/88/104)
-  // still show zone IDs; those need converter-side work to embed zone names. SPA 58 illusion
-  // forms are resolved via IllusionNames below; unknown forms fall to "form N".
+  // SPA cases 0-200 are ported faithfully from SoD. SPAs 168–198 (Dalaya-specific or SoD gaps)
+  // were reverse-engineered from spell data and descriptions. Dalaya-specific SPAs above 200
+  // were similarly reverse-engineered. Teleport zone names (SPA 83/88/104) still show zone IDs;
+  // those need converter-side work to embed zone names. SPA 58 illusion forms are resolved via
+  // IllusionNames below; unknown forms fall to "form N".
   internal static class SpellEffectDecoder
   {
     // Illusion form names for SPA 58. Covers every form ID present in Dalaya's spell data;
@@ -495,6 +496,27 @@ namespace EQLogParser
           return $"Autocast: [Spell {base1}]";
         case 154:
           return $"Dispell Effect: [Spell {base1}]";
+
+        // SPAs 168–198: Dalaya-specific or SoD gaps not previously ported.
+        case 168:
+          return FormatPercent("Melee Mitigation", base1);
+        case 173:
+          return FormatCount("Parry Skill", base1);
+        case 174:
+          return FormatPercent("Dodge", base1);
+        case 175:
+          return FormatCount("Riposte Skill", base1);
+        case 180:
+          return FormatPercent("Crowd Control Resistance", base1);
+        case 184:
+          return FormatPercent("Accuracy", base1);
+        case 185:
+          return FormatPercent("Damage", base1);
+        case 189:
+          return FormatCount("Endurance", base1) + repeating;
+        case 198:
+          return FormatCount("Endurance", base1);
+
         case 199:
           return FormatCount("Hate Transfer", base1);
         case 200:
