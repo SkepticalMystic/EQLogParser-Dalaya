@@ -548,8 +548,8 @@ namespace EQLogParser
   // Per-spell 12-slot effect data, sourced from data/spell-effects.json (emitted
   // by tools/spells/convert_spells.py). See memory project_dot_hot_validation
   // Phase 2 for the data carry rationale (sidecar JSON vs spells.txt extension).
-  // Only slots with a meaningful SPA effect are present in Slots (SPA 0 and 254
-  // are filtered as empty markers).
+  // SPA 254 (Unused marker) is always filtered. SPA 0 (HP change) is kept when
+  // non-zero — it carries real heal/nuke/regen effects on classic spells.
   internal class SpellSlotEffect
   {
     public int Slot { get; set; }

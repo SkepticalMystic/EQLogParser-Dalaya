@@ -718,6 +718,7 @@ namespace EQLogParser
     }
 
     // SPA effect id constants relevant to periodic-tick computation.
+    private const int SpaCurrentHp = 0;          // classic regen spells (Regeneration, Chloroplast)
     private const int SpaCurrentHpRepeating = 100;
 
     // Computes the expected per-tick healing for a HoT spell cast by a player of
@@ -767,6 +768,24 @@ namespace EQLogParser
           break;
         }
       }
+
+      // SPA 100 not found — fall back to SPA 0. Classic Dalaya regen spells
+      // (Regeneration, Chloroplast, Pack variants) store per-tick HP restore
+      // in SPA 0 with calc=100 rather than SPA 100. Guard with duration > 0
+      // so instant heals (which also use SPA 0 but have durationBase=0) are
+      // not mistaken for HoTs.
+      if (hotSlot == null && (effects.DurationBase > 0 || effects.DurationCalc > 0))
+      {
+        foreach (var slot in effects.Slots)
+        {
+          if (slot.Spa == SpaCurrentHp && slot.Base1 > 0)
+          {
+            hotSlot = slot;
+            break;
+          }
+        }
+      }
+
       if (hotSlot == null) return null;
 
       var perTickAmount = SpellFormula.CalcValue(hotSlot.Calc, hotSlot.Base1, hotSlot.Max, tick: 1, casterLevel);

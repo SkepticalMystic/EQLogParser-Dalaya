@@ -19,7 +19,8 @@ namespace EQLogParser
   //   Max Heal   — largest single tick (usually a crit)
   //   Crits      — ticks carrying the Crit modifier
   //   Crit %     — crit rate
-  //   Base Heal  — spell-data per-tick base value, before any modifiers
+  //   Base Heal  — spell-data per-tick base value (hidden by default; toggle via
+  //                right-click "Show Base Heal"). Useful for patch drift detection.
   //   Amplifier  — Avg Heal / Base Heal; captures the multiplicative stack of
   //                focus effects, AAs, Power Bonus, casting/proficiency skills,
   //                and crit averaging.
@@ -29,6 +30,8 @@ namespace EQLogParser
   // shared with project_dd_attribution).
   public partial class HotEffectivenessTable : UserControl
   {
+    private GridColumn _baseHealCol;
+
     public HotEffectivenessTable()
     {
       InitializeComponent();
@@ -70,6 +73,8 @@ namespace EQLogParser
       AddText("ExpectedDisplay", "Base Heal",
         "Spell-data base per-tick value, before any modifiers (focus effects, AAs, Power Bonus, casting/proficiency skills, crit). Druid HoTs tick every 2s on Dalaya; others tick every 6s.",
         TextAlignment.Right);
+      _baseHealCol = dataGrid.Columns[^1];
+      _baseHealCol.IsHidden = true;
 
       AddText("RatioDisplay", "Amplifier",
         "Avg Heal / Base Heal. Captures the multiplicative stack of focus effects, AAs, Power Bonus, casting/proficiency skills, and crit averaging. Consistent ratios across a player's spells suggest the spell-data baselines are correct; an outlier may indicate a spells.txt mismap or a Dalaya mechanic the formula port doesn't handle.",
@@ -127,6 +132,13 @@ namespace EQLogParser
     // Header template that preserves the displayed header text but adds an
     // explanatory tooltip on hover. Built programmatically so each column can
     // bind its own tooltip text without per-column XAML.
+    private void BaseHealToggleClick(object sender, RoutedEventArgs e)
+    {
+      if (_baseHealCol == null) return;
+      _baseHealCol.IsHidden = !_baseHealCol.IsHidden;
+      baseHealToggle.Header = _baseHealCol.IsHidden ? "Show Base Heal" : "Hide Base Heal";
+    }
+
     private static DataTemplate HeaderTemplateWithTooltip(string headerText, string tooltipText)
     {
       var tb = new FrameworkElementFactory(typeof(TextBlock));

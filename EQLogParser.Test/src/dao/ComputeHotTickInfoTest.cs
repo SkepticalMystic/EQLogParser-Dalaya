@@ -124,11 +124,41 @@ namespace EQLogParserTest
     [TestMethod]
     public void DirectHealSpell_ReturnsNull()
     {
-      // id 12, "Healing" — an instant heal (SPA 0 with a value, no SPA 100 slot).
-      // ComputeHotTickInfo keys on SPA 100, so it should refuse to fabricate HoT info.
+      // id 12, "Healing" — instant heal: SPA 0 with a value but durationBase=0.
+      // The SPA-0 fallback is guarded by duration > 0, so this must stay null.
       var spell = new SpellData { Id = "12", Name = "Healing", Level = 14 };
       var info = _store.ComputeHotTickInfo(spell, casterLevel: 14, casterClass: SpellClass.Clr);
       Assert.IsFalse(info.HasValue);
+    }
+
+    [TestMethod]
+    public void Regeneration_ClassicSpa0Regen_HasHotInfo()
+    {
+      // id 144, "Regeneration" — classic SPA-0 regen: base1=5, calc=100 (flat),
+      // durationCalc=99 → default branch → value = durationBase = 102 ticks = 612s.
+      // Non-Druid: 6s interval → tickCount=102, totalExpected=510.
+      var spell = FindById("144");
+      var info = _store.ComputeHotTickInfo(spell, casterLevel: 65, casterClass: SpellClass.Clr);
+
+      Assert.IsTrue(info.HasValue, "Regeneration (SPA 0 regen) should return HotTickInfo");
+      Assert.AreEqual(5, info.Value.PerTickAmount);
+      Assert.AreEqual(6, info.Value.TickIntervalSeconds);
+      Assert.AreEqual(102, info.Value.TickCount);
+      Assert.AreEqual(510, info.Value.TotalExpected);
+    }
+
+    [TestMethod]
+    public void PackChloroplast_ClassicSpa0Regen_HasHotInfo()
+    {
+      // id 138, "Pack Chloroplast" — SPA 0, base1=10, calc=100, durationBase=102.
+      // Same duration/interval math as Regeneration but base=10.
+      var spell = FindById("138");
+      var info = _store.ComputeHotTickInfo(spell, casterLevel: 65, casterClass: SpellClass.Clr);
+
+      Assert.IsTrue(info.HasValue, "Pack Chloroplast (SPA 0 regen) should return HotTickInfo");
+      Assert.AreEqual(10, info.Value.PerTickAmount);
+      Assert.AreEqual(102, info.Value.TickCount);
+      Assert.AreEqual(1020, info.Value.TotalExpected);
     }
 
     [TestMethod]

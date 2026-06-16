@@ -135,10 +135,27 @@ namespace EQLogParser
 
       dataGrid.Columns.Add(headerCol);
 
-      var categoryCol = new GridTextColumn
+      var categoryBadgeTemplate = new DataTemplate();
+      var badgeBorder = new FrameworkElementFactory(typeof(Border));
+      badgeBorder.SetValue(Border.CornerRadiusProperty, new CornerRadius(8));
+      badgeBorder.SetValue(Border.PaddingProperty, new Thickness(6, 1, 6, 1));
+      badgeBorder.SetValue(Border.MarginProperty, new Thickness(2, 1, 2, 1));
+      badgeBorder.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Left);
+      badgeBorder.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+      badgeBorder.SetBinding(Border.BackgroundProperty, new Binding("Category") { Converter = new CategoryBadgeColorConverter() });
+      badgeBorder.SetBinding(FrameworkElement.VisibilityProperty, new Binding("Category") { Converter = new CategoryBadgeVisibilityConverter() });
+      var badgeText = new FrameworkElementFactory(typeof(TextBlock));
+      badgeText.SetValue(TextBlock.ForegroundProperty, Brushes.White);
+      badgeText.SetValue(TextBlock.FontSizeProperty, 10.5);
+      badgeText.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+      badgeText.SetBinding(TextBlock.TextProperty, new Binding("Category") { Converter = new CategoryBadgeTextConverter() });
+      badgeBorder.AppendChild(badgeText);
+      categoryBadgeTemplate.VisualTree = badgeBorder;
+      var categoryCol = new GridTemplateColumn
       {
         HeaderText = "Category",
         MappingName = "Category",
+        CellTemplate = categoryBadgeTemplate,
         Width = ThemeConfig.CurrentSpellWidth
       };
       dataGrid.Columns.Add(categoryCol);
