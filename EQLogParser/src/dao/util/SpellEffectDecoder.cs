@@ -420,6 +420,38 @@ namespace EQLogParser
           return FormatCount("Hate Transfer", base1);
         case 200:
           return FormatCount("Hate", base1) + " per tick";
+
+        // --- Dalaya-specific SPAs (not in SoD-winspellparser) ---
+        case 203:
+          return "Soulbond";
+        case 206:
+          return $"Force Aggro ({base1} hate)";
+        case 220:
+          return base1 == 0 ? "Revive Pet" : "Suspend Pet";
+        case 234:
+          return FormatCount("Fortification", base1);
+        case 289:
+          return $"On Expiry: Cast [Spell {base1}]";
+        case 322:
+          return "Home Gate";
+        case 328:
+          return $"Delay Death: Survive up to {base1} negative HP";
+        case 340:
+          return max > 0
+            ? $"Add Spell Proc: [Spell {base1}] ({max}% Chance)"
+            : $"Add Spell Proc: [Spell {base1}]";
+        case 383:
+          return max > 0
+            ? $"Trigger: Cast [Spell {base1}] when [Spell {max}] is used"
+            : $"Trigger: Cast [Spell {base1}]";
+        case 460:
+          return "Relic: Savior Effect";
+        case 461:
+          return max > 0
+            ? $"Add Proc: [Spell {max}] ({base1}% Chance)"
+            : $"Add Proc: ({base1}% Chance)";
+        case 463:
+          return $"Add Block Proc: [Spell {base1}]";
       }
 
       return string.Format(CultureInfo.InvariantCulture,

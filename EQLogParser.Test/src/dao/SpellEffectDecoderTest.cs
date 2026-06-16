@@ -76,11 +76,55 @@ namespace EQLogParserTest
     [TestMethod]
     public void UnknownSpa_FallsBackToDescriptor()
     {
-      // Dalaya-specific SPAs above 200 (340, 383, ...) aren't in SoD's switch and fall to the
-      // same honest descriptor SoD emits — never throws.
+      // SPAs with no case in the switch emit an honest descriptor and never throw.
       Assert.AreEqual(
-        "Unknown Effect: 340 Base1=5 Base2=0 Max=0 Calc=100 Value=5",
-        Slot(340, 5));
+        "Unknown Effect: 999 Base1=5 Base2=0 Max=0 Calc=100 Value=5",
+        Slot(999, 5));
+    }
+
+    [TestMethod]
+    public void DalayaSpas_RenderCorrectly()
+    {
+      // SPA 203 — Soulbond
+      Assert.AreEqual("Soulbond", Slot(203, 0));
+
+      // SPA 206 — Force Aggro (taunt), base1 is hate amount
+      Assert.AreEqual("Force Aggro (100 hate)", Slot(206, 100));
+      Assert.AreEqual("Force Aggro (400 hate)", Slot(206, 400));
+
+      // SPA 220 — Suspend (1) / Revive (0) Pet
+      Assert.AreEqual("Suspend Pet", Slot(220, 1));
+      Assert.AreEqual("Revive Pet",  Slot(220, 0));
+
+      // SPA 234 — Fortification Enhancement, base1 is the enhancement amount
+      Assert.AreEqual("Increase Fortification by 10", Slot(234, 10));
+
+      // SPA 289 — On Expiry: Cast [Spell base1]
+      Assert.AreEqual("On Expiry: Cast [Spell 4656]", Slot(289, 4656));
+
+      // SPA 322 — Home Gate
+      Assert.AreEqual("Home Gate", Slot(322, 1));
+
+      // SPA 328 — Delay Death
+      Assert.AreEqual("Delay Death: Survive up to 600 negative HP",  Slot(328, 600));
+      Assert.AreEqual("Delay Death: Survive up to 5000 negative HP", Slot(328, 5000));
+
+      // SPA 340 — Add Spell Proc: [Spell base1] (max% Chance)
+      Assert.AreEqual("Add Spell Proc: [Spell 4700] (20% Chance)", Slot(340, 4700, max: 20));
+      Assert.AreEqual("Add Spell Proc: [Spell 4700]",              Slot(340, 4700, max: 0));
+
+      // SPA 383 — Trigger: Cast [Spell base1] when [Spell max] is used (max=0 → no trigger annotation)
+      Assert.AreEqual("Trigger: Cast [Spell 911] when [Spell 464] is used", Slot(383, 911, max: 464));
+      Assert.AreEqual("Trigger: Cast [Spell 1613]",                          Slot(383, 1613, max: 0));
+
+      // SPA 460 — Relic: Savior Effect
+      Assert.AreEqual("Relic: Savior Effect", Slot(460, 1));
+
+      // SPA 461 — Add Proc (reversed fields vs 340): base1=%, max=spell
+      Assert.AreEqual("Add Proc: [Spell 3295] (40% Chance)", Slot(461, 40, max: 3295));
+
+      // SPA 463 — Add Block Proc: [Spell base1]
+      Assert.AreEqual("Add Block Proc: [Spell 7143]", Slot(463, 7143));
     }
 
     [TestMethod]
