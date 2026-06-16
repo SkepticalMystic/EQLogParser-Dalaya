@@ -9,18 +9,97 @@ namespace EQLogParser
   // Direct port of ngdeao/SoD-winspellparser SpellParser.ParseEffect (the case<spa> switch at
   // SpellParser.cs:1391-1808) plus its FormatCount/FormatPercent/CalcValueRange helpers.
   //
-  // Phase 1 scope (see memory project_spell_tooltips):
-  //  - SPA cases 0-200, the set SoD itself decodes, are ported faithfully. Dalaya-specific
-  //    SPAs above 200 (e.g. 340, 383) and any other unhandled id fall to the same
-  //    "Unknown Effect" descriptor SoD emits — honest, never throws.
-  //  - Effects that reference SoD's parsed Extra text (teleport zone names, summoned pet/item
-  //    names) or its large lookup enums (Items / SpellIllusion / SpellTarget / SpellEffect /
-  //    SpellTargetRestrict) are rendered in a simplified numeric form, since we don't carry
-  //    Extra and haven't ported those enums. Revisit if a consumer needs the names.
-  //  - No UI surface yet; this is the decode layer consumers (tooltips, death recap, the
-  //    in-app spell browser) will call.
+  // SPA cases 0-200 are ported faithfully from SoD. Dalaya-specific SPAs above 200 were
+  // reverse-engineered from spell data and the Dalaya wiki. Teleport zone names (SPA 83/88/104)
+  // still show zone IDs; those need converter-side work to embed zone names. SPA 58 illusion
+  // forms are resolved via IllusionNames below; unknown forms fall to "form N".
   internal static class SpellEffectDecoder
   {
+    // Illusion form names for SPA 58. Covers every form ID present in Dalaya's spell data;
+    // unknown IDs fall back to "form N". Derived from SoD-winspellparser SpellIllusion enum
+    // (race/creature names) plus Dalaya-specific IDs from spell names and the wiki.
+    private static readonly Dictionary<int, string> IllusionNames = new()
+    {
+      [-1]  = "Gender Change",
+      [0]   = "Leather",
+      [1]   = "Human",
+      [2]   = "Barbarian",
+      [3]   = "Erudite",
+      [4]   = "Wood Elf",
+      [5]   = "High Elf",
+      [6]   = "Dark Elf",
+      [7]   = "Half Elf",
+      [8]   = "Dwarf",
+      [9]   = "Troll",
+      [10]  = "Ogre",
+      [11]  = "Halfling",
+      [12]  = "Gnome",
+      [14]  = "Werewolf",
+      [18]  = "Cyclops",
+      [27]  = "Werefrog",
+      [29]  = "Gargoyle",
+      [34]  = "Brown Bat",
+      [40]  = "Goblin",
+      [41]  = "Gorilla",
+      [42]  = "Wolf",
+      [43]  = "Bear",
+      [46]  = "Imp",
+      [49]  = "Dragon",
+      [56]  = "Fae",
+      [60]  = "Skeleton",
+      [61]  = "Shark",
+      [63]  = "Tiger",
+      [64]  = "Treant",
+      [65]  = "Razad",
+      [66]  = "Gladiator",
+      [69]  = "Storm Conduit",
+      [70]  = "Rotting Corpse",
+      [75]  = "Elemental",
+      [76]  = "Puma",
+      [82]  = "Fanatic",
+      [83]  = "Skunk",
+      [85]  = "Spectre",
+      [89]  = "Drakeling",
+      [91]  = "Hrugtah",
+      [93]  = "Defected",
+      [95]  = "Oldest Fear",
+      [104] = "Leech",
+      [107] = "Elephant",
+      [108] = "Eyesore",
+      [120] = "Spirit Wolf",
+      [122] = "Old Dragon",
+      [123] = "Hated One",
+      [124] = "Unicorn",
+      [127] = "Concealment",
+      [128] = "Iksar",
+      [130] = "Vah Shir",
+      [137] = "Yiv Goblin",
+      [142] = "Minor Illusion",
+      [143] = "Treeform",
+      [144] = "Mole",
+      [150] = "Nightmarr",
+      [161] = "Iksar Skeleton",
+      [176] = "White Rabbit",
+      [230] = "Portal Passage",
+      [235] = "Plaguebringer",
+      [241] = "Moon",
+      [250] = "Banshee",
+      [258] = "Mad Fever",
+      [279] = "Raven",
+      [300] = "Demon",
+      [316] = "Treefrog",
+      [330] = "Taldorian",
+      [348] = "Demon Beast",
+      [356] = "Scaled Wolf",
+      [367] = "Master of Death",
+      [373] = "Shade",
+      [376] = "Crate",
+      [382] = "Burial",
+      [384] = "King",
+      [456] = "Mushboom",
+      [576] = "Shade",
+    };
+
     // Render every populated slot of a spell as "Slot N: <text>" lines (N is 1-based to match
     // the wiki / SoD). Empty / no-op slots are skipped. level/minLevel drive formula scaling
     // and the "(Lmin) to (Lmax)" annotation; pass the spell's max and min castable levels for
@@ -191,8 +270,8 @@ namespace EQLogParser
         case 57:
           return "Levitate";
         case 58:
-          // Illusion — SoD resolves the form via the SpellIllusion enum; we show the form id.
-          return base2 > 0 ? $"Illusion: form {base1} ({max})" : $"Illusion: form {base1}";
+          var illusion = IllusionNames.TryGetValue(base1, out var illusionName) ? illusionName : $"form {base1}";
+          return base2 > 0 ? $"Illusion: {illusion} ({max})" : $"Illusion: {illusion}";
         case 59:
           return FormatCount("Damage Shield", -value, -minvalue, level, minLevel);
         case 61:

@@ -52,6 +52,17 @@ namespace EQLogParserTest
     }
 
     [TestMethod]
+    public void Illusion_ResolvesKnownFormNames()
+    {
+      Assert.AreEqual("Illusion: Iksar",       Slot(58, 128));
+      Assert.AreEqual("Illusion: Human",       Slot(58, 1));
+      Assert.AreEqual("Illusion: Dark Elf",    Slot(58, 6));
+      Assert.AreEqual("Illusion: Treeform",    Slot(58, 143));
+      Assert.AreEqual("Illusion: Mushboom",    Slot(58, 456));  // Dalaya-specific
+      Assert.AreEqual("Illusion: form 999",    Slot(58, 999));  // unknown → fallback
+    }
+
+    [TestMethod]
     public void NamedNoValueEffects()
     {
       Assert.AreEqual("Root", Slot(99, 1));
