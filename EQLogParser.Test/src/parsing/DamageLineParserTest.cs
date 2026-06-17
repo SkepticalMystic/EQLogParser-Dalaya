@@ -20,6 +20,7 @@ namespace EQLogParserTest
       _mockDataManager.Setup(m => m.GetDamagingSpellByName(It.IsAny<string>())).Returns((string name) => null);
 #pragma warning restore CS8603 // Possible null reference return.
       _mockDataManager.Setup(m => m.IsOldSpell(It.IsAny<string>())).Returns(false);
+      _mockDataManager.Setup(m => m.SpellHasInstantDamage(It.IsAny<SpellData>())).Returns(false);
       _mockDataManager.Setup(m => m.AbbreviateSpellName(It.IsAny<string>())).Returns((string name) => name);
 #pragma warning disable CS8603 // Possible null reference return.
       _mockDataManager.Setup(m => m.GetSpellByAbbrv(It.IsAny<string>())).Returns((string name) => null);

@@ -162,8 +162,12 @@ namespace EQLogParser
                 spellData = _dataStore.AddUnknownSpell(spellName);
               }
 
-              // Queue damaging spells for DD attribution in DamageLineParser.
-              if (_castTracker != null && _dataStore.GetDamagingSpellByName(spellName) is { } dmgSpell)
+              // Queue spells that fire an instant DD hit on landing for attribution in
+              // DamageLineParser. Pure DoTs (no SPA 79 slot) are excluded: they don't
+              // produce non-melee DD lines, so queuing them would falsely attribute any
+              // immediately-following bracer or melee proc to the DoT.
+              if (_castTracker != null && _dataStore.GetDamagingSpellByName(spellName) is { } dmgSpell
+                && _dataStore.SpellHasInstantDamage(dmgSpell))
               {
                 _castTracker.Push(player, spellName, dmgSpell.CastingTimeMs, currentTime);
               }
