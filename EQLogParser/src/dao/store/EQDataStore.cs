@@ -76,6 +76,11 @@ namespace EQLogParser
     bool IsOldSpell(string name);
     string AbbreviateSpellName(string spell);
     SpellData GetSpellByAbbrv(string abbrv);
+    // Returns true when the spell fires an instant damage hit on landing — either a
+    // pure nuke (Duration == 0) or a DoT with an SPA 79 initial-hit slot (base1 < 0).
+    // Used by SpellCastTracker to avoid queuing pure DoTs whose proc-like procs could
+    // be mistakenly attributed to the spell rather than to a melee/bracer proc.
+    bool SpellHasInstantDamage(SpellData spell);
   }
 
   internal class EQDataStore : IEQDataStore, ILifecycle
@@ -489,6 +494,14 @@ namespace EQLogParser
       return spellData;
     }
 
+    public bool SpellHasInstantDamage(SpellData spell)
+    {
+      if (spell == null) return false;
+      if (spell.Duration == 0) return true;
+      var effects = GetSpellEffects(spell.Id);
+      return effects?.Slots?.Any(s => s.Spa == SpaInstantDamage && s.Base1 < 0) ?? false;
+    }
+
     // Returns a beneficial spell entry under this name (used by HealingValidator
     // to look up Target type for the AoE-heal filter). The historical filter was
     // `Damaging < 0` (live-EQ convention where healing spells carry a negative
@@ -717,9 +730,10 @@ namespace EQLogParser
       return !string.IsNullOrEmpty(spellId) && _spellEffects.TryGetValue(spellId, out var effects) ? effects : null;
     }
 
-    // SPA effect id constants relevant to periodic-tick computation.
-    private const int SpaCurrentHp = 0;          // classic regen spells (Regeneration, Chloroplast)
+    // SPA effect id constants.
+    private const int SpaCurrentHp = 0;           // periodic HP delta (DoT tick / HoT tick)
     private const int SpaCurrentHpRepeating = 100;
+    private const int SpaInstantDamage = 79;       // one-shot HP loss on landing (initial DD hit)
 
     // Computes the expected per-tick healing for a HoT spell cast by a player of
     // the given level and class. Returns null when the spell has no HoT slot in

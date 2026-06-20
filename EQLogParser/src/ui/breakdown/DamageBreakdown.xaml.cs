@@ -189,6 +189,19 @@ namespace EQLogParser
           && win.Content is SpellDetailsPopup viewer) viewer.Init(spell);
     }
 
+    private void CompareSpellsClick(object sender, RoutedEventArgs e)
+    {
+      var spells = dataGrid.SelectedItems
+        .OfType<PlayerSubStats>()
+        .Select(s => EQDataStore.Instance.GetSpellByAbbrv(s.Name))
+        .Where(s => s != null)
+        .Distinct()
+        .ToList();
+      if (spells.Count < 2) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellTableWindow), "spellTableWindow", "Compare Spells")
+          && win.Content is SpellTableWindow tv) tv.Init(spells, compareMode: true);
+    }
+
     private void RequestTreeItems(object sender, TreeGridRequestTreeItemsEventArgs e)
     {
       if (dataGrid.ItemsSource is List<PlayerStats> list)

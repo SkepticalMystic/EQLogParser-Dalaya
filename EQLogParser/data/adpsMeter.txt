@@ -29,3 +29,8 @@ Spire of Ancestors=30
 Spire of Necromancy=25
 Spire of the Reavers=25
 Spirit of Vesagran=12
+
+#InstantDamageAAs
+Harm Touch
+Leech Touch
+Mana Burn

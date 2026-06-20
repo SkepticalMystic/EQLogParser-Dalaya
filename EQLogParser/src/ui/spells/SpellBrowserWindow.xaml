@@ -90,6 +90,7 @@
           <ColumnDefinition Width="90" />
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
         <TextBlock Grid.Column="0" Text="Lvl:" VerticalAlignment="Center" Margin="0,0,6,0"
@@ -160,6 +161,9 @@
         <Button Grid.Column="9" Content="Reset" Click="ResetClick"
                 Height="{DynamicResource EQButtonHeight}" Padding="12,0,12,0"
                 Foreground="{DynamicResource PrimaryDarken}" />
+        <Button Grid.Column="10" Content="Table View" Click="TableViewClick"
+                Height="{DynamicResource EQButtonHeight}" Padding="12,0,12,0"
+                Margin="8,0,0,0" Foreground="{DynamicResource PrimaryDarken}" />
       </Grid>
     </Grid>
 
@@ -174,7 +178,7 @@
                            IsReadOnly="True"
                            RowHeight="{DynamicResource EQTableRowHeight}"
                            ScrollViewer.CanContentScroll="False"
-                           SelectionMode="Single"
+                           SelectionMode="Extended"
                            CellDoubleTapped="OnCellDoubleTapped">
       <syncfusion:SfDataGrid.Columns>
         <syncfusion:GridTemplateColumn HeaderText="" MappingName="Icon" Width="34" AllowSorting="False"

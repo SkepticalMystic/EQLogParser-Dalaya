@@ -125,6 +125,15 @@ namespace EQLogParser
       logMergeDiagnosticsIcon.Visibility = mergeDiag ? Visibility.Visible : Visibility.Hidden;
       FightMerger.MergeDiagnosticsEnabled = mergeDiag;
 
+      // Quick Access Bar
+      var showBar = ConfigUtil.IfSetOrElse("ShowQuickAccessBar", true);
+      quickAccessBarIcon.Visibility = showBar ? Visibility.Visible : Visibility.Hidden;
+      if (!showBar)
+      {
+        sidebarBorder.Visibility = Visibility.Collapsed;
+        sidebarColumn.Width = new GridLength(0);
+      }
+
       // upgrade
       if (ConfigUtil.IfSet("TriggersWatchForGINA"))
       {
@@ -399,6 +408,51 @@ namespace EQLogParser
     private void ToggleLogMergeDiagnosticsClick(object sender, RoutedEventArgs e) => FightMerger.MergeDiagnosticsEnabled = MainActions.ToggleSetting("LogMergeDiagnostics", logMergeDiagnosticsIcon);
     private void LocationChangedEvent(object sender, EventArgs e) => SaveWindowSize();
     private void CloseLogClick(object sender, EventArgs e) => CloseLogFile(true);
+
+    private void SidebarOpenLogBtnMouseUp(object sender, MouseButtonEventArgs e)
+    {
+      if (sender is FrameworkElement fe && fe.ContextMenu != null)
+      {
+        fe.ContextMenu.PlacementTarget = fe;
+        fe.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Right;
+        fe.ContextMenu.IsOpen = true;
+      }
+    }
+
+    private void SidebarOpenLogMenuClick(object sender, RoutedEventArgs e)
+    {
+      if (sender is MenuItem item)
+      {
+        var lastMin = -1;
+        if (!string.IsNullOrEmpty(item.Tag as string))
+        {
+          lastMin = Convert.ToInt32(item.Tag.ToString(), CultureInfo.CurrentCulture) * 60;
+        }
+        OpenLogFile(null, lastMin);
+      }
+    }
+
+    private void SidebarTriggersMouseUp(object sender, MouseButtonEventArgs e) =>
+      SyncFusionUtil.ToggleWindow(dockSite, "triggersWindow");
+
+    private void SidebarRaidDamageMouseUp(object sender, MouseButtonEventArgs e) =>
+      SyncFusionUtil.ToggleWindow(dockSite, "raidDamageWindow");
+
+    private void SidebarSpellBrowserMouseUp(object sender, MouseButtonEventArgs e) =>
+      OpenSpellBrowserClick(sender, new RoutedEventArgs());
+
+    private void SidebarDamageMeterMouseUp(object sender, MouseButtonEventArgs e) =>
+      ToggleDamageOverlayClick(sender, new RoutedEventArgs());
+
+    private void SidebarLogManagementMouseUp(object sender, MouseButtonEventArgs e) =>
+      OpenLogManager(sender, new RoutedEventArgs());
+
+    private void ToggleQuickAccessBarClick(object sender, RoutedEventArgs e)
+    {
+      var show = MainActions.ToggleSetting("ShowQuickAccessBar", quickAccessBarIcon);
+      sidebarBorder.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+      sidebarColumn.Width = show ? new GridLength(40) : new GridLength(0);
+    }
 
     private void SaveTimerTick(object sender, EventArgs e)
     {

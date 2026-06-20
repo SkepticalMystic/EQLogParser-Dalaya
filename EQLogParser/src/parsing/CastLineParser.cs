@@ -26,13 +26,15 @@ namespace EQLogParser
 
     private readonly EQDataStore _dataStore;
     private readonly PlayerRegistry _playerRegistry;
+    private readonly SpellCastTracker _castTracker;
 
-    public CastLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance) { }
+    public CastLineParser() : this(EQDataStore.Instance, PlayerRegistry.Instance, SpellCastTracker.Instance) { }
 
-    public CastLineParser(EQDataStore dataStore, PlayerRegistry playerRegistry)
+    public CastLineParser(EQDataStore dataStore, PlayerRegistry playerRegistry, SpellCastTracker castTracker = null)
     {
       _dataStore = dataStore;
       _playerRegistry = playerRegistry;
+      _castTracker = castTracker;
     }
 
     public bool Process(LineData lineData)
@@ -160,6 +162,25 @@ namespace EQLogParser
                 spellData = _dataStore.AddUnknownSpell(spellName);
               }
 
+              // Queue spells that fire an instant DD hit on landing for attribution in
+              // DamageLineParser. Pure DoTs (no SPA 79 slot) are excluded: they don't
+              // produce non-melee DD lines, so queuing them would falsely attribute any
+              // immediately-following bracer or melee proc to the DoT.
+              // Fallback: instant-cast AAs/discs not in spells.txt are listed by name in
+              // adpsMeter.txt under #InstantDamageAAs and queued with 0 casting time.
+              if (_castTracker != null)
+              {
+                if (_dataStore.GetDamagingSpellByName(spellName) is { } dmgSpell
+                  && _dataStore.SpellHasInstantDamage(dmgSpell))
+                {
+                  _castTracker.Push(player, spellName, dmgSpell.CastingTimeMs, currentTime);
+                }
+                else if (AdpsTracker.Instance.IsInstantDamageAa(spellName))
+                {
+                  _castTracker.Push(player, spellName, 0, currentTime);
+                }
+              }
+
               var cast = new SpellCast { Caster = string.Intern(player), Spell = string.Intern(spellName), SpellData = spellData };
               RecordsStore.Instance.Add(cast, currentTime);
 
@@ -175,6 +196,7 @@ namespace EQLogParser
             }
             else
             {
+              _castTracker?.Cancel(player, spellName);
               foreach (var (beginTime, action) in RecordsStore.Instance.GetSpellsDuring(currentTime - 10, currentTime, true))
               {
                 if (action is SpellCast sc && sc.Spell == spellName && sc.Caster == player)

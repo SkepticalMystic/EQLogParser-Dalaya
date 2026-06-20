@@ -18,6 +18,7 @@ namespace EQLogParser
     internal DamageStatsBuilder DamageStatsBuilder { get; }
     internal TankingStatsBuilder TankingStatsBuilder { get; }
     internal HealingStatsBuilder HealingStatsBuilder { get; }
+    internal SpellCastTracker CastTracker { get; }
 
     internal ParseContext(
       EQDataStore dataStore,
@@ -31,7 +32,8 @@ namespace EQLogParser
       FightManager fightManager,
       DamageStatsBuilder damageStatsBuilder,
       TankingStatsBuilder tankingStatsBuilder,
-      HealingStatsBuilder healingStatsBuilder)
+      HealingStatsBuilder healingStatsBuilder,
+      SpellCastTracker castTracker = null)
     {
       DataStore = dataStore;
       PlayerRegistry = playerRegistry;
@@ -45,6 +47,7 @@ namespace EQLogParser
       DamageStatsBuilder = damageStatsBuilder;
       TankingStatsBuilder = tankingStatsBuilder;
       HealingStatsBuilder = healingStatsBuilder;
+      CastTracker = castTracker;
     }
 
     // The live parse context — singletons bundled together. FightManager is instantiated
@@ -82,9 +85,10 @@ namespace EQLogParser
       // unrefactored parsers — they aren't consumed by the healing stats path.
       // See memory project_healing_raid_tab.
       var rs = new RecordsStore(registerLifecycle: false);
-      var dlp = new DamageLineParser(ds, pr);
+      var tracker = new SpellCastTracker();
+      var dlp = new DamageLineParser(ds, pr, tracker);
       var hlp = new HealingLineParser(ds, pr, rs);
-      var clp = new CastLineParser(ds, pr);
+      var clp = new CastLineParser(ds, pr, tracker);
       var mlp = new MiscLineParser(ds, pr);
       var plp = new PreLineParser(pr);
       var fm = new FightManager(ds, pr, dlp);
@@ -93,7 +97,7 @@ namespace EQLogParser
       var dsb = new DamageStatsBuilder(ds, pr, fm);
       var tsb = new TankingStatsBuilder(ds, pr, fm);
       var hsb = new HealingStatsBuilder(ds, pr, fm, rs);
-      return new ParseContext(ds, pr, rs, dlp, hlp, clp, mlp, plp, fm, dsb, tsb, hsb);
+      return new ParseContext(ds, pr, rs, dlp, hlp, clp, mlp, plp, fm, dsb, tsb, hsb, tracker);
     }
   }
 }

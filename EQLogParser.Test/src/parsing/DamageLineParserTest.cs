@@ -20,6 +20,7 @@ namespace EQLogParserTest
       _mockDataManager.Setup(m => m.GetDamagingSpellByName(It.IsAny<string>())).Returns((string name) => null);
 #pragma warning restore CS8603 // Possible null reference return.
       _mockDataManager.Setup(m => m.IsOldSpell(It.IsAny<string>())).Returns(false);
+      _mockDataManager.Setup(m => m.SpellHasInstantDamage(It.IsAny<SpellData>())).Returns(false);
       _mockDataManager.Setup(m => m.AbbreviateSpellName(It.IsAny<string>())).Returns((string name) => name);
 #pragma warning disable CS8603 // Possible null reference return.
       _mockDataManager.Setup(m => m.GetSpellByAbbrv(It.IsAny<string>())).Returns((string name) => null);
@@ -525,7 +526,7 @@ namespace EQLogParserTest
       Assert.AreEqual("Pixtt Invi Mal", record.Defender);
       Assert.AreEqual((uint)150, record.Total);
       Assert.AreEqual(Labels.Dd, record.Type);
-      Assert.AreEqual(Labels.Dd, record.SubType);
+      Assert.AreEqual(Labels.Unk, record.SubType);
       Assert.IsFalse(record.AttackerIsSpell);
     }
 

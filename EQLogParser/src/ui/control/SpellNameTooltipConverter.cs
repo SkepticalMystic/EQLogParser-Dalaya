@@ -18,6 +18,10 @@ namespace EQLogParser
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
       if (value is not string name) return DependencyProperty.UnsetValue;
+
+      if (name == Labels.Unk)
+        return BuildUnknownDdTooltip();
+
       var abbrvName = name.StartsWith(ReceivedPrefix, StringComparison.Ordinal)
         ? name[ReceivedPrefix.Length..] : name;
       if (EQDataStore.Instance.GetSpellByAbbrv(abbrvName) == null)
@@ -36,6 +40,27 @@ namespace EQLogParser
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
       => throw new NotSupportedException();
+
+    private static ToolTip BuildUnknownDdTooltip()
+    {
+      var tip = new ToolTip { Padding = new Thickness(0) };
+      if (Application.Current.Resources["ContentBackground"] is Brush bg) tip.Background = bg;
+      var fg = Application.Current.Resources["ContentForeground"] as Brush ?? SystemColors.ControlTextBrush;
+      var panel = new StackPanel { Margin = new Thickness(4, 3, 4, 3) };
+      panel.Children.Add(new TextBlock { Text = "Unknown", FontWeight = FontWeights.Bold, Foreground = fg, Margin = new Thickness(0, 0, 0, 4) });
+      panel.Children.Add(new TextBlock
+      {
+        Text = "Non-melee hits that could not be attributed to a spell:\n" +
+               "  • Item/bracer procs (no cast message in the log)\n" +
+               "  • Instant-cast AAs not listed in adpsMeter.txt\n" +
+               "  • Spells absent from spells.txt",
+        Foreground = fg,
+        MaxWidth = 340,
+        TextWrapping = TextWrapping.Wrap
+      });
+      tip.Content = panel;
+      return tip;
+    }
 
     // Builds the tooltip content panel for a given abbreviated spell name. Returns null if
     // the spell isn't in the data store (should not happen if the converter already checked).

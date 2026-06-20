@@ -50,6 +50,7 @@
               <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Icon="Solid_InfoCircle" />
             </MenuItem.Icon>
           </MenuItem>
+          <MenuItem IsEnabled="True" Header="Compare Selected Spells" Click="CompareSpellsClick" ToolTip="Open a side-by-side table for the selected spell rows (2+ required)." />
           <Separator />
           <MenuItem InputGestureText="Ctrl+C" Header="Copy" Command="{Binding Source={x:Static Member=local:ContextMenuCommands.Copy}}"
                     CommandParameter="{Binding Path=PlacementTarget, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ContextMenu}}}">

@@ -332,6 +332,23 @@ namespace EQLogParser
       }
     }
 
+    private void CompareSpellsClick(object sender, RoutedEventArgs e)
+    {
+      const string receivedPrefix = "Received ";
+      var spells = dataGrid.SelectedItems
+        .OfType<IDictionary<string, object>>()
+        .Select(row => row.TryGetValue("Spell", out var v) && v is string s && !string.IsNullOrEmpty(s) ? s : null)
+        .Where(s => s != null)
+        .Select(s => s.StartsWith(receivedPrefix, StringComparison.Ordinal) ? s[receivedPrefix.Length..] : s)
+        .Select(EQDataStore.Instance.GetSpellByAbbrv)
+        .Where(s => s != null)
+        .Distinct()
+        .ToList();
+      if (spells.Count < 2) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellTableWindow), "spellTableWindow", "Compare Spells")
+          && win.Content is SpellTableWindow tv) tv.Init(spells, compareMode: true);
+    }
+
     private void AddPlayerRow(string player, string spell, double theValue, double playerTotal, IDictionary<string, object> row)
     {
       var countText = GetFormattedValue(theValue, playerTotal);
