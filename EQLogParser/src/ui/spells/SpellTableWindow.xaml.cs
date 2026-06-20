@@ -9,6 +9,8 @@ namespace EQLogParser
 {
   public partial class SpellTableWindow : UserControl
   {
+    private IList<SpellData> _spells = [];
+
     public SpellTableWindow()
     {
       InitializeComponent();
@@ -17,6 +19,7 @@ namespace EQLogParser
     internal void Init(IList<SpellData> spells, bool compareMode)
     {
       if (spells == null || spells.Count == 0) return;
+      _spells = spells;
 
       titleLabel.Content = compareMode
         ? $"Compare Spells — {spells.Count}"
@@ -89,6 +92,30 @@ namespace EQLogParser
       }
 
       return (rows, occupiedSlots);
+    }
+
+    private void SpellDetailsClick(object sender, System.Windows.RoutedEventArgs e)
+    {
+      if (dataGrid.SelectedItem is not IDictionary<string, object> row) return;
+      if (!row.TryGetValue("ID", out var idVal) || idVal is not string id) return;
+      var spell = _spells.FirstOrDefault(s => s.Id == id);
+      if (spell == null) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellDetailsPopup), "spellDetailsWindow", "Spell Details")
+          && win.Content is SpellDetailsPopup viewer) viewer.Init(spell);
+    }
+
+    private void CompareSpellsClick(object sender, System.Windows.RoutedEventArgs e)
+    {
+      var spells = dataGrid.SelectedItems
+        .OfType<IDictionary<string, object>>()
+        .Select(row => row.TryGetValue("ID", out var v) && v is string id
+          ? _spells.FirstOrDefault(s => s.Id == id) : null)
+        .Where(s => s != null)
+        .Distinct()
+        .ToList();
+      if (spells.Count < 2) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellTableWindow), "spellTableWindow", "Compare Spells")
+          && win.Content is SpellTableWindow tv) tv.Init(spells, compareMode: true);
     }
 
     // Parse "Slot N: text" lines (output of SpellEffectDecoder.Describe) into a

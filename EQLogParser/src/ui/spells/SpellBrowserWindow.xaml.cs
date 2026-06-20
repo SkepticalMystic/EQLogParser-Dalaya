@@ -17,6 +17,7 @@ namespace EQLogParser
     private readonly List<SpellData> _allSpells;
     private bool _loaded;
     private bool _resetting;
+    private bool _updatingCombos;
 
     private record SpellBrowserRow(SpellData Spell)
     {
@@ -110,13 +111,15 @@ namespace EQLogParser
 
     private void FilterChanged(object sender, RoutedEventArgs e)
     {
-      if (_loaded && !_resetting)
+      if (_loaded && !_resetting && !_updatingCombos)
       {
         ApplyFilter();
       }
     }
 
-    private void ApplyFilter()
+    // Builds a filtered spell query. Pass skipCategory/skipSpa=true to exclude those
+    // criteria so the dynamic combos can show what values exist given all OTHER filters.
+    private IEnumerable<SpellData> BuildQuery(bool skipCategory = false, bool skipSpa = false)
     {
       var text = searchBox.Text;
       var cls  = classFilter.SelectedItem as string;
@@ -145,7 +148,7 @@ namespace EQLogParser
         query = query.Where(s => (s.ClassMask & (int)cf) != 0);
       }
 
-      if (!string.IsNullOrEmpty(cat) && cat != AllCategories)
+      if (!skipCategory && !string.IsNullOrEmpty(cat) && cat != AllCategories)
       {
         query = query.Where(s => !string.IsNullOrEmpty(s.Category) &&
           s.Category.Split(';').Contains(cat, StringComparer.OrdinalIgnoreCase));
@@ -177,7 +180,9 @@ namespace EQLogParser
         });
       }
 
-      if (spaOption != null || slotIdx >= 0)
+      // skipSpa only skips the SPA criterion; slot filter always stays active so the
+      // SPA combo narrows to SPAs that appear in the selected slot.
+      if (!skipSpa && (spaOption != null || slotIdx >= 0))
       {
         var targetSpa  = spaOption?.Spa;
         var targetSlot = slotIdx;
@@ -200,12 +205,82 @@ namespace EQLogParser
           return effects.Slots.Any(e => e.Slot == targetSlot);
         });
       }
+      else if (skipSpa && slotIdx >= 0)
+      {
+        var targetSlot = slotIdx;
+        query = query.Where(s =>
+        {
+          var effects = EQDataStore.Instance.GetSpellEffects(s.Id);
+          return effects?.Slots?.Any(e => e.Slot == targetSlot) == true;
+        });
+      }
 
-      var rows = query.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
-                      .Select(s => new SpellBrowserRow(s))
-                      .ToList();
+      return query;
+    }
+
+    private void ApplyFilter()
+    {
+      var rows = BuildQuery()
+        .OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+        .Select(s => new SpellBrowserRow(s))
+        .ToList();
       dataGrid.ItemsSource = rows;
       countLabel.Text = $"{rows.Count:N0} spells";
+      RefreshDynamicCombos();
+    }
+
+    private void RefreshDynamicCombos()
+    {
+      _updatingCombos = true;
+      var refilterNeeded = false;
+
+      // Category combo: show only categories present when all other filters are active.
+      var catBase = BuildQuery(skipCategory: true).ToList();
+      var availCats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+      foreach (var s in catBase)
+        if (!string.IsNullOrEmpty(s.Category))
+          foreach (var c in s.Category.Split(';'))
+            availCats.Add(c.Trim());
+      var prevCat = categoryFilter.SelectedItem as string;
+      categoryFilter.Items.Clear();
+      categoryFilter.Items.Add(AllCategories);
+      foreach (var c in availCats.OrderBy(c => c, StringComparer.OrdinalIgnoreCase))
+        categoryFilter.Items.Add(c);
+      if (prevCat != null && prevCat != AllCategories && availCats.Contains(prevCat))
+        categoryFilter.SelectedItem = prevCat;
+      else
+      {
+        categoryFilter.SelectedIndex = 0;
+        if (prevCat != null && prevCat != AllCategories) refilterNeeded = true;
+      }
+
+      // SPA combo: show only SPAs present when all other filters are active (slot filter kept).
+      var spaBase = BuildQuery(skipSpa: true).ToList();
+      var availSpas = new HashSet<int>();
+      foreach (var s in spaBase)
+      {
+        var fx = EQDataStore.Instance.GetSpellEffects(s.Id);
+        if (fx?.Slots != null)
+          foreach (var slot in fx.Slots)
+            availSpas.Add(slot.Spa);
+      }
+      var prevSpa = hasSpaFilter.SelectedItem as SpaOption;
+      hasSpaFilter.Items.Clear();
+      hasSpaFilter.Items.Add(AnyEffect);
+      foreach (var spa in availSpas.OrderBy(x => x))
+        hasSpaFilter.Items.Add(new SpaOption(spa));
+      if (prevSpa != null && availSpas.Contains(prevSpa.Spa))
+        hasSpaFilter.SelectedItem = hasSpaFilter.Items.OfType<SpaOption>().First(o => o.Spa == prevSpa.Spa);
+      else
+      {
+        hasSpaFilter.SelectedIndex = 0;
+        if (prevSpa != null) refilterNeeded = true;
+      }
+
+      _updatingCombos = false;
+
+      // If a forced-reset occurred, run one more filter pass with the corrected selections.
+      if (refilterNeeded) ApplyFilter();
     }
 
     private void ResetClick(object sender, RoutedEventArgs e)
