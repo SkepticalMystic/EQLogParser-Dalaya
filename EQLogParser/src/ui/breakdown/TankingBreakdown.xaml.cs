@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -24,6 +25,19 @@ namespace EQLogParser
       if (spell == null) return;
       if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellDetailsPopup), "spellDetailsWindow", "Spell Details")
           && win.Content is SpellDetailsPopup viewer) viewer.Init(spell);
+    }
+
+    private void CompareSpellsClick(object sender, RoutedEventArgs e)
+    {
+      var spells = dataGrid.SelectedItems
+        .OfType<PlayerSubStats>()
+        .Select(s => EQDataStore.Instance.GetSpellByAbbrv(s.Name))
+        .Where(s => s != null)
+        .Distinct()
+        .ToList();
+      if (spells.Count < 2) return;
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellTableWindow), "spellTableWindow", "Compare Spells")
+          && win.Content is SpellTableWindow tv) tv.Init(spells, compareMode: true);
     }
 
     internal void Init(CombinedStats currentStats, List<PlayerStats> selectedStats)

@@ -85,6 +85,7 @@
           </MenuItem>
           <Separator />
           <MenuItem IsEnabled="True" Header="Spell Details" Click="SpellDetailsClick" ToolTip="Show this spell's decoded effect slots (SPA breakdown)." />
+          <MenuItem IsEnabled="True" Header="Compare Selected Spells" Click="CompareSpellsClick" ToolTip="Open a side-by-side table for the selected spell rows (2+ required)." />
         </ContextMenu>
       </syncfusion:SfTreeGrid.ContextMenu>
       <syncfusion:SfTreeGrid.Columns>

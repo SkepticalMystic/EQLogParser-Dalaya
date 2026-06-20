@@ -232,5 +232,21 @@ namespace EQLogParser
         viewer.Init(row.Spell);
       }
     }
+
+    private void TableViewClick(object sender, RoutedEventArgs e)
+    {
+      var selected = dataGrid.SelectedItems.OfType<SpellBrowserRow>().ToList();
+      bool compare = selected.Count >= 2;
+      var spells = compare
+        ? selected.Select(r => r.Spell).ToList()
+        : (dataGrid.ItemsSource as List<SpellBrowserRow>)?.Select(r => r.Spell).ToList();
+      if (spells == null || spells.Count == 0) return;
+      var title = compare ? "Compare Spells" : "Spell Table";
+      if (SyncFusionUtil.OpenWindow(out var win, typeof(SpellTableWindow), "spellTableWindow", title) &&
+          win.Content is SpellTableWindow tv)
+      {
+        tv.Init(spells, compareMode: compare);
+      }
+    }
   }
 }

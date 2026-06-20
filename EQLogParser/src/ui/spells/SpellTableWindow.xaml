@@ -1,0 +1,34 @@
+<UserControl x:Class="EQLogParser.SpellTableWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="480" d:DesignWidth="900">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="{DynamicResource EQGridTitleHeight}" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <Label x:Name="titleLabel" Grid.Row="0" Content="Spell Table"
+           Style="{StaticResource EQTitleStyle}" />
+    <TextBlock x:Name="countLabel" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center"
+               Margin="0,0,8,0" FontSize="{DynamicResource EQContentSize}"
+               Foreground="{DynamicResource ContentForeground}" Opacity="0.7" />
+
+    <syncfusion:SfDataGrid x:Name="dataGrid" Grid.Row="1"
+                           AutoGenerateColumns="False"
+                           AllowResizingColumns="True"
+                           AllowSorting="True"
+                           CurrentCellBorderThickness="0"
+                           FrozenColumnCount="1"
+                           GridLinesVisibility="Both"
+                           HeaderRowHeight="{DynamicResource EQTableHeaderRowHeight}"
+                           IsReadOnly="True"
+                           RowHeight="{DynamicResource EQTableRowHeight}"
+                           ScrollViewer.CanContentScroll="False"
+                           SelectionMode="Extended" />
+  </Grid>
+</UserControl>
