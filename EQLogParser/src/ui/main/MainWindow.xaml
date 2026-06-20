@@ -26,6 +26,20 @@
   <WindowChrome.WindowChrome>
     <WindowChrome CaptionHeight="{DynamicResource EQWindowTitleHeight}" ResizeBorderThickness="6" GlassFrameThickness="0" CornerRadius="0"/>
   </WindowChrome.WindowChrome>
+  <Window.Resources>
+    <Style x:Key="SidebarBtnStyle" TargetType="Border">
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Margin" Value="2,1"/>
+      <Setter Property="CornerRadius" Value="3"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter Property="Background" Value="{DynamicResource ContentBackgroundHover}"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="{DynamicResource EQGridWindowTitleHeight}"/>
@@ -265,6 +279,12 @@
             <MenuItem x:Name="verifiedPlayersWindowMenuItem" Click="MenuItemWindowClick" Header="Verified P_layers">
               <MenuItem.Icon>
                 <fa:ImageAwesome x:Name="verifiedPlayersIcon" Tag="verifiedPlayersWindow"  Loaded="WindowIconLoaded" Style="{StaticResource EQIconStyle}" Visibility="Hidden" Icon="Solid_Check" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator/>
+            <MenuItem Header="Show Quick Access _Bar" Click="ToggleQuickAccessBarClick">
+              <MenuItem.Icon>
+                <fa:ImageAwesome x:Name="quickAccessBarIcon" Style="{StaticResource EQIconStyle}" Visibility="Visible" Icon="Solid_Check" />
               </MenuItem.Icon>
             </MenuItem>
           </MenuItem>
@@ -518,7 +538,75 @@
       </StackPanel>
     </DockPanel>
     <Grid Grid.Row="1">
-      <syncfusion:DockingManager x:Name="dockSite" Margin="0" DockStateChanging="DockSiteDockStateChanging" UseDocumentContainer="True" DocumentCloseButtonType="Individual" CloseButtonClick="DockSiteCloseButtonClick"
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition x:Name="sidebarColumn" Width="40"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Border x:Name="sidebarBorder" Grid.Column="0" Background="{DynamicResource ContentBackground}" BorderBrush="{DynamicResource ContentBackgroundAlt3}" BorderThickness="0,0,1,0">
+        <StackPanel VerticalAlignment="Top" Margin="0,46,0,0">
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarOpenLogBtnMouseUp"
+                  ToolTip="Open Log" ToolTipService.Placement="Right">
+            <Border.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="Now" Tag="0" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_CalendarDay" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Last Hour" Tag="1" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_CalendarDay" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Last 8 Hours" Tag="8" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_CalendarDay" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Last 24 Hours" Tag="24" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_CalendarDay" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Last 2 Days" Tag="48" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_CalendarAlt" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Last 7 Days" Tag="168" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_CalendarAlt" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Last 14 Days" Tag="336" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_CalendarAlt" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Last 30 Days" Tag="720" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_CalendarAlt" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Everything" Tag="" Click="SidebarOpenLogMenuClick">
+                  <MenuItem.Icon><fa:ImageAwesome Icon="Solid_Infinity" Style="{StaticResource EQIconStyle}"/></MenuItem.Icon>
+                </MenuItem>
+              </ContextMenu>
+            </Border.ContextMenu>
+            <fa:ImageAwesome Icon="Solid_FolderOpen" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          </Border>
+          <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarTriggersMouseUp"
+                  ToolTip="Trigger Manager" ToolTipService.Placement="Right">
+            <fa:ImageAwesome Icon="Regular_FileAudio" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          </Border>
+          <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarRaidDamageMouseUp"
+                  ToolTip="Raid DPS" ToolTipService.Placement="Right">
+            <fa:ImageAwesome Icon="Solid_Meteor" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          </Border>
+          <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarDamageMeterMouseUp"
+                  ToolTip="Damage Meter" ToolTipService.Placement="Right">
+            <fa:ImageAwesome Icon="Solid_ThermometerHalf" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          </Border>
+          <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarSpellBrowserMouseUp"
+                  ToolTip="Spell Browser" ToolTipService.Placement="Right">
+            <fa:ImageAwesome Icon="Solid_Search" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          </Border>
+          <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarLogManagementMouseUp"
+                  ToolTip="Log Management" ToolTipService.Placement="Right">
+            <fa:ImageAwesome Icon="Solid_Archive" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          </Border>
+        </StackPanel>
+      </Border>
+      <syncfusion:DockingManager Grid.Column="1" x:Name="dockSite" Margin="0" DockStateChanging="DockSiteDockStateChanging" UseDocumentContainer="True" DocumentCloseButtonType="Individual" CloseButtonClick="DockSiteCloseButtonClick"
                               EnableDocumentTabHeaderEdit="True" UseNativeFloatWindow="True" WindowClosing="DockSiteWindowClosing" CloseTabOnMiddleClick="True" PersistState="False">
         <ContentControl x:Name="playerParseTextWindow" syncfusion:DockingManager.Header="Preview Parse" syncfusion:DockingManager.State="AutoHidden" syncfusion:DockingManager.SideInDockedMode="Bottom"
                       syncfusion:DockingManager.DesiredHeightInDockedMode="{DynamicResource EQParseWindowHeight}" syncfusion:DockingManager.CanDocument="False" syncfusion:DockingManager.DesiredMinHeightInFloatingMode="{DynamicResource EQParseWindowHeight}">
