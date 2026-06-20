@@ -2,6 +2,11 @@
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.4.0 | 06/20/26\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab {\b DD Attribution}: Non-melee damage hits in {\b DPS Breakdown} now attribute to spell names instead of appearing as a generic Non-melee row. The parser tracks recent casts and matches each incoming non-melee hit to the spell cast within a timing window. Pure DoTs are excluded -- they are already attributed by the landing-message path. Instant-cast AAs not in {\b spells.txt} are handled via a secondary ID-based lookup.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 2.\tx360\tab {\b Spell Table}: New window (right-click any breakdown surface and choose {\b View Spell Table}) showing all spells cast in a fight as a sortable, filterable grid. {\b Compare Spells} lets you open the same spell side-by-side across multiple breakdown surfaces to compare stats across fights or sources.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 3.\tx360\tab {\b Quick Access Bar}: Collapsible sidebar on the main window with one-click buttons for frequently used windows -- {\b Spell Browser}, {\b Spell Table}, {\b Raid Damage}, and others -- without navigating the menus.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 4.\tx360\tab {\b Spell Browser} improvements: filter fields now narrow results dynamically as you type. Right-click any spell row for a context menu with quick actions (open {\b Spell Details}, copy name, etc.).\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.3.4 | 06/16/26\par}
 {\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab {\b Spell hover tooltips}: Hover any spell name in {\b Spell Counts}, {\b Damage Breakdown}, {\b Healing Breakdown}, or {\b HoT Effectiveness} for 800ms to see decoded spell effects -- description, then each slot as wiki-style text ("Slot 2: Increase Max HP by 1150").\par}
 {\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 2.\tx360\tab {\b Spell Counts ADPS filter}: The category dropdown now includes {\b ADPS -- All / Caster / Melee / Tank / Healing} to quickly scope the table to buff-bar spells without picking a specific category.\par}
