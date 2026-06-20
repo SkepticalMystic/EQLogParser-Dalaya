@@ -166,10 +166,19 @@ namespace EQLogParser
               // DamageLineParser. Pure DoTs (no SPA 79 slot) are excluded: they don't
               // produce non-melee DD lines, so queuing them would falsely attribute any
               // immediately-following bracer or melee proc to the DoT.
-              if (_castTracker != null && _dataStore.GetDamagingSpellByName(spellName) is { } dmgSpell
-                && _dataStore.SpellHasInstantDamage(dmgSpell))
+              // Fallback: instant-cast AAs/discs not in spells.txt are listed by name in
+              // adpsMeter.txt under #InstantDamageAAs and queued with 0 casting time.
+              if (_castTracker != null)
               {
-                _castTracker.Push(player, spellName, dmgSpell.CastingTimeMs, currentTime);
+                if (_dataStore.GetDamagingSpellByName(spellName) is { } dmgSpell
+                  && _dataStore.SpellHasInstantDamage(dmgSpell))
+                {
+                  _castTracker.Push(player, spellName, dmgSpell.CastingTimeMs, currentTime);
+                }
+                else if (AdpsTracker.Instance.IsInstantDamageAa(spellName))
+                {
+                  _castTracker.Push(player, spellName, 0, currentTime);
+                }
               }
 
               var cast = new SpellCast { Caster = string.Intern(player), Spell = string.Intern(spellName), SpellData = spellData };

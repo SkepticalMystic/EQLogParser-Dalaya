@@ -20,12 +20,14 @@ namespace EQLogParser
     private readonly Dictionary<string, Dictionary<string, uint>> _adpsActive = [];
     private readonly Dictionary<string, HashSet<SpellData>> _adpsLandsOn = [];
     private readonly Dictionary<string, HashSet<SpellData>> _adpsWearOff = [];
+    private readonly HashSet<string> _instantDamageAAs = new(StringComparer.OrdinalIgnoreCase);
 
     internal AdpsTracker()
     {
       _adpsKeys.ForEach(k => _adpsActive[k] = []);
       _adpsKeys.ForEach(k => _adpsValues[k] = []);
 
+      const string instantDdKey = "#InstantDamageAAs";
       var key = "";
       foreach (var line in ConfigUtil.ReadList(@"data\adpsMeter.txt"))
       {
@@ -33,7 +35,11 @@ namespace EQLogParser
         {
           if (trimmed[0] != '#' && !string.IsNullOrEmpty(key))
           {
-            if (trimmed.Split('|') is { Length: > 0 } multiple)
+            if (key == instantDdKey)
+            {
+              _instantDamageAAs.Add(trimmed);
+            }
+            else if (trimmed.Split('|') is { Length: > 0 } multiple)
             {
               foreach (var spellLine in multiple)
               {
@@ -61,7 +67,7 @@ namespace EQLogParser
               }
             }
           }
-          else if (_adpsKeys.Contains(trimmed))
+          else if (_adpsKeys.Contains(trimmed) || trimmed == instantDdKey)
           {
             key = trimmed;
           }
@@ -161,6 +167,9 @@ namespace EQLogParser
     {
       return _adpsWearOff.TryGetValue(wearOffKey, out var list) && list.Count > 0 ? list : null;
     }
+
+    internal bool IsInstantDamageAa(string name) =>
+      !string.IsNullOrEmpty(name) && _instantDamageAAs.Contains(name);
 
     private void Recalculate()
     {
