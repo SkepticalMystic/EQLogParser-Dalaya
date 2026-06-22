@@ -1096,7 +1096,7 @@ namespace EQLogParser
             ConfigUtil.SetSetting("RecentFiles", string.Join(",", _recentFiles));
             UpdateRecentFiles();
             AppSettings.CurrentLogFile = theFile;
-            raidRecordBorder.IsEnabled = true;
+            sidebarRaidRecordBorder.Visibility = Visibility.Visible;
             _eqLogReader = new LogReader(new LogProcessor(theFile), theFile, lastMins);
             _ = _eqLogReader.StartAsync();
             UpdateLoadingProgress();
@@ -1136,7 +1136,7 @@ namespace EQLogParser
         CloseDamageOverlay(false);
         closeLogFile.IsEnabled = false;
         saveLogFile.IsEnabled = false;
-        raidRecordBorder.IsEnabled = false;
+        sidebarRaidRecordBorder.Visibility = Visibility.Collapsed;
         MainActions.FireLogLoadingEvent(closedFile, false);
       }
       catch (Exception)
@@ -1516,13 +1516,13 @@ namespace EQLogParser
         raidRecordIdleIcon.Visibility = Visibility.Collapsed;
         raidRecordActiveIcon.Visibility = Visibility.Visible;
         var since = DateTime.Now.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
-        raidRecordBorder.ToolTip = $"Recording since {since} — click to stop";
+        sidebarRaidRecordBorder.ToolTip = $"Recording since {since} — click to stop";
       }
       else
       {
         raidRecordIdleIcon.Visibility = Visibility.Visible;
         raidRecordActiveIcon.Visibility = Visibility.Collapsed;
-        raidRecordBorder.ToolTip = "Start Raid Recording";
+        sidebarRaidRecordBorder.ToolTip = "Start Raid Recording";
       }
     }
 
