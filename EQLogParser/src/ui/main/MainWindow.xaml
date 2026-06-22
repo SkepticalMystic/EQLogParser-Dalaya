@@ -388,6 +388,11 @@
               </MenuItem.Icon>
             </MenuItem>
           </MenuItem>
+          <MenuItem Header="Raid _Recording Settings…" Click="RaidRecordSettingsMenuClick">
+            <MenuItem.Icon>
+              <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Icon="Solid_Circle" />
+            </MenuItem.Icon>
+          </MenuItem>
           <Separator />
           <MenuItem Header="_Look And Feel">
             <MenuItem.Icon>
@@ -508,6 +513,22 @@
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
         <TextBlock x:Name="errorText" Margin="0,0,20,2" VerticalAlignment="Center" IsHitTestVisible="False" FontStyle="Italic" Foreground="{DynamicResource EQWarnForegroundBrush}"/>
         <TextBlock x:Name="versionText" VerticalAlignment="Center" Margin="0,0,25,2" IsHitTestVisible="False" Foreground="{DynamicResource ContentForeground}" FontStyle="Italic" Text="v1.0.0.0" HorizontalAlignment="Right"/>
+        <Border x:Name="raidRecordBorder" Width="{DynamicResource EQWindowButtonWidth}" Height="{DynamicResource EQWindowTitleHeight}"
+                Margin="0,0,10,0" WindowChrome.IsHitTestVisibleInChrome="True"
+                Background="Transparent" CornerRadius="3" Cursor="Hand" IsEnabled="False"
+                MouseLeftButtonUp="RaidRecordButtonUp"
+                MouseEnter="ButtonBorderMouseEnter" MouseLeave="ButtonBorderMouseLeave"
+                ToolTip="Start Raid Recording">
+          <Border.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Recording Settings…" Click="RaidRecordSettingsMenuClick"/>
+            </ContextMenu>
+          </Border.ContextMenu>
+          <Grid>
+            <fa:ImageAwesome x:Name="raidRecordIdleIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_Circle" Visibility="Visible"/>
+            <fa:ImageAwesome x:Name="raidRecordActiveIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_Stop" Foreground="OrangeRed" Visibility="Collapsed"/>
+          </Grid>
+        </Border>
         <Border Width="{DynamicResource EQWindowButtonWidth}" Height="{DynamicResource EQWindowTitleHeight}" Margin="0,0,2,0" WindowChrome.IsHitTestVisibleInChrome="True" Background="Transparent" CornerRadius="3" Cursor="Hand" MouseLeftButtonUp="MinimizeButtonUp" MouseEnter="ButtonBorderMouseEnter" MouseLeave="ButtonBorderMouseLeave">
           <Viewbox Stretch="Uniform" Height="{DynamicResource EQWindowButtonTextSize1}">
             <Path Margin="0,0,2,0" Stroke="{DynamicResource ContentForeground}" StrokeThickness="1" Data="M3,9 L11,9" StrokeStartLineCap="Round" StrokeEndLineCap="Round">

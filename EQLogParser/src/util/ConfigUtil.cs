@@ -36,6 +36,10 @@ namespace EQLogParser
     internal static void SetSetting(string key, bool value) => SetSetting(key, value.ToString());
     internal static void SetSetting(string key, double value) => SetSetting(key, value.ToString(CultureInfo.InvariantCulture));
     internal static void SetSetting(string key, int value) => SetSetting(key, value.ToString(CultureInfo.InvariantCulture));
+    internal static string GetRaidRecordDelivery() => GetSetting("RaidRecordDelivery");
+    internal static void SetRaidRecordDelivery(string v) => SetSetting("RaidRecordDelivery", v);
+    internal static string GetRaidRecordWebhook() => GetSetting("RaidRecordWebhook");
+    internal static void SetRaidRecordWebhook(string v) => SetSetting("RaidRecordWebhook", v);
 
     internal static void Init()
     {

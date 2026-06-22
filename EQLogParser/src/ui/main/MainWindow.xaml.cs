@@ -44,6 +44,11 @@ namespace EQLogParser
     private bool _resetWindowState;
     private volatile bool _isStarting;
     private volatile bool _appLoadingComplete;
+    private double _recordStartTime;
+    private string _recordSourceFile;
+    private long _recordLastFilePos;
+    private long _recordCombatBytes;
+    private DispatcherTimer _recordSizeTimer;
 
     public MainWindow()
     {
@@ -1055,6 +1060,22 @@ namespace EQLogParser
               DockingManager.SetState(npcWindow, DockState.Dock);
             }
 
+            if (_recordSourceFile != null)
+            {
+              var oldSource = _recordSourceFile;
+              var oldStart = _recordStartTime;
+              var oldEnd = DateUtil.ToDotNetSeconds(DateTime.Now);
+              DiscardRecording();
+
+              var answer = MessageBox.Show(
+                "A raid recording is in progress. Do you want to save/send it before switching logs?",
+                "Recording in Progress", MessageBoxButton.YesNo, MessageBoxImage.Question);
+              if (answer == MessageBoxResult.Yes)
+              {
+                _ = ExportAndDeliverAsync(oldSource, oldStart, oldEnd, autoStopped: false);
+              }
+            }
+
             CloseLogFile(changed);
             fileText.Text = $"-- {theFile}";
             _startLoadTime = DateTime.Now;
@@ -1075,6 +1096,7 @@ namespace EQLogParser
             ConfigUtil.SetSetting("RecentFiles", string.Join(",", _recentFiles));
             UpdateRecentFiles();
             AppSettings.CurrentLogFile = theFile;
+            raidRecordBorder.IsEnabled = true;
             _eqLogReader = new LogReader(new LogProcessor(theFile), theFile, lastMins);
             _ = _eqLogReader.StartAsync();
             UpdateLoadingProgress();
@@ -1114,6 +1136,7 @@ namespace EQLogParser
         CloseDamageOverlay(false);
         closeLogFile.IsEnabled = false;
         saveLogFile.IsEnabled = false;
+        raidRecordBorder.IsEnabled = false;
         MainActions.FireLogLoadingEvent(closedFile, false);
       }
       catch (Exception)
@@ -1289,6 +1312,217 @@ namespace EQLogParser
       if (Application.Current.ShutdownMode != ShutdownMode.OnExplicitShutdown)
       {
         Application.Current.Shutdown();
+      }
+    }
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+      if (_recordSourceFile != null)
+      {
+        var result = MessageBox.Show(
+          "A raid recording is in progress. Closing the app will discard it. Close anyway?",
+          "Recording in Progress", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (result == MessageBoxResult.No)
+        {
+          e.Cancel = true;
+          return;
+        }
+        DiscardRecording();
+      }
+      base.OnClosing(e);
+    }
+
+    private void RaidRecordButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+      if (_recordSourceFile == null)
+      {
+        StartRecording();
+      }
+      else
+      {
+        _ = StopRecordingAsync(autoStopped: false);
+      }
+    }
+
+    private void RaidRecordSettingsMenuClick(object sender, RoutedEventArgs e)
+    {
+      new RaidRecordSetupWindow().ShowDialog();
+    }
+
+    private void StartRecording()
+    {
+      if (string.IsNullOrEmpty(ConfigUtil.GetRaidRecordDelivery()))
+      {
+        var setup = new RaidRecordSetupWindow();
+        if (setup.ShowDialog() != true)
+        {
+          return;
+        }
+      }
+
+      _recordStartTime = DateUtil.ToDotNetSeconds(DateTime.Now);
+      _recordSourceFile = AppSettings.CurrentLogFile;
+
+      using (var f = File.OpenRead(_recordSourceFile))
+      {
+        _recordLastFilePos = f.Length;
+      }
+
+      _recordCombatBytes = 0;
+      _recordSizeTimer = UiUtil.CreateTimer(OnRecordSizeTimerTick, 60000, false);
+      _recordSizeTimer.Start();
+
+      SetRecordingButtonState(active: true);
+    }
+
+    private void OnRecordSizeTimerTick(object sender, EventArgs e)
+    {
+      if (_recordSourceFile == null)
+      {
+        return;
+      }
+
+      try
+      {
+        using var f = File.OpenRead(_recordSourceFile);
+        f.Seek(_recordLastFilePos, SeekOrigin.Begin);
+        using var reader = new System.IO.StreamReader(f, System.Text.Encoding.UTF8, false, 65536, leaveOpen: true);
+        while (!reader.EndOfStream)
+        {
+          var line = reader.ReadLine();
+          if (string.IsNullOrEmpty(line) || line.Length <= AppSettings.ActionIndex)
+          {
+            continue;
+          }
+
+          if (ChatLineParser.ParseChatType(line[AppSettings.ActionIndex..]) == null)
+          {
+            _recordCombatBytes += System.Text.Encoding.UTF8.GetByteCount(line) + Environment.NewLine.Length;
+          }
+        }
+        _recordLastFilePos = f.Position;
+      }
+      catch (Exception ex)
+      {
+        Log.Error("Error checking raid record size", ex);
+      }
+
+      if (_recordCombatBytes > 7_340_032)
+      {
+        _ = StopRecordingAsync(autoStopped: true);
+      }
+    }
+
+    private async Task StopRecordingAsync(bool autoStopped)
+    {
+      _recordSizeTimer?.Stop();
+      _recordSizeTimer = null;
+
+      var sourceFile = _recordSourceFile;
+      var startTime = _recordStartTime;
+      var endTime = DateUtil.ToDotNetSeconds(DateTime.Now);
+
+      _recordSourceFile = null;
+      _recordCombatBytes = 0;
+      _recordLastFilePos = 0;
+      _recordStartTime = 0;
+
+      SetRecordingButtonState(active: false);
+
+      await ExportAndDeliverAsync(sourceFile, startTime, endTime, autoStopped);
+    }
+
+    private void DiscardRecording()
+    {
+      _recordSizeTimer?.Stop();
+      _recordSizeTimer = null;
+      _recordSourceFile = null;
+      _recordCombatBytes = 0;
+      _recordLastFilePos = 0;
+      _recordStartTime = 0;
+      SetRecordingButtonState(active: false);
+    }
+
+    private async Task ExportAndDeliverAsync(string sourceFile, double startTime, double endTime, bool autoStopped)
+    {
+      var delivery = ConfigUtil.GetRaidRecordDelivery();
+      var bytes = await Task.Run(() => MainActions.ExportRaidRecord(sourceFile, startTime, endTime));
+
+      if (bytes.Length == 0)
+      {
+        new MessageWindow("No combat lines in the recording window — nothing to export.", "Raid Record", MessageWindow.IconType.Info).ShowDialog();
+        return;
+      }
+
+      var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmm", System.Globalization.CultureInfo.InvariantCulture);
+      var filename = $"eqlog_RaidRecord_{timestamp}.txt";
+      var banner = autoStopped ? "Recording stopped automatically — 7 MB limit reached.\n\n" : string.Empty;
+
+      if (delivery == "Discord")
+      {
+        var webhookUrl = ConfigUtil.GetRaidRecordWebhook();
+        if (string.IsNullOrEmpty(webhookUrl))
+        {
+          new MessageWindow("No Discord webhook URL configured. Open Recording Settings to configure.", "Raid Record", MessageWindow.IconType.Warn).ShowDialog();
+          return;
+        }
+
+        try
+        {
+          statusText.Text = "Sending to Discord…";
+          await MainActions.SendDiscordFile(webhookUrl, bytes, filename, banner + "Raid combat log attached.");
+          statusText.Text = "Sent to Discord ✓";
+          if (autoStopped)
+          {
+            new MessageWindow(banner.TrimEnd(), "Raid Record", MessageWindow.IconType.Info).ShowDialog();
+          }
+        }
+        catch (Exception ex)
+        {
+          Log.Error("Failed to send raid record to Discord", ex);
+          new MessageWindow("Problem sending to Discord. Check Error Log for details.", "Raid Record", MessageWindow.IconType.Warn).ShowDialog();
+        }
+      }
+      else
+      {
+        var dialog = new SaveFileDialog
+        {
+          Filter = "Text Files (*.txt)|*.txt",
+          FileName = filename
+        };
+        if (dialog.ShowDialog() == true)
+        {
+          try
+          {
+            await File.WriteAllBytesAsync(dialog.FileName, bytes);
+            if (autoStopped)
+            {
+              new MessageWindow(banner.TrimEnd(), "Raid Record", MessageWindow.IconType.Info).ShowDialog();
+            }
+          }
+          catch (Exception ex)
+          {
+            Log.Error("Failed to save raid record file", ex);
+            new MessageWindow("Problem saving file. Check Error Log for details.", "Raid Record", MessageWindow.IconType.Warn).ShowDialog();
+          }
+        }
+      }
+    }
+
+    private void SetRecordingButtonState(bool active)
+    {
+      if (active)
+      {
+        raidRecordIdleIcon.Visibility = Visibility.Collapsed;
+        raidRecordActiveIcon.Visibility = Visibility.Visible;
+        var since = DateTime.Now.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        raidRecordBorder.ToolTip = $"Recording since {since} — click to stop";
+      }
+      else
+      {
+        raidRecordIdleIcon.Visibility = Visibility.Visible;
+        raidRecordActiveIcon.Visibility = Visibility.Collapsed;
+        raidRecordBorder.ToolTip = "Start Raid Recording";
       }
     }
 

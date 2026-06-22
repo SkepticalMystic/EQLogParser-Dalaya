@@ -141,6 +141,59 @@ namespace EQLogParser
       }
     }
 
+    internal static async Task SendDiscordFile(string webhookUrl, byte[] fileBytes, string fileName, string message)
+    {
+      using var form = new MultipartFormDataContent();
+      var payloadJson = JsonSerializer.Serialize(new { content = message }, DiscordSerializationOptions);
+      form.Add(new StringContent(payloadJson, Encoding.UTF8, "application/json"), "payload_json");
+      form.Add(new ByteArrayContent(fileBytes), "files[0]", fileName);
+      var response = await TheHttpClient.PostAsync(webhookUrl, form);
+      response.EnsureSuccessStatusCode();
+    }
+
+    internal static byte[] ExportRaidRecord(string sourceFile, double startTime, double endTime)
+    {
+      var range = new TimeRange(new TimeSegment(startTime, endTime));
+      using var ms = new MemoryStream();
+
+      try
+      {
+        using var f = File.OpenRead(sourceFile);
+        var reader = FileUtil.GetStreamReader(f, startTime);
+        while (!reader.EndOfStream)
+        {
+          var line = reader.ReadLine();
+          if (string.IsNullOrEmpty(line) || line.Length <= AppSettings.ActionIndex)
+          {
+            continue;
+          }
+
+          var action = line[AppSettings.ActionIndex..];
+          if (ChatLineParser.ParseChatType(action) != null)
+          {
+            continue;
+          }
+
+          if (TimeRange.TimeCheck(line, startTime, range, out var exceeds))
+          {
+            ms.Write(Encoding.UTF8.GetBytes(line));
+            ms.Write(Encoding.UTF8.GetBytes(Environment.NewLine));
+          }
+
+          if (exceeds)
+          {
+            break;
+          }
+        }
+      }
+      catch (Exception ex)
+      {
+        Log.Error("Problem reading log for raid record export", ex);
+      }
+
+      return ms.ToArray();
+    }
+
     internal static bool ToggleSetting(string setting, ImageAwesome icon)
     {
       var enabled = icon.Visibility == Visibility.Hidden;
