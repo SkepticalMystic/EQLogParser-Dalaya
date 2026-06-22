@@ -584,6 +584,7 @@
             </Border.ContextMenu>
             <fa:ImageAwesome Icon="Solid_FolderOpen" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
           </Border>
+          <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
           <Border x:Name="sidebarRaidRecordBorder" Style="{StaticResource SidebarBtnStyle}" Visibility="Collapsed"
                   MouseLeftButtonUp="RaidRecordButtonUp"
                   ToolTip="Start Raid Recording" ToolTipService.Placement="Right">
@@ -593,11 +594,11 @@
               </ContextMenu>
             </Border.ContextMenu>
             <Grid>
-              <fa:ImageAwesome x:Name="raidRecordIdleIcon" Icon="Solid_Circle" Style="{StaticResource EQIconStyle}" Width="16" Height="16" Visibility="Visible"/>
+              <fa:ImageAwesome x:Name="raidRecordIdleIcon" Icon="Solid_Bullseye" Style="{StaticResource EQIconStyle}" Width="16" Height="16" Visibility="Visible"/>
               <fa:ImageAwesome x:Name="raidRecordActiveIcon" Icon="Solid_Stop" Style="{StaticResource EQIconStyle}" Width="16" Height="16" Foreground="OrangeRed" Visibility="Collapsed"/>
             </Grid>
           </Border>
-          <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
+          <Rectangle x:Name="sidebarRaidRecordSeparator" Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}" Visibility="Collapsed"/>
           <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarTriggersMouseUp"
                   ToolTip="Trigger Manager" ToolTipService.Placement="Right">
             <fa:ImageAwesome Icon="Regular_FileAudio" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>

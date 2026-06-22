@@ -1097,6 +1097,7 @@ namespace EQLogParser
             UpdateRecentFiles();
             AppSettings.CurrentLogFile = theFile;
             sidebarRaidRecordBorder.Visibility = Visibility.Visible;
+            sidebarRaidRecordSeparator.Visibility = Visibility.Visible;
             _eqLogReader = new LogReader(new LogProcessor(theFile), theFile, lastMins);
             _ = _eqLogReader.StartAsync();
             UpdateLoadingProgress();
@@ -1137,6 +1138,7 @@ namespace EQLogParser
         closeLogFile.IsEnabled = false;
         saveLogFile.IsEnabled = false;
         sidebarRaidRecordBorder.Visibility = Visibility.Collapsed;
+        sidebarRaidRecordSeparator.Visibility = Visibility.Collapsed;
         MainActions.FireLogLoadingEvent(closedFile, false);
       }
       catch (Exception)
