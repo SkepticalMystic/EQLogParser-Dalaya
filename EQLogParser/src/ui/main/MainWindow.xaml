@@ -549,8 +549,12 @@
       </Grid.ColumnDefinitions>
       <Border x:Name="sidebarBorder" Grid.Column="0" Background="{DynamicResource ContentBackground}" BorderBrush="{DynamicResource ContentBackgroundAlt3}" BorderThickness="0,0,1,0">
         <StackPanel VerticalAlignment="Top" Margin="0,46,0,0">
-          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarOpenLogBtnMouseUp"
-                  ToolTip="Open Log" ToolTipService.Placement="Right">
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarOpenLogBtnMouseUp">
+            <Border.ToolTip>
+              <ToolTip Placement="Right" Background="{DynamicResource ContentBackgroundAlt2}" Foreground="{DynamicResource PrimaryColor}">
+                <TextBlock FontSize="{DynamicResource EQContentSize}" Text="Open Log"/>
+              </ToolTip>
+            </Border.ToolTip>
             <Border.ContextMenu>
               <ContextMenu>
                 <MenuItem Header="Now" Tag="0" Click="SidebarOpenLogMenuClick">
@@ -582,46 +586,70 @@
                 </MenuItem>
               </ContextMenu>
             </Border.ContextMenu>
-            <fa:ImageAwesome Icon="Solid_FolderOpen" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+            <fa:ImageAwesome Icon="Solid_FolderOpen" Style="{StaticResource EQIconStyle}" Width="24" Height="24"/>
           </Border>
           <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
           <Border x:Name="sidebarRaidRecordBorder" Style="{StaticResource SidebarBtnStyle}" Visibility="Collapsed"
-                  MouseLeftButtonUp="RaidRecordButtonUp"
-                  ToolTip="Start Raid Recording" ToolTipService.Placement="Right">
+                  MouseLeftButtonUp="RaidRecordButtonUp">
+            <Border.ToolTip>
+              <ToolTip Placement="Right" Background="{DynamicResource ContentBackgroundAlt2}" Foreground="{DynamicResource PrimaryColor}">
+                <TextBlock FontSize="{DynamicResource EQContentSize}" Text="Start Raid Recording"/>
+              </ToolTip>
+            </Border.ToolTip>
             <Border.ContextMenu>
               <ContextMenu>
                 <MenuItem Header="Recording Settings…" Click="RaidRecordSettingsMenuClick"/>
               </ContextMenu>
             </Border.ContextMenu>
             <Grid>
-              <fa:ImageAwesome x:Name="raidRecordIdleIcon" Icon="Solid_Bullseye" Style="{StaticResource EQIconStyle}" Width="16" Height="16" Visibility="Visible"/>
-              <fa:ImageAwesome x:Name="raidRecordActiveIcon" Icon="Solid_Stop" Style="{StaticResource EQIconStyle}" Width="16" Height="16" Foreground="OrangeRed" Visibility="Collapsed"/>
+              <fa:ImageAwesome x:Name="raidRecordIdleIcon" Icon="Solid_Bullseye" Style="{StaticResource EQIconStyle}" Width="24" Height="24" Visibility="Visible"/>
+              <fa:ImageAwesome x:Name="raidRecordActiveIcon" Icon="Solid_Stop" Style="{StaticResource EQIconStyle}" Width="24" Height="24" Foreground="OrangeRed" Visibility="Collapsed"/>
             </Grid>
           </Border>
           <Rectangle x:Name="sidebarRaidRecordSeparator" Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}" Visibility="Collapsed"/>
-          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarTriggersMouseUp"
-                  ToolTip="Trigger Manager" ToolTipService.Placement="Right">
-            <fa:ImageAwesome Icon="Regular_FileAudio" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarTriggersMouseUp">
+            <Border.ToolTip>
+              <ToolTip Placement="Right" Background="{DynamicResource ContentBackgroundAlt2}" Foreground="{DynamicResource PrimaryColor}">
+                <TextBlock FontSize="{DynamicResource EQContentSize}" Text="Trigger Manager"/>
+              </ToolTip>
+            </Border.ToolTip>
+            <fa:ImageAwesome Icon="Regular_FileAudio" Style="{StaticResource EQIconStyle}" Width="24" Height="24"/>
           </Border>
           <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
-          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarRaidDamageMouseUp"
-                  ToolTip="Raid DPS" ToolTipService.Placement="Right">
-            <fa:ImageAwesome Icon="Solid_Meteor" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarRaidDamageMouseUp">
+            <Border.ToolTip>
+              <ToolTip Placement="Right" Background="{DynamicResource ContentBackgroundAlt2}" Foreground="{DynamicResource PrimaryColor}">
+                <TextBlock FontSize="{DynamicResource EQContentSize}" Text="Raid DPS"/>
+              </ToolTip>
+            </Border.ToolTip>
+            <fa:ImageAwesome Icon="Solid_Meteor" Style="{StaticResource EQIconStyle}" Width="24" Height="24"/>
           </Border>
           <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
-          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarDamageMeterMouseUp"
-                  ToolTip="Damage Meter" ToolTipService.Placement="Right">
-            <fa:ImageAwesome Icon="Solid_ThermometerHalf" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarDamageMeterMouseUp">
+            <Border.ToolTip>
+              <ToolTip Placement="Right" Background="{DynamicResource ContentBackgroundAlt2}" Foreground="{DynamicResource PrimaryColor}">
+                <TextBlock FontSize="{DynamicResource EQContentSize}" Text="Damage Meter"/>
+              </ToolTip>
+            </Border.ToolTip>
+            <fa:ImageAwesome Icon="Solid_ThermometerHalf" Style="{StaticResource EQIconStyle}" Width="24" Height="24"/>
           </Border>
           <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
-          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarSpellBrowserMouseUp"
-                  ToolTip="Spell Browser" ToolTipService.Placement="Right">
-            <fa:ImageAwesome Icon="Solid_Search" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarSpellBrowserMouseUp">
+            <Border.ToolTip>
+              <ToolTip Placement="Right" Background="{DynamicResource ContentBackgroundAlt2}" Foreground="{DynamicResource PrimaryColor}">
+                <TextBlock FontSize="{DynamicResource EQContentSize}" Text="Spell Browser"/>
+              </ToolTip>
+            </Border.ToolTip>
+            <fa:ImageAwesome Icon="Solid_Search" Style="{StaticResource EQIconStyle}" Width="24" Height="24"/>
           </Border>
           <Rectangle Height="1" Margin="4,3,4,3" Fill="{DynamicResource ContentBackgroundAlt3}"/>
-          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarLogManagementMouseUp"
-                  ToolTip="Log Management" ToolTipService.Placement="Right">
-            <fa:ImageAwesome Icon="Solid_Archive" Style="{StaticResource EQIconStyle}" Width="16" Height="16"/>
+          <Border Style="{StaticResource SidebarBtnStyle}" MouseLeftButtonUp="SidebarLogManagementMouseUp">
+            <Border.ToolTip>
+              <ToolTip Placement="Right" Background="{DynamicResource ContentBackgroundAlt2}" Foreground="{DynamicResource PrimaryColor}">
+                <TextBlock FontSize="{DynamicResource EQContentSize}" Text="Log Management"/>
+              </ToolTip>
+            </Border.ToolTip>
+            <fa:ImageAwesome Icon="Solid_Archive" Style="{StaticResource EQIconStyle}" Width="24" Height="24"/>
           </Border>
         </StackPanel>
       </Border>
