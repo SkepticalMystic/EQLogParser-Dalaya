@@ -1457,7 +1457,7 @@ namespace EQLogParser
       }
 
       var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmm", System.Globalization.CultureInfo.InvariantCulture);
-      var filename = $"eqlog_RaidRecord_{timestamp}.txt";
+      var filename = $"eqlog_{ConfigUtil.PlayerName}_{ConfigUtil.ServerName}-RaidRecord_{timestamp}.txt";
       var banner = autoStopped ? "Recording stopped automatically — 7 MB limit reached.\n\n" : string.Empty;
 
       if (delivery == "Discord")
