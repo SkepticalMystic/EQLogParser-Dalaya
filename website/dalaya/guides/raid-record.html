@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EQLogParser-Dalaya — Raid Recording</title>
+  <meta name="description" content="How to use Raid Recording to capture and share a combat-only log snapshot with your raid leader or Discord channel." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <nav class="topbar">
+    <div class="nav-inner">
+      <span class="nav-title">EQLogParser-Dalaya</span>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="index.html">Guides</a></li>
+        <li><a href="https://github.com/SkepticalMystic/EQLogParser-Dalaya" target="_blank">GitHub</a></li>
+        <li><a href="https://www.dalaya.org" target="_blank">Dalaya.org</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="guide-page-wrapper">
+
+    <nav id="guide-sidebar" class="guide-sidebar"></nav>
+
+    <div class="guide-main">
+      <h1>Raid Recording</h1>
+      <p class="guide-subtitle">Capture a combat-only log snapshot and deliver it automatically when the raid ends.</p>
+
+      <p>
+        Raid Recording lets you bookmark the start and end of a raid session. When you stop the
+        recording, EQLogParser extracts only the combat lines from that window — no chat, no system
+        messages — and either saves them to a file or sends them directly to a Discord channel via
+        webhook.
+      </p>
+      <p>
+        This is the fastest way to get everyone's logs to the raid leader for a
+        <a href="raid-dps.html">Raid DPS merge</a>. Instead of locating and uploading your full log
+        file after the raid, each player clicks two buttons and the combat snapshot is delivered
+        automatically.
+      </p>
+
+      <h2>First-time setup</h2>
+      <p>
+        Before recording, choose how the output will be delivered. Open
+        <strong>Options &gt; Raid Recording Settings</strong>, or right-click the Record button in
+        the sidebar.
+      </p>
+      <p>Two delivery modes are available:</p>
+      <ul>
+        <li>
+          <strong>Save to File</strong> — when you stop recording, a Save dialog opens and you
+          choose where to save the file. The file is named
+          <code>eqlog_RaidRecord_YYYY-MM-DD_HHmmss.txt</code>.
+        </li>
+        <li>
+          <strong>Send to Discord via Webhook</strong> — when you stop recording, the file is
+          uploaded directly to a Discord channel using a webhook URL you provide. No Save dialog
+          appears.
+        </li>
+      </ul>
+      <p>
+        If you choose Discord, paste your webhook URL into the text box and click
+        <strong>Test</strong> to verify the connection before the raid starts. The test sends a
+        short text message to the channel; no log data is included.
+      </p>
+      <div class="callout tip">
+        <p>
+          To create a Discord webhook: open the channel you want to post to, go to
+          <strong>Edit Channel &gt; Integrations &gt; Webhooks &gt; New Webhook</strong>, copy the
+          URL, and paste it into the setup window.
+        </p>
+      </div>
+      <p>
+        Your delivery preference and webhook URL are saved automatically. You only need to set
+        this up once — it persists across sessions.
+      </p>
+
+      <h2>Starting a recording</h2>
+      <p>
+        Click the <strong>Record button</strong> in the left sidebar (the circle icon below
+        <em>Open Log</em>). The button turns red and its tooltip shows the time recording started.
+        The sidebar Record button is only visible when a log file is open.
+      </p>
+      <p>
+        If no delivery mode has been configured yet, the Setup window opens automatically on the
+        first click so you can choose one before recording begins.
+      </p>
+      <div class="callout tip">
+        <p>
+          Start the recording at the beginning of the raid, before the first pull. Only events
+          that occur <em>after</em> you click Record are captured.
+        </p>
+      </div>
+
+      <h2>Stopping a recording</h2>
+      <p>
+        Click the red Record button again to stop. EQLogParser reads the log from the point where
+        you started, strips out all non-combat lines, and delivers the result according to your
+        configured mode.
+      </p>
+      <ul>
+        <li>
+          <strong>Save to File</strong>: a Save dialog opens. Choose a location and save.
+        </li>
+        <li>
+          <strong>Send to Discord</strong>: the file is uploaded in the background. A confirmation
+          message appears when the upload completes.
+        </li>
+      </ul>
+      <p>
+        If no combat lines were captured in the recording window (for example, you stopped
+        immediately after starting), a message appears and nothing is saved or sent.
+      </p>
+
+      <h2>Size limit</h2>
+      <p>
+        Discord's file upload cap is 8 MB for most servers. Raid Recording monitors the size of
+        captured combat data in the background and stops automatically if it exceeds 7 MB, leaving
+        a margin below Discord's limit. A message appears when this happens.
+      </p>
+      <p>
+        For very long raids, consider starting a new recording after each major event (e.g.,
+        after clearing a zone wing) rather than running a single recording for the entire night.
+      </p>
+
+      <h2>Switching logs or closing the app while recording</h2>
+      <p>
+        If you open a different log file while a recording is active, EQLogParser will ask whether
+        you want to save or send the recording before switching. Choosing <strong>No</strong>
+        discards the current recording.
+      </p>
+      <p>
+        Similarly, closing the app while recording is active shows a warning. Clicking
+        <strong>Yes</strong> closes the app and discards the recording; clicking
+        <strong>No</strong> cancels the close so you can stop the recording first.
+      </p>
+
+      <nav id="guide-prevnext" class="guide-prevnext"></nav>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>EQLogParser-Dalaya is not affiliated with Daybreak Game Company or the EQ franchise.</p>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script>renderNav("raid-record");</script>
+
+</body>
+</html>

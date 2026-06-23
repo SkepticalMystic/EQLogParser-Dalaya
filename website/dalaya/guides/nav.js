@@ -3,6 +3,7 @@ var GUIDES = [
   { id: "parser",             title: "Using the parser",          ready: true },
   { id: "raid-export",        title: "Exporting for raid DPS",    ready: true },
   { id: "raid-dps",           title: "Using raid DPS",            ready: true },
+  { id: "raid-record",        title: "Raid recording",            ready: true },
   { id: "creating-triggers",  title: "Creating triggers",         ready: true },
   { id: "trigger-variables",  title: "Trigger variables",         ready: true },
   { id: "regex",              title: "Regex reference",           ready: true },
