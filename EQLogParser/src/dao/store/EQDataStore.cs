@@ -889,12 +889,28 @@ namespace EQLogParser
             // Col 29 (IconId) added alongside spell-descriptions.json sidecar. Defaults
             // to 0 (no icon) on older spells.txt files.
             IconId = data.Length > 29 ? int.Parse(data[29], CultureInfo.InvariantCulture) : 0,
+            // Col 30 (ClassLevels) added to carry per-class level requirements (16 values,
+            // pipe-separated, 255 = can't cast). Older spells.txt files fall back to null,
+            // and callers fall back to the single Level field in that case.
+            ClassLevels = data.Length > 30 ? ParseClassLevels(data[30]) : null,
             Description = _spellDescriptions.TryGetValue(string.Intern(data[0]), out var desc) ? desc : string.Empty
           };
         }
       }
 
       return spellData;
+    }
+
+    private static byte[] ParseClassLevels(string raw)
+    {
+      var parts = raw.Split('|');
+      if (parts.Length != 16) return null;
+      var levels = new byte[16];
+      for (var i = 0; i < 16; i++)
+      {
+        levels[i] = byte.TryParse(parts[i], out var v) ? v : (byte)255;
+      }
+      return levels;
     }
 
     private static SpellData FindPreviousCast(string player, IEnumerable<SpellData> output, bool isAdps = false)

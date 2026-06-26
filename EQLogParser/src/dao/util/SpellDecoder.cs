@@ -9,7 +9,9 @@ namespace EQLogParser
   {
     // showLevel=true  → "NEC/65  WIZ/65" (popup details view)
     // showLevel=false → "NEC  WIZ"        (browser grid column)
-    internal static string DecodeClasses(ushort mask, byte level, bool showLevel = true)
+    // classLevels: optional 16-element per-class level array from SpellData.ClassLevels;
+    // falls back to the scalar `level` when null (older spells.txt or single-class spells).
+    internal static string DecodeClasses(ushort mask, byte level, bool showLevel = true, byte[] classLevels = null)
     {
       if (mask == 0)
       {
@@ -22,7 +24,15 @@ namespace EQLogParser
       {
         if ((mask & (1 << i)) != 0)
         {
-          parts.Add(showLevel ? $"{names[i]}/{level}" : names[i]);
+          if (showLevel)
+          {
+            var classLevel = (classLevels != null && classLevels.Length == 16) ? classLevels[i] : level;
+            parts.Add($"{names[i]}/{classLevel}");
+          }
+          else
+          {
+            parts.Add(names[i]);
+          }
         }
       }
       return string.Join("  ", parts);

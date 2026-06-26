@@ -266,35 +266,36 @@ def _safe_int_signed(src_fields: list[str], col: int) -> str:
         return "0"
 
 
-def _level_and_class_mask(src_fields: list[str]) -> tuple[str, str]:
-    """Return (level, class_mask) derived from the 16 class-level columns.
+def _level_and_class_mask(src_fields: list[str]) -> tuple[str, str, str]:
+    """Return (level, class_mask, class_levels) derived from the 16 class-level columns.
 
-    Level = lowest non-255 class level (or "255" if no class can cast).
-    ClassMask = bitmask where bit(classid-1) is set when col(103+classid) != 255.
+    Level       = lowest non-255 class level (or "255" if no class can cast).
+    ClassMask   = bitmask where bit(classid-1) is set when col(103+classid) != 255.
+    ClassLevels = pipe-separated 16-element string of raw class levels (255 = can't cast).
     """
     min_level = 256
     mask = 0
+    levels = []
     for classid in range(1, 17):
         col = CLASS_LEVEL_FIRST_COL + (classid - 1)
-        if col >= len(src_fields):
-            continue
-        raw = src_fields[col].strip()
-        if not raw:
-            continue
-        try:
-            lvl = int(raw)
-        except ValueError:
-            continue
-        if lvl == 255:
-            continue
-        mask |= 1 << (classid - 1)
-        if lvl < min_level:
-            min_level = lvl
+        lvl = 255
+        if col < len(src_fields):
+            raw = src_fields[col].strip()
+            if raw:
+                try:
+                    lvl = int(raw)
+                except ValueError:
+                    pass
+        levels.append(str(lvl))
+        if lvl != 255:
+            mask |= 1 << (classid - 1)
+            if lvl < min_level:
+                min_level = lvl
     if min_level == 256:
-        return "255", "0"
+        return "255", "0", "|".join(levels)
     # Parser parses Level as byte (0-255). Source values up to 254 are valid;
     # 255 already excluded above.
-    return str(min(min_level, 255)), str(mask)
+    return str(min(min_level, 255)), str(mask), "|".join(levels)
 
 
 def _category_labels(src_fields: list[str], categories: dict[str, str]) -> str:
@@ -370,7 +371,7 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
     range_ = _safe_int(src_fields, RANGE_COL)
     resist_mod = _safe_int_signed(src_fields, RESIST_MOD_COL)
     icon_id = _safe_int(src_fields, ICON_COL)
-    level, class_mask = _level_and_class_mask(src_fields)
+    level, class_mask, class_levels = _level_and_class_mask(src_fields)
     damaging = "1" if (lands_on_you or lands_on_other or wear_off) else "0"
     # ADPS = category-derived | upstream-overlay | SPA-inference (third fallback).
     # Category data is from Dalaya itself; upstream overlay is hand-curated.
@@ -413,6 +414,7 @@ def convert_line(src_fields: list[str], adps_overlay: dict[str, int], categories
         range_,           # 27 Range in feet (source col 9; 0 = self-only or no direct range)
         resist_mod,       # 28 ResistMod (source col 147; negative = harder to resist)
         icon_id,          # 29 IconId (source col 144; gemicon{N}.jpg index; 0 = no icon)
+        class_levels,     # 30 ClassLevels (pipe-separated 16-element per-class levels; 255 = can't cast)
     ])
 
 
@@ -576,7 +578,7 @@ def extract_effects(src_fields: list[str]) -> dict | None:
     if not slots:
         return None
 
-    _, class_mask = _level_and_class_mask(src_fields)
+    _, class_mask, _class_levels = _level_and_class_mask(src_fields)
     return {
         "name": src_fields[1],
         "durationCalc": _safe_field_int(src_fields, 16),

@@ -518,6 +518,7 @@ namespace EQLogParser
     public byte Target { get; set; }
     public ushort ClassMask { get; set; }
     public byte Level { get; set; }
+    public byte[] ClassLevels { get; set; }
     public bool HasAmbiguity { get; set; }
     public string LandsOnYou { get; set; }
     public string LandsOnOther { get; set; }

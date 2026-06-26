@@ -105,9 +105,7 @@ namespace EQLogParser
 
       rows.Add(new("ID", spell.Id));
 
-      // ClassMask stores which classes can cast; Level is the minimum across all eligible classes.
-      // For single-class spells this is exact. Multi-class spells share the minimum level label.
-      var classes = SpellDecoder.DecodeClasses(spell.ClassMask, spell.Level);
+      var classes = SpellDecoder.DecodeClasses(spell.ClassMask, spell.Level, classLevels: spell.ClassLevels);
       if (!string.IsNullOrEmpty(classes))
       {
         rows.Add(new("Classes", classes));
