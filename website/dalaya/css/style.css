@@ -437,6 +437,16 @@ a.guide-sidebar-link:hover {
   color: #c9d1d9;
 }
 
+.guide-screenshot {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 0 0 1rem;
+  background: var(--surface-2);
+}
+
 .guide-main a {
   color: var(--link);
 }

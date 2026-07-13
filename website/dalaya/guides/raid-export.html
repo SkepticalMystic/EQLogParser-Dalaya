@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EQLogParser-Dalaya — Exporting for Raid DPS</title>
-  <meta name="description" content="How to find and share your EverQuest log file for use in the Raid DPS multi-log merger." />
+  <meta name="description" content="How to open a log in EQLogParser, select the raid encounter, and use the built-in export to share a clean file for the Raid DPS multi-log merger." />
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
@@ -27,12 +27,14 @@
 
     <div class="guide-main">
       <h1>Exporting for Raid DPS</h1>
-      <p class="guide-subtitle">How to share your log file so it can be merged with others.</p>
+      <p class="guide-subtitle">How to open your log, select the raid encounter, and export a share-ready file.</p>
 
       <p>
-        The Raid Damage window combines raw log files from multiple players to build a complete,
-        cross-player view of a raid encounter. There is no special export step — what you share
-        is your EverQuest log file directly.
+        The Raid Damage window combines log files from multiple players to build a complete,
+        cross-player view of a raid encounter. Don't just hand someone your raw EverQuest log —
+        it's unwieldy and full of unrelated chat and downtime. Instead, open your log in
+        EQLogParser, select the fights that make up the raid, and use the built-in export to
+        save a clean, filtered file that's ready to share.
       </p>
 
       <h2>Before the raid: make sure logging is on</h2>
@@ -46,67 +48,79 @@
       </ul>
       <p>See the <a href="installation.html">Installation guide</a> for more detail on enabling logging.</p>
 
-      <h2>Finding your log file</h2>
-      <p>Your log file is in the <code>Logs</code> subfolder of your EverQuest installation:</p>
-      <pre><code>[EQ folder]\Logs\eqlog_CharacterName_dalaya.txt</code></pre>
+      <h2>Step 1: Open your log in EQLogParser</h2>
       <p>
-        The filename includes your character name and the server identifier (<code>dalaya</code> for
-        Dalaya). For example:
+        In the main EQLogParser window, go to <strong>File &gt; Open and Monitor Log File</strong>
+        and pick your EverQuest log file (in the <code>Logs</code> subfolder of your EQ
+        installation, e.g. <code>eqlog_Kateila_dalaya.txt</code>). This works whether you open it
+        live during the raid or after the fact on a completed log — either way, EQLogParser parses
+        the file and builds up its <strong>Fight List</strong> panel with the encounters it finds.
       </p>
-      <pre><code>C:\Sony\EverQuest\Logs\eqlog_Kateila_dalaya.txt</code></pre>
+      <img class="guide-screenshot" src="images/raid-export-file-menu.png"
+           alt="File menu with Open and Monitor Log File highlighted" style="max-width: 340px;" />
+
+      <h2>Step 2: Select the fights for the raid</h2>
+      <p>
+        In the <strong>Fight List</strong> panel, click the fight (or fights) that make up the
+        raid encounter you want to share. Hold <kbd>Ctrl</kbd> or <kbd>Shift</kbd> to select
+        multiple fights at once — for example, if trash pulls and adds show up as separate entries
+        alongside the main boss fight.
+      </p>
+      <img class="guide-screenshot" src="images/raid-export-fight-select.png"
+           alt="Fight List panel with two fights multi-selected" style="max-width: 420px;" />
+
+      <h2>Step 3: Export the selection</h2>
+      <p>
+        Right-click the selected fight(s) and choose one of the export options:
+      </p>
+      <img class="guide-screenshot" src="images/raid-export-context-menu.png"
+           alt="Right-click context menu showing Export Selected Fights options" style="max-width: 480px;" />
+      <ul>
+        <li>
+          <strong>Export Selected Fights (without adds)...</strong> — filters the output to only
+          the selected fight(s), dropping unrelated NPCs that happened to overlap in time. This is
+          the recommended option for multi-log sharing via the Raid Damage window, since it keeps
+          the file focused and small.
+        </li>
+        <li>
+          <strong>Export Selected Fights (with adds)...</strong> — includes any other NPCs that
+          were active in the same time window, giving a fuller "what happened during this fight"
+          archive. Use this if you want more surrounding context preserved.
+        </li>
+      </ul>
+      <p>
+        A save dialog opens with a default filename like <code>eqlog_Kateila_dalaya-selected.txt</code>.
+        Chat lines are stripped automatically either way — only combat-relevant lines are written
+        to the exported file.
+      </p>
+      <img class="guide-screenshot" src="images/raid-export-save-dialog.png"
+           alt="Save dialog with the default exported filename" style="max-width: 480px;" />
       <div class="callout tip">
         <p>
-          In Windows Explorer, navigate to your EQ folder, open the <code>Logs</code> folder,
-          and sort by Date Modified to find your most recent log file quickly.
+          The same export is also available from the menu bar under
+          <strong>File &gt; Save &gt; Selected Fight Log</strong> after selecting fights in the
+          Fight List.
         </p>
       </div>
 
-      <h2>Sharing your log file</h2>
+      <h2>Step 4: Share the exported file</h2>
       <p>
-        Copy the log file and share it with whoever is running the Raid Damage merge — typically
-        the raid leader or a designated parser. Any file transfer method works: Discord, a shared
-        folder, direct message, etc.
-      </p>
-      <p>
-        Consider renaming the file to include your character name before sharing, since all Dalaya
-        log files have the same filename format:
-      </p>
-      <pre><code>eqlog_Kateila_dalaya.txt  →  Kateila_2026-06-15.txt</code></pre>
-      <p>
-        This makes it easier for the person loading multiple logs to keep track of whose file is whose.
+        Send the exported <code>-selected.txt</code> file — not your raw EQ log — to whoever is
+        running the Raid Damage merge, typically the raid leader or a designated parser. Any file
+        transfer method works: Discord, a shared folder, direct message, etc. The default filename
+        already includes your character name, so it's easy to tell whose file is whose once several
+        are collected.
       </p>
 
-      <h2>What data is in the log</h2>
+      <h2>Why export instead of sharing the raw log</h2>
       <p>
-        Your log file contains everything EverQuest wrote during your session — combat events,
-        chat, system messages, and more. The Raid Damage window reads only the combat-relevant
-        lines; the rest is ignored.
+        Only events your client witnessed are in your log, and the raw file also contains every
+        chat line and idle moment from the session. Exporting via the Fight List trims that down
+        to just the relevant combat window for the encounter you're sharing, which keeps files
+        small and avoids exposing chat you didn't mean to share. Combining exports from multiple
+        players still gives a more complete picture than any single log alone, since each person's
+        client only sees events in their own range.
       </p>
-      <p>
-        Only events your client witnessed are in your log. If a player was out of range when
-        a damage proc fired, that event won't appear in their log. This is why combining logs
-        from multiple players gives a more complete picture than any single log alone.
-      </p>
-
-      <h2>Archiving your logs</h2>
-      <p>
-        EverQuest appends to the same log file across multiple sessions. Over time this file
-        grows large and older content can be harder to locate. A few options:
-      </p>
-      <ul>
-        <li>
-          After each raid, copy the current log to an archive folder with a dated name before
-          the next session starts appending to it
-        </li>
-        <li>
-          Use EQLogParser's built-in <strong>Log Backup</strong> utility (in the Tools menu) to
-          automate periodic log archiving
-        </li>
-        <li>
-          Clear or rename the log file between raids to keep each session cleanly separated
-          — EverQuest creates a new file automatically if the old one is missing
-        </li>
-      </ul>
 
       <nav id="guide-prevnext" class="guide-prevnext"></nav>
     </div>
