@@ -35,19 +35,21 @@
       </p>
       <ul>
         <li>
-          <strong>Toolbar</strong> — buttons for opening a log file, accessing Settings, opening the
-          Trigger Manager, and launching overlay windows
+          <strong>Sidebar</strong> — the narrow icon column on the left: Open Log, Start Raid Recording,
+          Trigger Manager, Raid DPS, Damage Meter, Spell Browser, and Log Management. General app options
+          live under the <strong>Options</strong> menu instead of the sidebar.
         </li>
         <li>
           <strong>Fight list</strong> — a panel listing all the NPC encounters captured in the current
           session; each named NPC becomes its own fight entry
         </li>
         <li>
-          <strong>Content tabs</strong> — the main analysis area with tabs for Damage, Healing, Tanking,
-          Spell Counts, Deaths, Loot, and other views; the selected tab updates to reflect the
-          fight(s) you have chosen in the fight list
+          <strong>Content tabs</strong> — the main analysis area, opened from the <strong>View</strong>
+          menu: Damage, Healing, and Tanking are the primary ones; the selected tab updates to reflect
+          the fight(s) you have chosen in the fight list
         </li>
       </ul>
+      <img class="guide-screenshot" src="images/parser-sidebar-fightlist.png" alt="Sidebar icon column next to the Fight List panel, showing two captured fights" style="max-width: 310px;" />
 
       <h2>Fights and encounters</h2>
       <p>
@@ -62,26 +64,20 @@
       </p>
       <div class="callout tip">
         <p>
-          Start a new parse session before each significant encounter by using
-          <strong>File &rarr; New Parse</strong> (or the equivalent toolbar button). This clears
-          old fights from the list so the data stays focused.
+          To clear out old fights and start fresh, right-click anywhere in the fight list and choose
+          <strong>Clear All</strong>. This empties the fight list without closing the log file, so
+          monitoring continues uninterrupted.
         </p>
       </div>
 
-      <h2>Live tailing vs. opening a log file</h2>
-      <p>There are two ways to read a log file:</p>
-      <ul>
-        <li>
-          <strong>Live tailing</strong> — click the folder icon in the toolbar and select your log file.
-          The parser watches for new lines as EverQuest writes them. Only events that happen
-          <em>after</em> you select the file are captured.
-        </li>
-        <li>
-          <strong>Open from beginning</strong> — use <strong>File &rarr; Open Log File</strong> to
-          read the entire file from the start. Use this to review a session you played earlier,
-          or to catch fights that happened before you opened the parser.
-        </li>
-      </ul>
+      <h2>Live tailing vs. reading history</h2>
+      <p>
+        Click the folder icon at the top of the sidebar (or <strong>File &rarr; Open and Monitor Log
+        File</strong> — both open the same menu) and pick how far back to read: <strong>Now</strong>
+        for live tailing only, or one of the time-range options up to <strong>Everything</strong> to
+        also load fights that already happened. Either way, the parser keeps watching the file for new
+        lines afterward &mdash; there's no separate "monitor" vs. "one-time read" mode.
+      </p>
 
       <h2>Selecting fights</h2>
       <p>
@@ -102,46 +98,40 @@
       </p>
       <ul>
         <li><strong>Name</strong> — player or pet name</li>
-        <li><strong>Total</strong> — total damage dealt across the selected fight(s)</li>
+        <li><strong>Damage</strong> — total damage dealt across the selected fight(s)</li>
         <li><strong>DPS</strong> — damage per second over the fight duration</li>
-        <li><strong>%</strong> — share of total group or raid damage</li>
-        <li><strong>Hits / Avg</strong> — number of hits and average hit size</li>
-        <li><strong>Crits</strong> — number and percentage of critical hits</li>
+        <li><strong>% Total</strong> — share of total group or raid damage</li>
+        <li><strong># Hits / Av Hit</strong> — number of hits and average hit size</li>
+        <li><strong>% Crit / Av Crit</strong> — critical hit rate and average critical hit size</li>
       </ul>
       <p>Click any column header to sort by that column.</p>
+      <img class="guide-screenshot" src="images/parser-dps-summary.png" alt="DPS Summary table for a fight, showing the Name, % Total, Damage, DPS, SDPS, and hit-rate columns for two players" style="max-width: 640px;" />
 
       <h3>Damage breakdowns</h3>
       <p>
-        Right-click any player row to open a per-spell breakdown showing how much damage each of
-        their spells or combat abilities contributed. Right-click the fight (NPC) row to see a
-        breakdown by attacker.
-      </p>
-      <p>
-        Double-clicking a row, or using the right-click menu's breakdown option, opens a detail
-        window with hit distribution, damage ranges, and additional stats for that player.
+        Right-click any player row for a context menu with several per-player views: <strong>DPS
+        Breakdown</strong> (damage by spell/ability), <strong>Spell Counts</strong> (cast counts),
+        <strong>Hit Frequency</strong>, <strong>DPS Log</strong>, and <strong>Death Log</strong> (their
+        deaths during the selected fight(s), with the last several hits before each one). Each opens
+        its own detail window.
       </p>
 
       <h2>Other tabs</h2>
       <ul>
         <li>
-          <strong>Healing</strong> — heals cast and received per player; right-click for per-spell
-          breakdown and access to the HoT Effectiveness table for HoT spells
+          <strong>Healing</strong> — heals cast and received per player; right-click for the same kind
+          of per-player breakdowns as Damage, plus the HoT Effectiveness table for HoT spells
         </li>
         <li>
           <strong>Tanking</strong> — incoming damage per player, useful for tracking who is taking
           the most damage and from what sources
         </li>
-        <li>
-          <strong>Spell Counts</strong> — how many times each spell was cast per player; right-click
-          a spell for details or to open the Spell Details popup
-        </li>
-        <li>
-          <strong>Deaths</strong> — a log of player deaths with the last several hits before each death
-        </li>
-        <li>
-          <strong>Loot</strong> — items seen in loot messages during the session
-        </li>
       </ul>
+      <p>
+        A few other views live under <strong>View &rarr; Events</strong> rather than as their own
+        content tab: <strong>Looted Items</strong> (items seen in loot messages), <strong>Random
+        Rolls</strong>, and <strong>Misc Events</strong>.
+      </p>
 
       <h2>Pet handling</h2>
       <p>

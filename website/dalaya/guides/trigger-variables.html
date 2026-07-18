@@ -139,8 +139,9 @@
       <p>
         Not a variable — this is a command you send in-game (via <code>/say</code>, <code>/group</code>,
         <code>/raid</code>, or a custom channel). When EQLogParser sees a line starting with
-        <code>{EQLP:STOP}</code> from your own character, it reloads triggers, closes overlays,
-        and stops all audio. Only responds to lines originating from you.
+        <code>{EQLP:STOP}</code> from your own character, it removes all running timers, speech,
+        and overlays — the same as clicking the Stop button in the Trigger Manager. Only responds
+        to lines originating from you.
       </p>
 
       <nav id="guide-prevnext" class="guide-prevnext"></nav>

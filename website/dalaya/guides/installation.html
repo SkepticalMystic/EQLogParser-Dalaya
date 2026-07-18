@@ -91,29 +91,35 @@
       <h2>Step 4 &mdash; First launch</h2>
       <ol>
         <li>Launch <strong>EQLogParser-Dalaya</strong> from the desktop shortcut or Start menu</li>
-        <li>Click the <strong>folder icon</strong> in the top-left of the toolbar to open the log file picker</li>
+        <li>Click the <strong>folder icon</strong> at the top of the left-hand sidebar (tooltip: "Open Log")</li>
         <li>
-          Navigate to your EverQuest <code>Logs</code> folder and select the log file for your character
-          (<code>eqlog_CharacterName_dalaya.txt</code>)
+          A menu appears asking how far back to read: <strong>Now</strong>, <strong>Last Hour</strong>, <strong>Last 8 Hours</strong>,
+          up through <strong>Last 30 Days</strong>, or <strong>Everything</strong>. Pick <strong>Now</strong> if you just want to
+          start tracking from this point forward, or <strong>Everything</strong> to load fights already in the log.
+          <img class="guide-screenshot" src="images/installation-open-log-menu.png" alt="Open Log sidebar button showing the time-range menu: Now, Last Hour, Last 8 Hours, Last 24 Hours, Last 2 Days, Last 7 Days, Last 14 Days, Last 30 Days, Everything" style="max-width: 210px;" />
         </li>
         <li>
-          The title bar updates with your character name and the parser begins reading the log in real time.
-          Combat events from that point forward will be captured automatically.
+          In the file picker that opens, navigate to your EverQuest <code>Logs</code> folder and select the log file
+          for your character (<code>eqlog_CharacterName_dalaya.txt</code>)
+        </li>
+        <li>
+          The title bar updates with your character name and the parser reads the selected time range, then keeps
+          monitoring the file in real time so new combat events are captured automatically.
         </li>
       </ol>
       <div class="callout tip">
         <p>
-          To catch fights you were already in before opening the parser, use
-          <strong>File &rarr; Open Log File</strong> and select the same log. This reads the full file from
-          the beginning rather than tailing it live.
+          <strong>File &rarr; Open and Monitor Log File</strong> in the menu bar opens the same time-range menu as the
+          sidebar button &mdash; use whichever is more convenient. There isn't a separate "load without monitoring" option;
+          picking a wider time range (or Everything) is how you catch fights you were already in.
         </p>
       </div>
 
       <h2>Updates</h2>
       <p>
-        EQLogParser-Dalaya checks for new releases automatically on startup.
-        When an update is available, a notification appears in the toolbar.
-        Download the new installer from the releases page and run it over the existing installation &mdash;
+        EQLogParser-Dalaya checks for new releases automatically on startup. When an update is available, a popup
+        asks <em>"Version X.Y.Z is Available. Download and Install?"</em> Click <strong>Yes</strong> and it downloads
+        the new installer and launches it for you, closing the app to let the install finish &mdash;
         settings and trigger configurations are preserved.
       </p>
 

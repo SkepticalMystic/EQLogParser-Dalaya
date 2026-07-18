@@ -37,10 +37,16 @@
 
       <h2>Opening the Trigger Manager</h2>
       <p>
-        Click the <strong>Trigger Manager</strong> button in the toolbar, or open it from the
-        main menu. It opens as a panel or separate window with a folder tree on the left and
-        the trigger editor on the right.
+        Click the <strong>Trigger Manager</strong> icon in the left sidebar, or use
+        <strong>View &rarr; Triggers &rarr; Trigger Manager</strong>. It opens as a dockable panel
+        with three columns: <strong>Manage Characters</strong> on the left, the <strong>Manage
+        Triggers</strong> folder tree in the middle, and <strong>Edit Properties</strong> on the right.
       </p>
+      <p>
+        Triggers are enabled per character — check the box next to a character in Manage Characters,
+        then select that character to see and edit their trigger tree in the middle column.
+      </p>
+      <img class="guide-screenshot" src="images/creating-triggers-sidebar.png" alt="Left sidebar showing the Trigger Manager icon (third from top)" style="max-width: 40px;" />
 
       <h2>Organizing triggers into folders</h2>
       <p>
@@ -61,13 +67,14 @@
       <h2>Creating a trigger</h2>
       <ol>
         <li>Select the folder where the trigger should live</li>
-        <li>Right-click and choose <strong>New Trigger</strong>, or click the Add button</li>
+        <li>Right-click and choose <strong>New Trigger</strong></li>
         <li>Give the trigger a clear name</li>
-        <li>Enter a <strong>Pattern</strong> — the text the parser looks for in your log</li>
-        <li>Check <strong>Regex</strong> if your pattern uses regular expression syntax (recommended)</li>
-        <li>Fill in at least one action field (Text to Speak, Text to Display, Timer, or Sound)</li>
+        <li>Enter a <strong>Match Pattern</strong> — the text the parser looks for in your log</li>
+        <li>Toggle regex matching if your pattern uses regular expression syntax (recommended)</li>
+        <li>Fill in at least one action field (Sound/Text to Speak, Text to Display, or Start a Timer)</li>
         <li>Click <strong>Save</strong></li>
       </ol>
+      <img class="guide-screenshot" src="images/creating-triggers-properties.png" alt="Edit Properties panel showing the Trigger Properties field list: Match Pattern, Sound/Text to Speak, Text to Display, Start a Timer, and more" style="max-width: 400px;" />
       <div class="callout tip">
         <p>
           Name triggers specifically enough that you can tell what they do at a glance in the
@@ -77,8 +84,8 @@
 
       <h2>Writing patterns</h2>
       <p>
-        The Pattern field matches against the content of each log line, after the date/time prefix
-        is stripped. The match is case-sensitive by default.
+        The Match Pattern field matches against the content of each log line, after the date/time
+        prefix is stripped. The match is <strong>not</strong> case-sensitive.
       </p>
       <p>
         A good pattern is specific enough not to fire on unrelated lines, but not so rigid that
@@ -115,11 +122,13 @@
 
       <h2>Action types</h2>
 
-      <h3>Text to Speak</h3>
+      <h3>Sound/Text to Speak</h3>
       <p>
-        Spoken aloud by the text-to-speech engine when the trigger fires. Keep it short and clear —
-        one or two words is often enough for an audio cue you'll be processing mid-combat.
-        You can use trigger variables here: <code>{S1} is casting</code>.
+        A single field that does either job: enter a phrase and it's spoken aloud by the
+        text-to-speech engine, or point it at a <code>.wav</code>/<code>.mp3</code> file (additional
+        sound files go in <code>Program Files\EQLogParser\data\sounds</code>) to play that instead.
+        Keep spoken phrases short and clear — one or two words is often enough for an audio cue
+        you'll be processing mid-combat. You can use trigger variables here: <code>{S1} is casting</code>.
       </p>
 
       <h3>Text to Display</h3>
@@ -128,10 +137,12 @@
         want a visual cue alongside (or instead of) audio.
       </p>
 
-      <h3>Timer</h3>
+      <h3>Start a Timer</h3>
       <p>
-        Starts a visible countdown bar when the trigger fires. Set the duration in seconds.
-        The timer appears in the overlay window you've configured. Common uses:
+        Starts a visible countdown bar when the trigger fires. Choose a timer type (Countdown,
+        Fast Countdown, or Progress) and a <strong>Duration</strong> — under 60 seconds enter decimal
+        seconds (e.g. <code>3.3</code>), at 60 seconds or more use <code>hh:mm:ss</code>. The timer
+        appears in the overlay window you've configured. Common uses:
       </p>
       <ul>
         <li>Buff durations — the timer counts down to when you need to re-cast</li>
@@ -139,30 +150,24 @@
         <li>Recast windows — track spell cooldowns</li>
       </ul>
       <p>
-        Use <code>{TS}</code> in the Pattern to capture a duration from the log line itself
+        Use <code>{TS}</code> in the Match Pattern to capture a duration from the log line itself
         and apply it dynamically as the timer length.
       </p>
 
-      <h3>End Early Pattern</h3>
+      <h3>Match End Early Pattern</h3>
       <p>
-        A second pattern that cancels a running timer before it expires. Use this for spells
-        that can be resisted, absorbed, or removed early — the timer stops cleanly rather
-        than counting down to zero on a buff that's already gone.
-      </p>
-
-      <h3>Sound</h3>
-      <p>
-        Plays an audio file when the trigger fires. Useful as an alternative to TTS for
-        short, distinct alert sounds. Point the trigger at a <code>.wav</code> or
-        <code>.mp3</code> file on your system.
+        A second pattern (under the timer's "Timer End Early" options) that cancels a running timer
+        before it expires. Use this for spells that can be resisted, absorbed, or removed early —
+        the timer stops cleanly rather than counting down to zero on a buff that's already gone.
       </p>
 
       <h2>Testing triggers</h2>
       <p>
-        Use the <strong>Test Trigger</strong> button in the trigger editor to simulate a log
-        line matching the pattern. This lets you verify the TTS text, check that variables
-        are captured correctly, and confirm that timer durations look right — without having
-        to recreate the in-game event.
+        Open the <strong>Trigger Tester</strong> (<strong>View &rarr; Triggers &rarr; Trigger
+        Tester</strong>). Paste one or more log lines into the text box and click <strong>Run
+        Test</strong> to fire any triggers that match them — no need to recreate the in-game event.
+        Check <strong>Real-Time</strong> to have the lines processed with the same pacing as a live
+        log instead of all at once.
       </p>
       <p>
         The <strong>Trigger Log</strong> tab (in the main window) records every trigger that

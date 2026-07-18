@@ -93,7 +93,7 @@
       <h2>.NET regex specifics</h2>
       <ul>
         <li><strong>No slashes</strong> — just type the pattern directly. Do not wrap it in <code>/like this/</code></li>
-        <li><strong>Case-sensitive by default</strong> — "cast" does not match "Cast"</li>
+        <li><strong>Not case-sensitive</strong> — "cast" matches "Cast" just as well</li>
         <li><strong>Spaces and punctuation must match exactly</strong> as they appear in the log line</li>
         <li><strong>Named groups are supported</strong> — <code>(?&lt;name&gt;...)</code> captures into a named variable.
           The trigger variables <code>{S1}</code>, <code>{N1}</code>, etc. expand to named groups internally.</li>
@@ -112,8 +112,9 @@
       </ul>
 
       <div class="callout tip">
-        <p>To test a pattern against a real log line before saving a trigger, paste the line into the
-        <strong>Test Trigger</strong> field in the Trigger Manager and run it.</p>
+        <p>To test a pattern against a real log line before saving a trigger, open the
+        <strong>Trigger Tester</strong> (View &rarr; Triggers &rarr; Trigger Tester), paste the line
+        in, and click <strong>Run Test</strong>.</p>
       </div>
 
       <nav id="guide-prevnext" class="guide-prevnext"></nav>

@@ -54,14 +54,44 @@ does:
 | `Screenshot-FullDesktop $outPath` | Screenshots the whole screen — only for locating native Open/Save dialogs (see below) |
 | `Crop-Image $inPath $outPath $x $y $w $h` | Crops a PNG to a sub-rectangle |
 
+### Finding a floating window's true bounds
+
+Floating child windows (like the Spell Browser) don't necessarily open where you'd guess relative
+to the main window content behind them. Don't estimate a crop rectangle from a mental model of the
+layout — crop a generous, deliberately-oversized region first, read it back, then narrow in on the
+actual edges (title bar, close button, bottom status text) before committing to a final tight crop.
+Guessing the rectangle up front reliably produces a crop that's cut off on one side and bleeding
+background content on the other.
+
+### Finding click coordinates reliably
+
+The `Read` tool often displays a screenshot scaled down (e.g. "displayed at 2000x1087" for a
+2560x1391 original) and reports coordinates in the *displayed* size. If you eyeball a position
+from that description, multiply by `original / displayed` before passing it to `Click-At` — using
+the displayed number directly is a frequent source of clicks landing tens of pixels off target.
+Safer approach: `Crop-Image` a small region (guess-and-check is fine) until the target text sits
+clearly inside the crop, then compute the click point from the **crop's offset + local position
+within the crop**, not from the original screenshot's displayed rendering.
+
+Some Syncfusion `SfDataGrid` rows (e.g. the "Merged Fights" grid in the Raid Damage view) didn't
+visibly respond to `Click-At` after several coordinate-corrected attempts — no row highlight, no
+downstream panel update — despite the same click pattern working fine on other grids (Fight List,
+DPS Summary). Similarly, right-clicking a row in the Trigger Manager's "Manage Characters" list
+opened the *Fight List's* context menu instead of a characters-list one, even though the click
+coordinates were well inside the characters panel. Cause unconfirmed in both cases — possibly a
+docked-panel z-order/focus quirk specific to certain panel combinations. If a control won't respond
+correctly after 2-3 careful attempts, don't keep burning turns on it — fall back to a screenshot of
+whatever state you already have (e.g. the loaded-but-unselected list, or an empty property-grid
+template showing just field labels) if it still demonstrates the guide's point; it usually does.
+
 ## End-to-end recipe
 
 1. **Build the app** if `EQLogParser/EQLogParser/bin/x64/Debug/net8.0-windows10.0.17763.0/EQLogParser-Dalaya.exe` doesn't exist yet: `dotnet build -p:Platform=x64` (see root `CLAUDE.md`).
 2. **Create a dummy log** — copy `sample-dummy-log.txt` (or write a new one following its format) to a scratch path named `eqlog_<SomeName>_dalaya.txt`. See "Dummy data rules" below — this is the step that must not be skipped.
 3. **Launch**: `Start-AppAndWait $exePath` → note the returned process's `Id`.
-4. **Open the dummy log**: `Focus-App`, `Click-At` the File menu, `Click-At` "Open and Monitor Log File", `Click-At` "Everything" in its flyout (guarantees every line loads regardless of the dummy timestamps vs. real wall-clock time) — this opens a native `CommonOpenFileDialog`. `Type-AndEnter` the full dummy-log path into it (the filename box is focused by default).
+4. **Open the dummy log**: `Focus-App`, `Click-At` the sidebar "Open Log" button (or the File menu's "Open and Monitor Log File"), `Click-At` "Everything" in its flyout (guarantees every line loads regardless of the dummy timestamps vs. real wall-clock time) — this opens a native `CommonOpenFileDialog`. Call `Type-AndEnter` with the full dummy-log path **immediately, with no `Click-At` in between** — the filename box already has keyboard focus when the dialog opens, and clicking anywhere in the dialog (even at what looks like the filename box) hands focus to the file list instead, silently swallowing everything you type afterward. If you do need to click inside a native dialog for some other reason, get its coordinates from `Screenshot-FullDesktop` (see next step), never from `Screenshot-AppWindow` — see the pitfall below.
 5. **Drive the UI** for whatever the guide needs — `Click-At` / `CtrlClick-At` / `RightClick-At` fight rows, menu items, etc. Screenshot after each step with `Screenshot-AppWindow`, `Read` the PNG to see the result and find the next click's coordinates.
-6. **Native Open/Save dialogs** are separate top-level windows outside the app's rect. To interact with one: `Screenshot-FullDesktop`, `Read` it to locate the dialog, then `Crop-Image` immediately to just the dialog region and discard the full-desktop capture (see privacy note below) before doing anything else with it.
+6. **Native Open/Save dialogs** are separate top-level windows outside the app's rect. To interact with one: `Screenshot-FullDesktop`, `Read` it to locate the dialog, then `Crop-Image` immediately to just the dialog region and discard the full-desktop capture (see privacy note below) before doing anything else with it. **Never call `Screenshot-AppWindow` while a native dialog is open** — once the dialog has focus, `Get-AppRect` (which reads the process's `MainWindowHandle`) starts returning the *dialog's* rect instead of the main window's, at a different apparent scale than the real screen (a coordinate pulled from that image and fed back into `Click-At` lands nowhere near the intended control). Stick to `Screenshot-FullDesktop` for any coordinate-finding for as long as a dialog is on screen.
 7. **Crop each final screenshot** with `Crop-Image` down to just the relevant panel/menu/dialog — tight crops keep guide images small and avoid dragging in unrelated UI chrome.
 8. **Copy finals** into `website/dalaya/guides/images/` and reference them from the guide HTML.
 9. **Verify** the guide renders (see "Local verification" below).
@@ -85,6 +115,12 @@ dummy log existed:
    to a scratch path with `Type-AndEnter` before screenshotting anything, or crop the screenshot
    down to just the filename field / Save-as-type row / buttons — never the folder browser,
    breadcrumb, or sidebar.
+3. **The Trigger Manager's "Manage Characters" list is independent of which log is open** (found
+   2026-07-18) — it lists every real character that has triggers configured, and stays populated
+   with real names even after switching to a dummy log, because it's driven by trigger config, not
+   the current log file. If a guide screenshot's crop region could include the Trigger Manager
+   panel, either close/avoid that tab or crop it out entirely — opening a dummy log does **not**
+   clean this panel up the way it does the Fight List.
 
 General rule: prefer `Screenshot-AppWindow` (cropped to the app's own rect) over
 `Screenshot-FullDesktop` everywhere possible; only use the full-desktop capture to locate a

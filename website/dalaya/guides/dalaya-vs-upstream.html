@@ -86,6 +86,17 @@
         raid logs where other players' pets may also appear.
       </p>
 
+      <h3>Direct-damage spell attribution</h3>
+      <p>
+        Dalaya's non-melee direct-damage lines carry no spell name at all:
+      </p>
+      <pre><code>Target hit by Caster for 500 points of non-melee damage.</code></pre>
+      <p>
+        This fork tracks each attacker's recent spell casts and, when one of these hits arrives
+        within the expected timing window of a cast, stamps that spell's name onto the hit so it
+        shows up correctly in spell-count and DPS breakdowns instead of as "Unknown".
+      </p>
+
       <h2>Spell database</h2>
       <p>
         The upstream EQLogParser ships with a spell list built from Live EverQuest data.
@@ -117,7 +128,8 @@
         </li>
         <li>
           <strong>Spell Details popup</strong> — shows all SPA effect slots for any spell in a
-          human-readable format, accessible from the Spell Counts view
+          human-readable format, accessible from the Damage, Healing, Tanking, Spell Counts, and
+          Spell Cast breakdown views
         </li>
         <li>
           <strong>Trigger spell picker</strong> — browse Dalaya spells when writing trigger patterns

@@ -88,10 +88,10 @@
           logging before pulling.
         </li>
         <li>
-          <strong>You are tailing live instead of reading from the start.</strong> If you
-          opened the log file after the fight had already begun, only events from that point
-          onward are captured. Use <strong>File &rarr; Open Log File</strong> to read the
-          full file from the beginning.
+          <strong>You are tailing live instead of reading from the start.</strong> If you opened
+          the log with <strong>Now</strong> selected in the Open Log time-range menu, only events
+          from that point onward are captured. Reopen the log and pick <strong>Everything</strong>
+          (or a wide-enough range) instead.
         </li>
         <li>
           <strong>Damage Shield (DS) damage.</strong> DS damage is only visible in the log
@@ -141,9 +141,9 @@
 
       <h2>Copy or Quick Share doesn't work — nothing is copied to the clipboard</h2>
       <p>
-        Check the error log under <strong>Tools &rarr; Error Log</strong> for a line containing:
+        Check the error log under <strong>Tools &rarr; View Error Log</strong> for a line containing:
       </p>
-      <pre><code>ERROR EQLogParser.UiUtil - Failed to set Clipboard Text: OpenClipboard Failed (0x800401D0)</code></pre>
+      <pre><code>ERROR EQLogParser.UIUtil - Failed to set Clipboard Text: OpenClipboard Failed (0x800401D0)</code></pre>
       <p>
         If you see this, your antivirus software is blocking clipboard access by EQLogParser.
         Add an exception for <code>EQLogParser-Dalaya.exe</code> in your antivirus settings.

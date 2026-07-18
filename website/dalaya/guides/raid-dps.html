@@ -37,63 +37,51 @@
 
       <h2>Opening the Raid Damage window</h2>
       <p>
-        Open the Raid Damage window from the <strong>File</strong> menu or the toolbar. It opens
-        as a separate window alongside the main parser — both can be open at the same time.
+        Click the <strong>Raid DPS</strong> icon in the left sidebar, or use <strong>View &rarr; DPS
+        &rarr; Raid Damage (Multi-Log)</strong>. It opens as a dockable panel inside the main window
+        (the same docking area as the Fight List and other tabs) rather than a separate OS window, so
+        you can view it side-by-side with the rest of the parser by dragging its tab.
       </p>
 
       <h2>Loading log files</h2>
       <p>
-        In the Raid Damage window, use the <strong>Add Log</strong> button (or the equivalent control)
-        to load each player's log file. Repeat for every player whose log you have collected.
+        In the Raid Damage window's <strong>Log Sources</strong> panel, use the <strong>Add</strong>
+        button to load each player's log file. Repeat for every player whose log you have collected.
+        Each file must follow the usual <code>eqlog_PlayerName_server.txt</code> naming convention —
+        that's how the source's player name gets identified.
       </p>
       <p>
         There is no fixed limit on the number of logs you can load. Load as many as you have —
         the more logs, the more complete the merged picture.
       </p>
-      <div class="callout tip">
-        <p>
-          Load the raid leader's or main tank's log last. Since they're typically in range of all
-          combat, their log often has the most events and provides the best baseline for
-          the merged fight timeline.
-        </p>
-      </div>
+      <img class="guide-screenshot" src="images/raid-dps-sources-merged.png" alt="Log Sources panel with two loaded logs, and the Merged Fights list showing two combined fights" style="max-width: 545px;" />
 
       <h2>How the merge works</h2>
       <p>
         When multiple players log the same damage event — for example, a wizard's nuke that three
         nearby players all witnessed — that event appears in all three logs. The merger detects
-        these duplicates by comparing the event type, attacker, target, damage amount, and
-        timestamp, and keeps only one copy.
+        these duplicates and keeps only one copy.
       </p>
       <p>
-        Players' system clocks are rarely perfectly synchronized. The merger automatically detects
-        the time offset between each log and adjusts all events onto a shared timeline before
-        deduplication and aggregation. You don't need to do anything for this — it's handled
-        automatically.
+        Players' system clocks are rarely perfectly synchronized. Once you've loaded two or more
+        sources, the app automatically detects the time offset between each log (by aligning fights
+        they have in common) and adjusts all events onto a shared timeline before deduplication and
+        aggregation — you don't need to do anything for this. If you ever need to override it, right-click
+        a source for <strong>Set time offset...</strong>, or use the <strong>Detect</strong> button to
+        re-run detection after loading more sources.
       </p>
 
-      <h2>Reading the merged DPS view</h2>
+      <h2>Reading the merged views</h2>
       <p>
         The fight list in the Raid Damage window shows encounters built from the combined logs.
-        Select a fight to view its merged stats. The DPS Summary works the same as in the
-        single-player view — click a column to sort, right-click for per-spell breakdowns.
+        Select a fight to view its merged stats. The right-hand pane has three tabs — <strong>DPS</strong>,
+        <strong>Tanking</strong>, and <strong>Healing</strong> — that work the same as their single-player
+        counterparts: click a column to sort, right-click for per-spell breakdowns.
       </p>
       <p>
         Because events from all logs are combined, players who were out of range of some events
         are still accurately represented as long as at least one other player's log captured
         those events.
-      </p>
-
-      <h2>Healing tab</h2>
-      <p>
-        The Raid Damage window includes a Healing tab that aggregates healing done across all
-        loaded log files. Unlike damage records (which may appear in multiple logs and need
-        deduplication), heal events are sourced independently per log — each player's heals
-        are visible only in their own log or the logs of those nearby.
-      </p>
-      <p>
-        The merger aligns each source's heal records onto the shared timeline and combines them.
-        The result is a raid-wide view of who healed how much and with what spells.
       </p>
 
       <h2>Limitations</h2>
