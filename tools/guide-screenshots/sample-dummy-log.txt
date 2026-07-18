@@ -1,0 +1,28 @@
+[Sun Jul 12 21:00:00 2026] You engage Warlord Kredge!
+[Sun Jul 12 21:00:01 2026] You crush Warlord Kredge for 5120 points of damage. (Critical)
+[Sun Jul 12 21:00:02 2026] Brannor slashes Warlord Kredge for 2890 points of damage.
+[Sun Jul 12 21:00:03 2026] Warlord Kredge crushes Brannor for 1560 points of damage.
+[Sun Jul 12 21:00:04 2026] Warlord Kredge has taken 3305 damage from Wysteria by Fire Bolt.
+[Sun Jul 12 21:00:05 2026] You crush Warlord Kredge for 4780 points of damage.
+[Sun Jul 12 21:00:06 2026] Brannor slashes Warlord Kredge for 3110 points of damage. (Critical)
+[Sun Jul 12 21:00:07 2026] Warlord Kredge crushes Brannor for 2200 points of damage.
+[Sun Jul 12 21:00:08 2026] Wysteria has healed Brannor for 1800 points of damage.
+[Sun Jul 12 21:00:09 2026] Warlord Kredge has taken 4010 damage from Wysteria by Fire Bolt.
+[Sun Jul 12 21:00:10 2026] You crush Warlord Kredge for 5590 points of damage. (Lucky Critical)
+[Sun Jul 12 21:00:11 2026] Brannor slashes Warlord Kredge for 2650 points of damage.
+[Sun Jul 12 21:00:12 2026] Warlord Kredge crushes Brannor for 1980 points of damage.
+[Sun Jul 12 21:00:13 2026] Wysteria has healed Brannor for 2200 points of damage.
+[Sun Jul 12 21:00:14 2026] Warlord Kredge has taken 3760 damage from Wysteria by Fire Bolt.
+[Sun Jul 12 21:00:15 2026] You crush Warlord Kredge for 4990 points of damage.
+[Sun Jul 12 21:00:16 2026] Brannor slashes Warlord Kredge for 3320 points of damage. (Critical)
+[Sun Jul 12 21:00:17 2026] Warlord Kredge crushes Brannor for 2410 points of damage.
+[Sun Jul 12 21:00:18 2026] Wysteria has healed Brannor for 1950 points of damage.
+[Sun Jul 12 21:00:19 2026] You crush Warlord Kredge for 6120 points of damage. (Critical)
+[Sun Jul 12 21:00:20 2026] Brannor slashes Warlord Kredge for 2780 points of damage.
+[Sun Jul 12 21:00:21 2026] Warlord Kredge has been slain by You!
+[Sun Jul 12 21:00:45 2026] You engage a raid guard!
+[Sun Jul 12 21:00:46 2026] You crush a raid guard for 3210 points of damage.
+[Sun Jul 12 21:00:47 2026] Brannor slashes a raid guard for 1890 points of damage.
+[Sun Jul 12 21:00:48 2026] a raid guard crushes Brannor for 980 points of damage.
+[Sun Jul 12 21:00:49 2026] You crush a raid guard for 2990 points of damage. (Critical)
+[Sun Jul 12 21:00:50 2026] a raid guard has been slain by You!
