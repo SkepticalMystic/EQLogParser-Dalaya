@@ -449,7 +449,7 @@ namespace EQLogParser
         webhookUrl = ConfigUtil.GetRaidRecordWebhook();
         if (string.IsNullOrEmpty(webhookUrl))
         {
-          new MessageWindow("No Discord webhook URL configured. Open Raid Recording Settings and select Send to Discord.", "Discord Export",
+          new MessageWindow("No Discord webhook URL configured. Open Discord Export Settings and select Send to Discord via Webhook.", "Discord Export",
             MessageWindow.IconType.Warn).ShowDialog();
           return;
         }

@@ -388,7 +388,7 @@
               </MenuItem.Icon>
             </MenuItem>
           </MenuItem>
-          <MenuItem Header="Raid _Recording Settings…" Click="RaidRecordSettingsMenuClick">
+          <MenuItem Header="Discord E_xport Settings…" Click="RaidRecordSettingsMenuClick">
             <MenuItem.Icon>
               <fa:ImageAwesome Style="{StaticResource EQIconStyle}" Icon="Solid_Circle" />
             </MenuItem.Icon>
@@ -598,7 +598,7 @@
             </Border.ToolTip>
             <Border.ContextMenu>
               <ContextMenu>
-                <MenuItem Header="Recording Settings…" Click="RaidRecordSettingsMenuClick"/>
+                <MenuItem Header="Discord Export Settings…" Click="RaidRecordSettingsMenuClick"/>
               </ContextMenu>
             </Border.ContextMenu>
             <Grid>

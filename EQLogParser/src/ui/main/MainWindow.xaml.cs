@@ -1470,7 +1470,7 @@ namespace EQLogParser
         var webhookUrl = ConfigUtil.GetRaidRecordWebhook();
         if (string.IsNullOrEmpty(webhookUrl))
         {
-          new MessageWindow("No Discord webhook URL configured. Open Recording Settings to configure.", "Raid Record", MessageWindow.IconType.Warn).ShowDialog();
+          new MessageWindow("No Discord webhook URL configured. Open Discord Export Settings to configure.", "Raid Record", MessageWindow.IconType.Warn).ShowDialog();
           return;
         }
 
