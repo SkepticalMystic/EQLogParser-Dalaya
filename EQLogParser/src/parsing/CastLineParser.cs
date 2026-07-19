@@ -152,7 +152,7 @@ namespace EQLogParser
 
               var spellData = _dataStore.GetSpellByName(spellName);
 
-              if (spellData != null)
+              if (spellData is not null)
               {
                 spellData.SeenRecently = true;
               }
@@ -189,7 +189,7 @@ namespace EQLogParser
                 _playerRegistry.SetActivePlayerClass(player, theClass, 2, currentTime);
               }
 
-              if (specialKey != null && spellData != null)
+              if (specialKey is not null && spellData is not null)
               {
                 AdpsTracker.Instance.UpdateAdps(spellData);
               }
@@ -280,7 +280,7 @@ namespace EQLogParser
           {
             foreach (var spell in PetSpells)
             {
-              if (searchResult.SpellData[0].Name?.StartsWith(spell, StringComparison.OrdinalIgnoreCase) == true)
+              if (searchResult.SpellData[0].Name?.StartsWith(spell, StringComparison.OrdinalIgnoreCase) is true)
               {
                 _playerRegistry.AddVerifiedPet(target);
                 break;

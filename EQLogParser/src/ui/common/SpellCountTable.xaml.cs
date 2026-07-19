@@ -547,9 +547,9 @@ namespace EQLogParser
       {
         foreach (var selected in dataGrid.SelectedItems)
         {
-          if (selected is IDictionary<string, object> spr)
+          if (selected is IDictionary<string, object> spr && spr["Spell"] is string spell)
           {
-            _hiddenSpells[spr["Spell"] as string ?? string.Empty] = 1;
+            _hiddenSpells[spell] = 1;
             dataGrid.View.Remove(spr);
             UpdateCounts();
           }
@@ -561,15 +561,15 @@ namespace EQLogParser
     {
       Dispatcher.InvokeAsync(() =>
       {
-        if (sender is not ImageAwesome ia)
+        if (sender is not ImageAwesome { DataContext: IDictionary<string, object> spr })
           return;
 
-        if (ia.DataContext is not IDictionary<string, object> spr)
-          return;
-
-        _hiddenSpells[spr["Spell"] as string ?? string.Empty] = 1;
-        dataGrid.View.Remove(spr);
-        UpdateCounts();
+        if (spr["Spell"] is string spell)
+        {
+          _hiddenSpells[spell] = 1;
+          dataGrid.View.Remove(spr);
+          UpdateCounts();
+        }
       });
     }
 
