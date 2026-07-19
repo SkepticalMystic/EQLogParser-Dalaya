@@ -33,8 +33,8 @@
       <ul>
         <li><strong>Windows 10 or 11</strong>, 64-bit</li>
         <li><strong>.NET 8 Desktop Runtime (x64)</strong> &mdash; see Step 1</li>
-        <li><strong>EverQuest</strong> with logging enabled &mdash; see Step 2</li>
-        <li><strong>Windowed mode</strong> in EverQuest if you plan to use overlays (damage meter, timer bars)</li>
+        <li><strong>Dalaya</strong> (EverQuest client connected to the Dalaya server) with logging enabled &mdash; see Step 2</li>
+        <li><strong>Windowed mode</strong> in Dalaya if you plan to use overlays (damage meter, timer bars)</li>
       </ul>
 
       <h2>Step 1 &mdash; Install .NET 8</h2>
@@ -52,22 +52,24 @@
         Run it and follow the prompts &mdash; no configuration is needed.
       </p>
 
-      <h2>Step 2 &mdash; Enable EverQuest logging</h2>
+      <h2>Step 2 &mdash; Enable Dalaya logging</h2>
       <p>
-        EQLogParser reads your EverQuest log file in real time.
-        Logging is off by default and must be enabled each session, or set permanently in your EQ config.
+        EQLogParser reads your Dalaya log file in real time.
+        Logging is off by default and must be enabled each session, or set permanently in your Dalaya config.
       </p>
-      <p><strong>To enable for the current session:</strong> type <code>/log on</code> in the EverQuest chat window.
+      <p><strong>To enable for the current session:</strong> type <code>/log on</code> in the Dalaya chat window.
       You will see a confirmation message. Logging stays active until you type <code>/log off</code> or log out.</p>
-      <p><strong>To enable permanently:</strong> open <code>eqclient.ini</code> in your EverQuest folder
-      and set <code>Log=TRUE</code>. This enables logging automatically every time EQ launches.</p>
-      <p>Your log file is written to the <code>Logs</code> subfolder of your EverQuest installation:</p>
-      <pre><code>[EQ folder]\Logs\eqlog_CharacterName_dalaya.txt</code></pre>
+      <p><strong>To enable permanently:</strong> open <code>eqclient.ini</code> in your Dalaya install folder
+      and set <code>Log=TRUE</code>. This enables logging automatically every time Dalaya launches.</p>
+      <p>Your log file is written to the <code>Logs</code> subfolder of your Dalaya installation. Following the
+      Dalaya install guide, the client lives at <code>C:\Dalaya</code>, so your log path is:</p>
+      <pre><code>C:\Dalaya\Logs\eqlog_CharacterName_dalaya.txt</code></pre>
       <p>
         The <code>dalaya</code> portion of the filename is the server identifier for the Dalaya server.
         For example, a character named Kateila would have a log file at:
       </p>
-      <pre><code>C:\Sony\EverQuest\Logs\eqlog_Kateila_dalaya.txt</code></pre>
+      <pre><code>C:\Dalaya\Logs\eqlog_Kateila_dalaya.txt</code></pre>
+      <p>If you installed the client to a different location, substitute your own install folder above.</p>
       <div class="callout tip">
         <p>Log in to your character before proceeding to Step 4 so the log file already exists on disk when you select it in the parser.</p>
       </div>
@@ -99,7 +101,7 @@
           <img class="guide-screenshot" src="images/installation-open-log-menu.png" alt="Open Log sidebar button showing the time-range menu: Now, Last Hour, Last 8 Hours, Last 24 Hours, Last 2 Days, Last 7 Days, Last 14 Days, Last 30 Days, Everything" style="max-width: 210px;" />
         </li>
         <li>
-          In the file picker that opens, navigate to your EverQuest <code>Logs</code> folder and select the log file
+          In the file picker that opens, navigate to your Dalaya <code>Logs</code> folder and select the log file
           for your character (<code>eqlog_CharacterName_dalaya.txt</code>)
         </li>
         <li>
