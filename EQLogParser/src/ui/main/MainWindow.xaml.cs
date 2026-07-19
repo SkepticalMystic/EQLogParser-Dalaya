@@ -355,7 +355,11 @@ namespace EQLogParser
     {
       if (configure)
       {
-        _damageOverlay = new DamageOverlayWindow(true);
+        _damageOverlay = new DamageOverlayWindow(true)
+        {
+          ShowActivated = false
+        };
+
         _damageOverlay.Show();
       }
       // delay opening overlay so group IDs get populated
@@ -366,6 +370,7 @@ namespace EQLogParser
           _damageOverlay?.Close();
           _damageOverlay = new DamageOverlayWindow(false, reset);
           _damageOverlay.Opacity = 0;
+          _damageOverlay.ShowActivated = false;
           _damageOverlay.Show();
           _damageOverlay.UpdateLayout();
           _damageOverlay.Opacity = 1.0;
