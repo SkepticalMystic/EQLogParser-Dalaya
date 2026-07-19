@@ -580,7 +580,7 @@ namespace EQLogParser
 
         // Apply Crit modifier when this melee record matches a recent Finishing Blow!! announcement
         // (which carries no damage value — empty-Value path).
-        if (record != null && _lastCrit != null && string.Equals(_lastCrit.Attacker, record.Attacker, StringComparison.OrdinalIgnoreCase) &&
+        if (record is not null && _lastCrit is not null && string.Equals(_lastCrit.Attacker, record.Attacker, StringComparison.OrdinalIgnoreCase) &&
           (lineData.BeginTime - _lastCrit.BeginTime) <= 1 && string.IsNullOrEmpty(_lastCrit.Value))
         {
           record.ModifiersMask = LineModifiersParser.Crit;
@@ -897,7 +897,7 @@ namespace EQLogParser
 
         // Apply Crit modifier when this DD record matches a recent "delivers a critical blast! (N)"
         // announcement: same attacker, within 1s, and the parenthesized value matches this hit's damage.
-        if (record != null && _lastCrit != null && string.Equals(_lastCrit.Attacker, record.Attacker, StringComparison.OrdinalIgnoreCase) &&
+        if (record is not null && _lastCrit is not null && string.Equals(_lastCrit.Attacker, record.Attacker, StringComparison.OrdinalIgnoreCase) &&
           (lineData.BeginTime - _lastCrit.BeginTime) <= 1 && _lastCrit.Value?.Length > 2 &&
           _lastCrit.Value.AsSpan(1, _lastCrit.Value.Length - 2).SequenceEqual(split[pointsOfIndex - 1].AsSpan()))
         {
@@ -918,7 +918,7 @@ namespace EQLogParser
           attacker = UpdateAttacker(attacker, Labels.Unk);
 
           var damageRecord = CreateDamageRecord(lineData, split, stop, attacker, Labels.Unk, damage, Labels.Melee, "Hits");
-          if (damageRecord != null)
+          if (damageRecord is not null)
           {
             damageRecord.ModifiersMask = LineModifiersParser.Crit;
           }
@@ -1102,11 +1102,11 @@ namespace EQLogParser
         }
       }
 
-      if (record != null)
+      if (record is not null)
       {
         // Transfer the Crit flag stashed by "scores a critical hit!" / "lands a Crippling Blow!"
         // onto the next real damage record from the same attacker within 1s.
-        if (_delayCritRecord != null && (lineData.BeginTime - _delayCritRecord.BeginTime) <= 1 &&
+        if (_delayCritRecord is not null && (lineData.BeginTime - _delayCritRecord.BeginTime) <= 1 &&
           string.Equals(record.Attacker, _delayCritRecord.Record.Attacker, StringComparison.OrdinalIgnoreCase))
         {
           record.ModifiersMask = _delayCritRecord.Record.ModifiersMask;
@@ -1184,7 +1184,7 @@ namespace EQLogParser
 
     private void UpdateSlain(string slain, string killer, LineData lineData)
     {
-      if (!string.IsNullOrEmpty(slain) && killer != null && !InIgnoreList(slain)) // killer may not be known so empty string is OK
+      if (!string.IsNullOrEmpty(slain) && killer is not null && !InIgnoreList(slain)) // killer may not be known so empty string is OK
       {
         killer = killer.Length > 2 ? _playerRegistry.ReplacePlayer(killer, killer) : killer;
         slain = _playerRegistry.ReplacePlayer(slain, slain);
@@ -1204,7 +1204,7 @@ namespace EQLogParser
           {
             // we also use upper case now
             slain = TextUtils.ToUpper(slain);
-            if (!SlainQueue.Contains(slain) && FightManager.GetFight(slain) != null)
+            if (!SlainQueue.Contains(slain) && FightManager.GetFight(slain) is not null)
             {
               SlainQueue.Add(slain);
               _slainTime = currentTime;
@@ -1214,7 +1214,7 @@ namespace EQLogParser
           killer = TextUtils.ToUpper(killer);
 
           var death = new DeathRecord { Killed = string.Intern(slain), Killer = string.Intern(killer), Message = string.Intern(lineData.Action) };
-          if (_previousAction != null)
+          if (_previousAction is not null)
           {
             death.Previous = _previousAction;
           }
@@ -1355,7 +1355,7 @@ namespace EQLogParser
         {
           var spellName = _dataStore.AbbreviateSpellName(name);
           var data = _dataStore.GetSpellByAbbrv(spellName);
-          if (data != null)
+          if (data is not null)
           {
             if (data.Damaging == 2)
             {

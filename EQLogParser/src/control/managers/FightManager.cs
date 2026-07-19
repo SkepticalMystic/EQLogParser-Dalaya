@@ -101,7 +101,7 @@ namespace EQLogParser
       {
         _activeFights.TryGetValue(name, out result);
         // don't think this happens but just in-case
-        if (result?.Dead == true)
+        if (result?.Dead is true)
         {
           _activeFights.TryRemove(name, out _);
         }
@@ -286,7 +286,9 @@ namespace EQLogParser
             isNonTankingFight = fight.DamageHits == 1;
 
             var attacker = record.AttackerOwner ?? record.Attacker;
-            var validator = new DamageValidator();
+            var validator = new DamageValidator(
+              AppSettings.IsAssassinateDamageEnabled, AppSettings.IsBaneDamageEnabled, AppSettings.IsDamageShieldDamageEnabled,
+              AppSettings.IsFinishingBlowDamageEnabled, AppSettings.IsHeadshotDamageEnabled, AppSettings.IsSlayUndeadDamageEnabled);
             if (fight.PlayerDamageTotals.TryGetValue(attacker, out var total))
             {
               total.Damage += validator.IsValid(record) ? record.Total : 0;

@@ -606,7 +606,9 @@ namespace EQLogParser
         return;
       }
 
-      var validator = new DamageValidator();
+      var validator = new DamageValidator(
+        AppSettings.IsAssassinateDamageEnabled, AppSettings.IsBaneDamageEnabled, AppSettings.IsDamageShieldDamageEnabled,
+        AppSettings.IsFinishingBlowDamageEnabled, AppSettings.IsHeadshotDamageEnabled, AppSettings.IsSlayUndeadDamageEnabled);
 
       foreach (var block in fight.DamageBlocks)
       {

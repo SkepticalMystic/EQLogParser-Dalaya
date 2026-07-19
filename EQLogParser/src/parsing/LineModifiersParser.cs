@@ -57,7 +57,7 @@ namespace EQLogParser
           playerStats.AssHits++;
           playerStats.TotalAss += record.Total;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.AssHits++;
           }
@@ -67,7 +67,7 @@ namespace EQLogParser
         {
           playerStats.DoubleBowHits++;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.DoubleBowHits++;
           }
@@ -77,7 +77,7 @@ namespace EQLogParser
         {
           playerStats.FlurryHits++;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.FlurryHits++;
           }
@@ -88,7 +88,7 @@ namespace EQLogParser
           playerStats.HeadHits++;
           playerStats.TotalHead += record.Total;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.HeadHits++;
           }
@@ -99,7 +99,7 @@ namespace EQLogParser
           playerStats.FinishingHits++;
           playerStats.TotalFinishing += record.Total;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.FinishingHits++;
           }
@@ -109,7 +109,7 @@ namespace EQLogParser
         {
           playerStats.TwincastHits++;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.TwincastHits++;
           }
@@ -123,7 +123,7 @@ namespace EQLogParser
         {
           playerStats.RampageHits++;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.RampageHits++;
           }
@@ -135,7 +135,7 @@ namespace EQLogParser
           playerStats.RiposteHits++;
           playerStats.TotalRiposte += record.Total;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.RiposteHits++;
           }
@@ -145,7 +145,7 @@ namespace EQLogParser
         {
           playerStats.StrikethroughHits++;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.StrikethroughHits++;
           }
@@ -156,7 +156,7 @@ namespace EQLogParser
           playerStats.SlayHits++;
           playerStats.TotalSlay += record.Total;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.SlayHits++;
           }
@@ -166,7 +166,7 @@ namespace EQLogParser
         {
           playerStats.CritHits++;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.CritHits++;
           }
@@ -175,7 +175,7 @@ namespace EQLogParser
           {
             playerStats.TotalCrit += record.Total;
 
-            if (theHit != null)
+            if (theHit is not null)
             {
               theHit.TotalCrit += record.Total;
             }
@@ -185,7 +185,7 @@ namespace EQLogParser
               playerStats.NonTwincastCritHits++;
               playerStats.TotalNonTwincastCrit += record.Total;
 
-              if (theHit != null)
+              if (theHit is not null)
               {
                 theHit.NonTwincastCritHits++;
                 theHit.TotalNonTwincastCrit += record.Total;
@@ -199,7 +199,7 @@ namespace EQLogParser
           playerStats.LuckyHits++;
           playerStats.TotalLucky += record.Total;
 
-          if (theHit != null)
+          if (theHit is not null)
           {
             theHit.LuckyHits++;
             theHit.TotalLucky += record.Total;
@@ -210,7 +210,7 @@ namespace EQLogParser
             playerStats.NonTwincastLuckyHits++;
             playerStats.TotalNonTwincastLucky += record.Total;
 
-            if (theHit != null)
+            if (theHit is not null)
             {
               theHit.NonTwincastLuckyHits++;
               theHit.TotalNonTwincastLucky += record.Total;
