@@ -144,7 +144,8 @@ namespace EQLogParser
     internal static async Task SendDiscordFile(string webhookUrl, byte[] fileBytes, string fileName, string message)
     {
       using var form = new MultipartFormDataContent();
-      var payloadJson = JsonSerializer.Serialize(new { content = message }, DiscordSerializationOptions);
+      // flags: 4096 = SUPPRESS_NOTIFICATIONS -- raid record uploads shouldn't ping the channel
+      var payloadJson = JsonSerializer.Serialize(new { content = message, flags = 4096 }, DiscordSerializationOptions);
       form.Add(new StringContent(payloadJson, Encoding.UTF8, "application/json"), "payload_json");
       form.Add(new ByteArrayContent(fileBytes), "files[0]", fileName);
       var response = await TheHttpClient.PostAsync(webhookUrl, form);
@@ -560,6 +561,74 @@ namespace EQLogParser
       }
     }
 
+    // Builds the combat-line export for a set of selected fights: unions each fight's time
+    // window (with a 15s pre-roll), strips chat, and optionally drops lines whose parsed
+    // damage-record defender isn't one of the selected fight names ("without adds" mode).
+    private static byte[] BuildFightExportBytes(string currentFile, List<Fight> fights, bool filterToSelectedDefenders)
+    {
+      // Build a case-insensitive defender-name set for the precise-filter path. The parser's
+      // UpdateDefender normalization already matches what Fight.Name stores (first letter
+      // uppercased), so a case-insensitive compare covers any stray casing variance.
+      var defenderNames = filterToSelectedDefenders
+        ? new HashSet<string>(fights.Select(f => f.Name), StringComparer.OrdinalIgnoreCase)
+        : null;
+
+      var range = new TimeRange();
+      fights.ForEach(fight =>
+      {
+        range.Add(new TimeSegment(fight.BeginTime - 15, fight.LastTime));
+      });
+
+      using var ms = new MemoryStream();
+
+      if (range.TimeSegments.Count > 0)
+      {
+        using var f = File.OpenRead(currentFile);
+        var s = FileUtil.GetStreamReader(f, range.TimeSegments[0].BeginTime);
+        while (!s.EndOfStream)
+        {
+          var line = s.ReadLine();
+          if (string.IsNullOrEmpty(line) || line.Length <= AppSettings.ActionIndex)
+          {
+            continue;
+          }
+
+          var action = line[AppSettings.ActionIndex..];
+          if (ChatLineParser.ParseChatType(action) != null)
+          {
+            continue;
+          }
+
+          if (TimeRange.TimeCheck(line, range.TimeSegments[0].BeginTime, range, out var exceeds))
+          {
+            // "Without adds" mode: parse the line as damage; if it produced a record
+            // whose defender is NOT one of the selected fights, drop the line. Non-
+            // damage lines (casts, buffs, misc) fall through since ParseLine returns
+            // null — those provide DoT/proc attribution context and don't spawn
+            // stray Fight entries on re-parse.
+            if (defenderNames != null)
+            {
+              var damageRecord = DamageLineParser.Instance.ParseLine(action);
+              if (damageRecord != null && !defenderNames.Contains(damageRecord.Defender))
+              {
+                continue;
+              }
+            }
+
+            ms.Write(Encoding.UTF8.GetBytes(line));
+            ms.Write(Encoding.UTF8.GetBytes(Environment.NewLine));
+          }
+
+          if (exceeds)
+          {
+            break;
+          }
+        }
+      }
+
+      return ms.ToArray();
+    }
+
     internal static void ExportFights(string currentFile, List<Fight> fights, bool filterToSelectedDefenders = false)
     {
       var saveFileDialog = new SaveFileDialog();
@@ -572,73 +641,14 @@ namespace EQLogParser
         var dialog = new MessageWindow($"Saving {fights.Count} Selected Fights.", Resource.FILEMENU_SAVE_FIGHTS,
           MessageWindow.IconType.Save);
 
-        // Build a case-insensitive defender-name set for the precise-filter path. The parser's
-        // UpdateDefender normalization already matches what Fight.Name stores (first letter
-        // uppercased), so a case-insensitive compare covers any stray casing variance.
-        var defenderNames = filterToSelectedDefenders
-          ? new HashSet<string>(fights.Select(f => f.Name), StringComparer.OrdinalIgnoreCase)
-          : null;
-
         Task.Delay(150).ContinueWith(async _ =>
         {
           var accessError = false;
 
           try
           {
-            using (var os = File.Open(saveFileDialog.FileName, FileMode.Create))
-            {
-              var range = new TimeRange();
-              fights.ForEach(fight =>
-              {
-                range.Add(new TimeSegment(fight.BeginTime - 15, fight.LastTime));
-              });
-
-              if (range.TimeSegments.Count > 0)
-              {
-                using var f = File.OpenRead(currentFile);
-                var s = FileUtil.GetStreamReader(f, range.TimeSegments[0].BeginTime);
-                while (!s.EndOfStream)
-                {
-                  var line = s.ReadLine();
-                  if (string.IsNullOrEmpty(line) || line.Length <= AppSettings.ActionIndex)
-                  {
-                    continue;
-                  }
-
-                  var action = line[AppSettings.ActionIndex..];
-                  if (ChatLineParser.ParseChatType(action) != null)
-                  {
-                    continue;
-                  }
-
-                  if (TimeRange.TimeCheck(line, range.TimeSegments[0].BeginTime, range, out var exceeds))
-                  {
-                    // "Without adds" mode: parse the line as damage; if it produced a record
-                    // whose defender is NOT one of the selected fights, drop the line. Non-
-                    // damage lines (casts, buffs, misc) fall through since ParseLine returns
-                    // null — those provide DoT/proc attribution context and don't spawn
-                    // stray Fight entries on re-parse.
-                    if (defenderNames != null)
-                    {
-                      var damageRecord = DamageLineParser.Instance.ParseLine(action);
-                      if (damageRecord != null && !defenderNames.Contains(damageRecord.Defender))
-                      {
-                        continue;
-                      }
-                    }
-
-                    os.Write(Encoding.UTF8.GetBytes(line));
-                    os.Write(Encoding.UTF8.GetBytes(Environment.NewLine));
-                  }
-
-                  if (exceeds)
-                  {
-                    break;
-                  }
-                }
-              }
-            }
-
+            var bytes = BuildFightExportBytes(currentFile, fights, filterToSelectedDefenders);
+            File.WriteAllBytes(saveFileDialog.FileName, bytes);
             UiUtil.InvokeNow(() => dialog.Close());
           }
           catch (IOException ex)
@@ -674,6 +684,43 @@ namespace EQLogParser
 
         dialog.ShowDialog();
       }
+    }
+
+    internal static void ExportFightsToDiscord(string currentFile, List<Fight> fights, string webhookUrl, bool filterToSelectedDefenders = false)
+    {
+      var dialog = new MessageWindow($"Sending {fights.Count} Selected Fights to Discord.", "Discord Export", MessageWindow.IconType.Save);
+
+      Task.Delay(150).ContinueWith(async _ =>
+      {
+        var failed = false;
+
+        try
+        {
+          var bytes = BuildFightExportBytes(currentFile, fights, filterToSelectedDefenders);
+          var fileName = $"eqlog_{ConfigUtil.PlayerName}_{ConfigUtil.ServerName}-selected.txt";
+          var label = fights.Count == 1 ? "1 fight" : $"{fights.Count} fights";
+          await SendDiscordFile(webhookUrl, bytes, fileName, $"{label} exported from EQLogParser-Dalaya.");
+        }
+        catch (Exception ex)
+        {
+          Log.Error("Problem sending fight export to Discord", ex);
+          failed = true;
+        }
+        finally
+        {
+          await UiUtil.InvokeAsync(() =>
+          {
+            dialog.Close();
+
+            if (failed)
+            {
+              new MessageWindow("Problem sending to Discord. Check Error Log for details.", "Discord Export", MessageWindow.IconType.Warn).ShowDialog();
+            }
+          });
+        }
+      });
+
+      dialog.ShowDialog();
     }
 
     internal static void ExportAsHtml(Dictionary<string, SummaryTable> tables)

@@ -105,6 +105,11 @@
               <fa:ImageAwesome x:Name="exportFightsNoAddsIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_FileExport" />
             </MenuItem.Icon>
           </MenuItem>
+          <MenuItem x:Name="menuItemExportFightsDiscord" IsEnabled="False" Header="Send Selected Fights to Discord..." Click="ExportFightsToDiscordClick" ToolTip="Send Selected Fights to the Discord webhook configured in Raid Recording Settings.">
+            <MenuItem.Icon>
+              <fa:ImageAwesome x:Name="exportFightsDiscordIcon" Style="{StaticResource EQIconStyle}" Icon="Solid_Upload" />
+            </MenuItem.Icon>
+          </MenuItem>
           <Separator />
           <MenuItem InputGestureText="Ctrl+A" Header="Select All" Command="{Binding Source={x:Static Member=local:ContextMenuCommands.SelectAll}}" 
                     CommandParameter="{Binding Path=PlacementTarget, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ContextMenu}}}">

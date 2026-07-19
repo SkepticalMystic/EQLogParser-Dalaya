@@ -392,7 +392,8 @@ namespace EQLogParser
       menuItemSetPlayer.IsEnabled = dataGrid.SelectedItems.Count == 1 && dataGrid.SelectedItem is Fight { IsInactivity: false, Name: var name } &&
         PlayerRegistry.IsPossiblePlayerName(name);
       menuItemRefresh.IsEnabled = dataGrid.SelectedItems.Count > 0;
-      menuItemExportFightsWithAdds.IsEnabled = menuItemExportFightsNoAdds.IsEnabled = dataGrid.SelectedItems.Count > 0;
+      menuItemExportFightsWithAdds.IsEnabled = menuItemExportFightsNoAdds.IsEnabled =
+        menuItemExportFightsDiscord.IsEnabled = dataGrid.SelectedItems.Count > 0;
     }
 
     private void RefreshClick(object sender, RoutedEventArgs e)
@@ -419,6 +420,42 @@ namespace EQLogParser
       {
         new MessageWindow("No Fights Selected. Nothing to Save.", Resource.FILEMENU_SAVE_FIGHTS).ShowDialog();
       }
+    }
+
+    private void ExportFightsToDiscordClick(object sender, RoutedEventArgs e)
+    {
+      var filtered = GetSelectedFights().OrderBy(fight => fight.Id).ToList();
+
+      if (string.IsNullOrEmpty(AppSettings.CurrentLogFile))
+      {
+        new MessageWindow("No Log File Opened. Nothing to Send.", "Discord Export").ShowDialog();
+        return;
+      }
+
+      if (filtered.Count == 0)
+      {
+        new MessageWindow("No Fights Selected. Nothing to Send.", "Discord Export").ShowDialog();
+        return;
+      }
+
+      var webhookUrl = ConfigUtil.GetRaidRecordWebhook();
+      if (string.IsNullOrEmpty(webhookUrl))
+      {
+        if (new RaidRecordSetupWindow().ShowDialog() != true)
+        {
+          return;
+        }
+
+        webhookUrl = ConfigUtil.GetRaidRecordWebhook();
+        if (string.IsNullOrEmpty(webhookUrl))
+        {
+          new MessageWindow("No Discord webhook URL configured. Open Raid Recording Settings and select Send to Discord.", "Discord Export",
+            MessageWindow.IconType.Warn).ShowDialog();
+          return;
+        }
+      }
+
+      MainActions.ExportFightsToDiscord(AppSettings.CurrentLogFile, filtered, webhookUrl);
     }
 
     private void SelectGroupClick(object sender, RoutedEventArgs e)
