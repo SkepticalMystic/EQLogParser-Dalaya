@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>EQLogParser-Dalaya — Exporting for Raid DPS</title>
-  <meta name="description" content="How to open a log in EQLogParser, select the raid encounter, and use the built-in export to share a clean file for the Raid DPS multi-log merger." />
+  <meta name="description" content="How to open a log in EQLogParser, select the raid encounter, and export a clean file (or send it straight to Discord) for the Raid DPS multi-log merger." />
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
@@ -74,7 +74,7 @@
         Right-click the selected fight(s) and choose one of the export options:
       </p>
       <img class="guide-screenshot" src="images/raid-export-context-menu.png"
-           alt="Right-click context menu showing Export Selected Fights options" style="max-width: 480px;" />
+           alt="Right-click context menu showing Export Selected Fights (with adds), Export Selected Fights (without adds), and Send Selected Fights to Discord options" style="max-width: 480px;" />
       <ul>
         <li>
           <strong>Export Selected Fights (without adds)...</strong> — filters the output to only
@@ -87,11 +87,16 @@
           were active in the same time window, giving a fuller "what happened during this fight"
           archive. Use this if you want more surrounding context preserved.
         </li>
+        <li>
+          <strong>Send Selected Fights to Discord...</strong> — skips the file entirely and
+          uploads the same "without adds" export straight to a Discord webhook, using the same
+          text file the raid leader would merge. See below.
+        </li>
       </ul>
       <p>
-        A save dialog opens with a default filename like <code>eqlog_Kateila_dalaya-selected.txt</code>.
-        Chat lines are stripped automatically either way — only combat-relevant lines are written
-        to the exported file.
+        The two <strong>Export Selected Fights</strong> options open a save dialog with a default
+        filename like <code>eqlog_Kateila_dalaya-selected.txt</code>. Chat lines are stripped
+        automatically for all three options — only combat-relevant lines are written or sent.
       </p>
       <img class="guide-screenshot" src="images/raid-export-save-dialog.png"
            alt="Save dialog with the default exported filename" style="max-width: 480px;" />
@@ -103,13 +108,30 @@
         </p>
       </div>
 
+      <h2>Sending directly to Discord</h2>
+      <p>
+        <strong>Send Selected Fights to Discord...</strong> requires a webhook URL configured
+        first — open <strong>Options &gt; Discord Export Settings</strong>, select
+        <strong>Send to Discord via Webhook</strong>, and paste in your webhook URL. This is the
+        same setting used by <a href="raid-record.html">Raid Recording</a>, so if you've already
+        set that up there's nothing else to configure. See the Raid Recording guide's
+        <a href="raid-record.html#first-time-setup">First-time setup</a> section for how to create
+        a Discord webhook if you don't have one yet.
+      </p>
+      <p>
+        If no webhook is configured, choosing this option opens the setup window automatically. The
+        upload happens in the background and is sent silently, so it won't trigger a notification
+        ping in the destination channel.
+      </p>
+
       <h2>Step 4: Share the exported file</h2>
       <p>
-        Send the exported <code>-selected.txt</code> file — not your raw EQ log — to whoever is
-        running the Raid Damage merge, typically the raid leader or a designated parser. Any file
-        transfer method works: Discord, a shared folder, direct message, etc. The default filename
-        already includes your character name, so it's easy to tell whose file is whose once several
-        are collected.
+        If you used <strong>Send Selected Fights to Discord</strong>, delivery already happened —
+        skip to the next guide. Otherwise, send the exported <code>-selected.txt</code> file — not
+        your raw EQ log — to whoever is running the Raid Damage merge, typically the raid leader or
+        a designated parser. Any file transfer method works: Discord, a shared folder, direct
+        message, etc. The default filename already includes your character name, so it's easy to
+        tell whose file is whose once several are collected.
       </p>
 
       <h2>Why export instead of sharing the raw log</h2>
