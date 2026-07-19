@@ -2,6 +2,11 @@
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.5.0 | 07/18/26\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab New {\b Raid Record}: bookmark the start and end of a raid session with the sidebar {\b Record} button. On {\b Stop}, combat lines from that window (chat stripped) export to a file or upload to a Discord channel via webhook -- configure delivery in {\b Options -> Raid Recording Settings}.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 2.\tx360\tab Sidebar icons scaled up (16x16 -> 24x24) with styled tooltips matching the title bar's font and theme.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 3.\tx360\tab Fixed: {\b Raid Record} export filenames now match the {\b Export Fights} naming convention so player and server name parse correctly on reload -- previously combat was mis-attributed to "You" and pet mapping loaded for the wrong server.\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 4.\tx360\tab Fixed: {\b Spell Details} showed the wrong level for multi-class spells (e.g. always showing the lowest eligible class's level); each class now shows its own level.\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.4.0 | 06/20/26\par}
 {\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab {\b DD Attribution}: Non-melee damage hits in {\b DPS Breakdown} now attribute to spell names instead of appearing as a generic Non-melee row. The parser tracks recent casts and matches each incoming non-melee hit to the spell cast within a timing window. Pure DoTs are excluded -- they are already attributed by the landing-message path. Instant-cast AAs not in {\b spells.txt} are handled via a secondary ID-based lookup.\par}
 {\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 2.\tx360\tab {\b Spell Table}: New window (right-click any breakdown surface and choose {\b View Spell Table}) showing all spells cast in a fight as a sortable, filterable grid. {\b Compare Spells} lets you open the same spell side-by-side across multiple breakdown surfaces to compare stats across fights or sources.\par}
