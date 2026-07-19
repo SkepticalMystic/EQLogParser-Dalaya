@@ -61,7 +61,7 @@ namespace EQLogParser
 
       try
       {
-        await MainActions.SendDiscordMessage("EQLogParser raid recording test — connection OK.", url);
+        await MainActions.SendDiscordMessage("EQLogParser raid recording test — connection OK.", url, silent: true);
         testStatusText.Text = "Test message sent successfully.";
         testStatusText.SetResourceReference(ForegroundProperty, "EQGoodForegroundBrush");
       }

@@ -123,12 +123,14 @@ namespace EQLogParser
       SyncFusionUtil.AddDocument(dockSite, typeof(DamageSummary), "damageSummaryWindow", "DPS Summary", true);
     }
 
-    internal static async Task SendDiscordMessage(string content, string webhookUrl)
+    internal static async Task SendDiscordMessage(string content, string webhookUrl, bool silent = false)
     {
       try
       {
-        var payload = new { content };
-        var json = JsonSerializer.Serialize(payload, DiscordSerializationOptions);
+        // flags: 4096 = SUPPRESS_NOTIFICATIONS
+        var json = silent
+          ? JsonSerializer.Serialize(new { content, flags = 4096 }, DiscordSerializationOptions)
+          : JsonSerializer.Serialize(new { content }, DiscordSerializationOptions);
         using var body = new StringContent(json, Encoding.UTF8, "application/json");
 
         // Reuses the same HttpClient instance & its connection pool

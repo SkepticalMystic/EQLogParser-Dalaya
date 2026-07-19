@@ -787,7 +787,7 @@ namespace EQLogParser
           {
             updatedSendToChatText = updatedSendToChatText.Replace(LogTimeCode, DateUtil.FormatDotNetTimeSeconds(lineData.BeginTime), StringComparison.OrdinalIgnoreCase);
           }
-          _ = MainActions.SendDiscordMessage(updatedSendToChatText, wrapper.TriggerData.ChatWebhook);
+          _ = MainActions.SendDiscordMessage(updatedSendToChatText, wrapper.TriggerData.ChatWebhook, wrapper.TriggerData.SilentChatWebhook);
         }
       }
 
