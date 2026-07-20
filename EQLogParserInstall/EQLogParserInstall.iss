@@ -6,7 +6,7 @@
 #endif
 
 #define MyAppName "EQLogParser-Dalaya"
-#define MyAppVersion "1.6.2"
+#define MyAppVersion "1.6.3"
 #define MyAppPublisher "SkepticalMystic"
 #define MyAppURL "https://github.com/SkepticalMystic/EQLogParser-Dalaya"
 #define MyAppExeName "EQLogParser-Dalaya.exe"
