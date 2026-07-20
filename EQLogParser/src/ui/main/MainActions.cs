@@ -143,15 +143,52 @@ namespace EQLogParser
       }
     }
 
+    // Below this, upload the raw file as-is -- matches Discord's non-boosted-server cap with a safety margin
+    private const int DiscordDirectUploadLimit = 7_340_032;
+    // Hard ceiling for a zipped attachment -- Discord's actual cap is 8_388_608
+    private const int DiscordMaxUploadBytes = 8_000_000;
+
     internal static async Task SendDiscordFile(string webhookUrl, byte[] fileBytes, string fileName, string message)
     {
+      var (bytes, name) = PrepareDiscordAttachment(fileBytes, fileName);
+
       using var form = new MultipartFormDataContent();
       // flags: 4096 = SUPPRESS_NOTIFICATIONS -- raid record uploads shouldn't ping the channel
       var payloadJson = JsonSerializer.Serialize(new { content = message, flags = 4096 }, DiscordSerializationOptions);
       form.Add(new StringContent(payloadJson, Encoding.UTF8, "application/json"), "payload_json");
-      form.Add(new ByteArrayContent(fileBytes), "files[0]", fileName);
+      form.Add(new ByteArrayContent(bytes), "files[0]", name);
       var response = await TheHttpClient.PostAsync(webhookUrl, form);
       response.EnsureSuccessStatusCode();
+    }
+
+    // Combat log text is highly repetitive and compresses well, so oversized exports are zipped
+    // before falling back to rejecting the upload outright.
+    private static (byte[] Bytes, string FileName) PrepareDiscordAttachment(byte[] rawBytes, string fileName)
+    {
+      if (rawBytes.Length <= DiscordDirectUploadLimit)
+      {
+        return (rawBytes, fileName);
+      }
+
+      using var ms = new MemoryStream();
+      using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+      {
+        var entry = zip.CreateEntry(fileName, CompressionLevel.SmallestSize);
+        using var entryStream = entry.Open();
+        entryStream.Write(rawBytes);
+      }
+
+      var zipBytes = ms.ToArray();
+      if (zipBytes.Length > DiscordMaxUploadBytes)
+      {
+        var rawMb = rawBytes.Length / 1_000_000.0;
+        var zipMb = zipBytes.Length / 1_000_000.0;
+        throw new DiscordUploadTooLargeException(
+          $"Recording is too large for Discord even after compression ({rawMb:0.#} MB raw, {zipMb:0.#} MB zipped). " +
+          "Split the raid into shorter recordings, or use Save to File delivery instead.");
+      }
+
+      return (zipBytes, Path.ChangeExtension(fileName, ".zip"));
     }
 
     internal static byte[] ExportRaidRecord(string sourceFile, double startTime, double endTime)
@@ -695,6 +732,7 @@ namespace EQLogParser
       Task.Delay(150).ContinueWith(async _ =>
       {
         var failed = false;
+        string failMessage = null;
 
         try
         {
@@ -702,6 +740,12 @@ namespace EQLogParser
           var fileName = $"eqlog_{ConfigUtil.PlayerName}_{ConfigUtil.ServerName}-selected.txt";
           var label = fights.Count == 1 ? "1 fight" : $"{fights.Count} fights";
           await SendDiscordFile(webhookUrl, bytes, fileName, $"{label} exported from EQLogParser-Dalaya.");
+        }
+        catch (DiscordUploadTooLargeException tle)
+        {
+          Log.Error("Fight export too large to send to Discord", tle);
+          failed = true;
+          failMessage = tle.Message;
         }
         catch (Exception ex)
         {
@@ -716,7 +760,7 @@ namespace EQLogParser
 
             if (failed)
             {
-              new MessageWindow("Problem sending to Discord. Check Error Log for details.", "Discord Export", MessageWindow.IconType.Warn).ShowDialog();
+              new MessageWindow(failMessage ?? "Problem sending to Discord. Check Error Log for details.", "Discord Export", MessageWindow.IconType.Warn).ShowDialog();
             }
           });
         }
@@ -798,4 +842,6 @@ namespace EQLogParser
       }
     }
   }
+
+  internal sealed class DiscordUploadTooLargeException(string message) : Exception(message);
 }

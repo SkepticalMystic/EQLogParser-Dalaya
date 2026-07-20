@@ -49,6 +49,8 @@ namespace EQLogParser
     private long _recordLastFilePos;
     private long _recordCombatBytes;
     private DispatcherTimer _recordSizeTimer;
+    // Sanity ceiling only -- actual Discord fit is decided at send time via zip compression in MainActions.SendDiscordFile
+    private const long MaxRaidRecordBytes = 100_000_000;
 
     public MainWindow()
     {
@@ -1414,7 +1416,7 @@ namespace EQLogParser
         Log.Error("Error checking raid record size", ex);
       }
 
-      if (_recordCombatBytes > 7_340_032)
+      if (_recordCombatBytes > MaxRaidRecordBytes)
       {
         _ = StopRecordingAsync(autoStopped: true);
       }
@@ -1463,7 +1465,7 @@ namespace EQLogParser
 
       var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmm", System.Globalization.CultureInfo.InvariantCulture);
       var filename = $"eqlog_{ConfigUtil.PlayerName}_{ConfigUtil.ServerName}-RaidRecord_{timestamp}.txt";
-      var banner = autoStopped ? "Recording stopped automatically — 7 MB limit reached.\n\n" : string.Empty;
+      var banner = autoStopped ? "Recording stopped automatically — 100 MB limit reached.\n\n" : string.Empty;
 
       if (delivery == "Discord")
       {
@@ -1483,6 +1485,11 @@ namespace EQLogParser
           {
             new MessageWindow(banner.TrimEnd(), "Raid Record", MessageWindow.IconType.Info).ShowDialog();
           }
+        }
+        catch (DiscordUploadTooLargeException tle)
+        {
+          Log.Error("Raid record too large to send to Discord", tle);
+          new MessageWindow(tle.Message, "Raid Record", MessageWindow.IconType.Warn).ShowDialog();
         }
         catch (Exception ex)
         {

@@ -122,13 +122,17 @@
 
       <h2>Size limit</h2>
       <p>
-        Discord's file upload cap is 8 MB for most servers. Raid Recording monitors the size of
-        captured combat data in the background and stops automatically if it exceeds 7 MB, leaving
-        a margin below Discord's limit. A message appears when this happens.
+        Discord's file upload cap is 8 MB for most servers. If a recording's combat text is small
+        enough to fit under that cap, it's sent as a plain <code>.txt</code> file, same as before.
+        Larger recordings are compressed into a <code>.zip</code> before upload — combat log text
+        is highly repetitive and typically shrinks 5–10x, so most raids fit easily even after the
+        session runs long. Recording only stops automatically as a sanity limit if the raw captured
+        data exceeds 100 MB, which normal raid lengths won't come close to.
       </p>
       <p>
-        For very long raids, consider starting a new recording after each major event (e.g.,
-        after clearing a zone wing) rather than running a single recording for the entire night.
+        In the rare case a recording is still too large for Discord even after compression, a
+        message explains this and the recording is not sent — save to a file instead and share it
+        another way, or split the raid into shorter recordings.
       </p>
 
       <h2>Switching logs or closing the app while recording</h2>
