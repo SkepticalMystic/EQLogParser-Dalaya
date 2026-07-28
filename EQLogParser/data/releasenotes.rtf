@@ -2,6 +2,8 @@
 {\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
 \widowctrl\hyphauto
 
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.6.4 | 07/27/26\par}
+{\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab Fixed: a stray message that looked like a {\b /tell} (starting with a word containing punctuation, e.g. "I'm") could crash the log-reading pipeline and freeze the app at a fixed "Reading Log.." percentage indefinitely, requiring a restart. The pipeline is also now resilient to any single malformed line, so one bad line can no longer take down the whole session this way.\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.6.3 | 07/19/26\par}
 {\pard \ql \f0 \fs20 \sa0 \li720 \fi-360 1.\tx360\tab Fixed: {\b Raid Record} and {\b Send Selected Fights to Discord} uploads that exceeded Discord's 8 MB cap are now compressed to a .zip instead of being cut off -- combat log text typically shrinks 5-10x, so recordings can now run far longer before hitting a limit.\sa180\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs24 1.6.2 | 07/19/26\par}
