@@ -45,7 +45,20 @@ namespace EQLogParser
           foreach (var data in collection.GetConsumingEnumerable())
           {
             if (_isDisposed) break;
-            DoPreProcess(data.Line, data.Ts, data.IsMonitor);
+
+            try
+            {
+              DoPreProcess(data.Line, data.Ts, data.IsMonitor);
+            }
+            catch (Exception ex)
+            {
+              // Defense in depth: a single malformed line must never kill this consumer.
+              // LogReader.HandleLine keeps queueing into a *bounded* BlockingCollection —
+              // if this loop dies, the queue fills and the reader blocks on Add() forever,
+              // which surfaces as the app frozen at a fixed "Reading Log.." percentage with
+              // no error shown. Log and move on to the next queued line instead.
+              Log.Error($"Error processing log line, skipping: {data.Line}", ex);
+            }
           }
         }
         catch (Exception ex)

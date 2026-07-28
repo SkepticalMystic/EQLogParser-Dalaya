@@ -1,4 +1,6 @@
+using log4net;
 using System;
+using System.Reflection;
 
 namespace EQLogParser
 {
@@ -44,12 +46,25 @@ namespace EQLogParser
 
   public static class ChatLineParser
   {
+    private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod()?.DeclaringType);
+
     public static ChatType ParseChatType(string action)
     {
       if (!string.IsNullOrEmpty(action))
       {
-        var span = action.AsSpan();
-        return span.StartsWith("You ") ? CheckYouCriteria(span) : CheckOtherCriteria(span);
+        try
+        {
+          var span = action.AsSpan();
+          return span.StartsWith("You ") ? CheckYouCriteria(span) : CheckOtherCriteria(span);
+        }
+        catch (Exception ex)
+        {
+          // Every other line parser (Damage/Healing/Misc/Cast) guards itself the same way —
+          // this one didn't, and an edge case (an EQ client "You told <word>, ..." bounce
+          // where <word> contains punctuation before any separator) took down LogProcessor's
+          // whole background consumer task. See LogProcessorTest for the resulting hang.
+          Log.Error($"Error parsing chat line: {action}", ex);
+        }
       }
 
       return null;
@@ -309,12 +324,24 @@ namespace EQLogParser
 
         if (span[i] == '\'')
         {
+          // No whitespace/comma seen before the quote (e.g. a receiver-less bounce like
+          // "You told I'm, 'I'm is not online at this time'") — not a name we can extract.
+          if (wsIndex == -1)
+          {
+            return -1;
+          }
+
           receiver = dotIndex == -1 ? span[..wsIndex].ToString() : span[dotIndex..wsIndex].ToString();
           return span.Length > i + 1 ? i + 1 : i;
         }
 
         if (span[i] == ':')
         {
+          if (wsIndex == -1)
+          {
+            return -1;
+          }
+
           receiver = dotIndex == -1 ? span[..wsIndex].ToString() : span[dotIndex..wsIndex].ToString();
           return span.Length > i + 1 ? i + 1 : i;
         }
